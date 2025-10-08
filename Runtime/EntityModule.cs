@@ -1,5 +1,4 @@
 using System;
-using SpellBound.Core;
 using UnityEngine;
 
 namespace SpellBound.Core {

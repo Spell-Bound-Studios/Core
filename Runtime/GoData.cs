@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using PurrNet.Packing;
-using Unity.Collections;
 using UnityEngine;
 
 namespace SpellBound.Core {
