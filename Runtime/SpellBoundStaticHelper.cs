@@ -23,8 +23,6 @@ namespace SpellBound.Core {
         public static void InvokeOnEntityDamage(Entity entity) {
             OnEntityDamage?.Invoke(entity);
         }
-
-        public static IChunkManager chunkManager { get; set;}
     }
 }
 
