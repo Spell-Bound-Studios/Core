@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using PurrNet;
 using UnityEngine;
 using System.Linq;
 
@@ -14,7 +13,7 @@ namespace SpellBound.Core {
         
         private void Awake() {
             DontDestroyOnLoad(gameObject);
-            InstanceHandler.RegisterInstance(this);
+            SingletonManager.RegisterSingleton(this);
             
             var presets = Resources.LoadAll<ObjectPreset>("");
             foreach (var preset in presets) {
@@ -34,10 +33,6 @@ namespace SpellBound.Core {
                             preset);
                 }
             }
-        }
-
-        private void OnDestroy() {
-            InstanceHandler.UnregisterInstance<ObjectPresetDatabase>();
         }
         
         // Public getter for non-Burst systems that still want the preset object.
@@ -67,7 +62,7 @@ namespace SpellBound.Core {
         
         public static ObjectPreset ResolvePreset(this string uid) {
             return !string.IsNullOrEmpty(uid) &&
-                   InstanceHandler.TryGetInstance(out ObjectPresetDatabase db) &&
+                   SingletonManager.TryGetSingletonInstance(out ObjectPresetDatabase db) &&
                    db.TryGetPreset(uid, out var preset)
                 ? preset
                 : null;

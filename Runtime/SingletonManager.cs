@@ -10,6 +10,9 @@ namespace SpellBound.Core {
     {
         private static readonly Dictionary<Type, object> _singletons = new Dictionary<Type, object>();
         
+        /// <summary>
+        /// Pretty sure this means we don't need to unregister.
+        /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static void ClearAll() => _singletons.Clear();
         
