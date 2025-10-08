@@ -5,13 +5,24 @@ using UnityEngine;
 
 namespace SpellBound.Core {
     public static class FastPacker {
-        #region Constants
+        #region Bool
 
-        public const int Vec3ByteSize = sizeof(float) * 3;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteBool(ref Span<byte> buffer, bool value) {
+            buffer[0] = value ? (byte)1 : (byte)0;
+            buffer = buffer[1..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ReadBool(ref ReadOnlySpan<byte> buffer) {
+            var value = buffer[0] != 0;
+            buffer = buffer[1..];
+            return value;
+        }
 
         #endregion
-
-        #region Ints
+        
+        #region Int
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt(ref Span<byte> buffer, int value) {
@@ -83,6 +94,46 @@ namespace SpellBound.Core {
             var z = ReadFloat(ref buffer);
 
             return new Vector3(x, y, z);
+        }
+
+        #endregion
+
+        #region Vector2
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteVector2(ref Span<byte> buffer, in Vector2 v) {
+            WriteFloat(ref buffer, v.x);
+            WriteFloat(ref buffer, v.y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 ReadVector2(ref ReadOnlySpan<byte> buffer) {
+            var x = ReadFloat(ref buffer);
+            var y = ReadFloat(ref buffer);
+
+            return new Vector2(x, y);
+        }
+
+        #endregion
+
+        #region Quaternion
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteQuaternion(ref Span<byte> buffer, in Quaternion q) {
+            WriteFloat(ref buffer, q.x);
+            WriteFloat(ref buffer, q.y);
+            WriteFloat(ref buffer, q.z);
+            WriteFloat(ref buffer, q.w);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion ReadQuaternion(ref ReadOnlySpan<byte> buffer) {
+            var x = ReadFloat(ref buffer);
+            var y = ReadFloat(ref buffer);
+            var z = ReadFloat(ref buffer);
+            var w = ReadFloat(ref buffer);
+
+            return new Quaternion(x, y, z, w);
         }
 
         #endregion
