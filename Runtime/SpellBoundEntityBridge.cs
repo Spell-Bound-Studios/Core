@@ -8,6 +8,7 @@ namespace SpellBound.Core {
     public class SpellBoundEntityBridge : MonoBehaviour {
         public static SpellBoundEntityBridge Instance;
         private GameObject _lastInteractor;
+        private IChunkManager _chunkManager;
 
         private void Awake() {
             if (Instance != null && Instance != this)
@@ -19,6 +20,9 @@ namespace SpellBound.Core {
         }
 
         void OnEnable() {
+            if (!SingletonManager.TryGetSingletonInstance(out _chunkManager)) 
+                return;
+            
             Helper.OnEntityInteraction += HandleSwap;
         }
 
@@ -46,7 +50,7 @@ namespace SpellBound.Core {
                 sbbDataList.Add(sbbData.Value);
             }
             var transformData =  entityManager.GetComponentData<LocalTransform>(entity);
-            var chunk = Helper.chunkManager.GetObjectParentChunk(transformData.Position);
+            var chunk = _chunkManager.GetObjectParentChunk(transformData.Position);
             chunk.SwapInPersistent(sbbEntityData.PresetUiD.Value, sbbEntityData.GenerationIndex, transformData.Position, transformData.Rotation, transformData.Scale, sbbDataList.ToArray());
         }
     
