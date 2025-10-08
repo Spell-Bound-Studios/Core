@@ -1,11 +1,9 @@
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEngine;
 
 namespace SpellBound.Core
 {
-    
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateBefore(typeof(ProxyCollisionSystem))]
     public partial struct GoDeletionsCleanup: ISystem, ISystemStartStop
@@ -16,11 +14,9 @@ namespace SpellBound.Core
         public void OnStartRunning(ref SystemState state) {
             _goDeletionManager = SystemAPI.GetSingletonEntity<AddedGoDeletionBuffer>();
         }
-
-
+        
         [BurstCompile]
         public void OnStopRunning(ref SystemState state) { }
-        
         
         
         [BurstCompile]
