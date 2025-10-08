@@ -4,7 +4,13 @@ using System.Text;
 using UnityEngine;
 
 namespace SpellBound.Core {
+    /// <summary>
+    /// Contains both bitwise and bit converter calls for the user to determine which they want to use.
+    /// Uses TryWriteBytes to avoid allocations (except for strings).
+    /// </summary>
     public static class FastPacker {
+        public static readonly bool IsLittleEndian = BitConverter.IsLittleEndian;
+
         #region Bool
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,6 +43,22 @@ namespace SpellBound.Core {
 
             return value;
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteIntBitwise(ref Span<byte> buffer, int value) {
+            buffer[0] = (byte)(value);
+            buffer[1] = (byte)(value >> 8);
+            buffer[2] = (byte)(value >> 16);
+            buffer[3] = (byte)(value >> 24);
+            buffer = buffer[4..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int ReadIntBitwise(ref ReadOnlySpan<byte> buffer) {
+            var value = buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
+            buffer = buffer[4..];
+            return value;
+        }
 
         #endregion
 
@@ -54,6 +76,18 @@ namespace SpellBound.Core {
             buffer = buffer[sizeof(float)..];
 
             return value;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteFloatBitwise(ref Span<byte> buffer, float value) {
+            var intVal = BitConverter.SingleToInt32Bits(value);
+            WriteIntBitwise(ref buffer, intVal);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReadFloatBitwise(ref ReadOnlySpan<byte> buffer) {
+            var intVal = ReadIntBitwise(ref buffer);
+            return BitConverter.Int32BitsToSingle(intVal);
         }
 
         #endregion
@@ -95,6 +129,21 @@ namespace SpellBound.Core {
 
             return new Vector3(x, y, z);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteVector3Bitwise(ref Span<byte> buffer, in Vector3 v) {
+            WriteFloatBitwise(ref buffer, v.x);
+            WriteFloatBitwise(ref buffer, v.y);
+            WriteFloatBitwise(ref buffer, v.z);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 ReadVector3Bitwise(ref ReadOnlySpan<byte> buffer) {
+            var x = ReadFloatBitwise(ref buffer);
+            var y = ReadFloatBitwise(ref buffer);
+            var z = ReadFloatBitwise(ref buffer);
+            return new Vector3(x, y, z);
+        }
 
         #endregion
 
@@ -111,6 +160,19 @@ namespace SpellBound.Core {
             var x = ReadFloat(ref buffer);
             var y = ReadFloat(ref buffer);
 
+            return new Vector2(x, y);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteVector2Bitwise(ref Span<byte> buffer, in Vector2 v) {
+            WriteFloatBitwise(ref buffer, v.x);
+            WriteFloatBitwise(ref buffer, v.y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 ReadVector2Bitwise(ref ReadOnlySpan<byte> buffer) {
+            var x = ReadFloatBitwise(ref buffer);
+            var y = ReadFloatBitwise(ref buffer);
             return new Vector2(x, y);
         }
 
@@ -133,6 +195,23 @@ namespace SpellBound.Core {
             var z = ReadFloat(ref buffer);
             var w = ReadFloat(ref buffer);
 
+            return new Quaternion(x, y, z, w);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteQuaternionBitwise(ref Span<byte> buffer, in Quaternion q) {
+            WriteFloatBitwise(ref buffer, q.x);
+            WriteFloatBitwise(ref buffer, q.y);
+            WriteFloatBitwise(ref buffer, q.z);
+            WriteFloatBitwise(ref buffer, q.w);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Quaternion ReadQuaternionBitwise(ref ReadOnlySpan<byte> buffer) {
+            var x = ReadFloatBitwise(ref buffer);
+            var y = ReadFloatBitwise(ref buffer);
+            var z = ReadFloatBitwise(ref buffer);
+            var w = ReadFloatBitwise(ref buffer);
             return new Quaternion(x, y, z, w);
         }
 
