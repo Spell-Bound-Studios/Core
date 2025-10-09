@@ -2,7 +2,6 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Physics;
-using UnityEngine;
 
 namespace SpellBound.Core {
     /// <summary>

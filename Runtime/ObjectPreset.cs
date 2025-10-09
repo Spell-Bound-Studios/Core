@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Unity.Collections;
 using UnityEngine;
 
 namespace SpellBound.Core {
