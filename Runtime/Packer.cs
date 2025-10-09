@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
@@ -8,8 +9,12 @@ namespace SpellBound.Core {
     /// Contains both bitwise and bit converter calls for the user to determine which they want to use.
     /// Uses TryWriteBytes to avoid allocations (except for strings).
     /// </summary>
-    public static class FastPacker {
-        public static readonly bool IsLittleEndian = BitConverter.IsLittleEndian;
+    public static class Packer {
+        // Starting stack buffer size
+        private const int StackBufferSize = 4096;
+
+        // Max heap buffer allowed: 64 MB - tune as needed
+        private const int MaxRentedBuffer = 1024 * 1024 * 64;
 
         #region Bool
 
@@ -23,11 +28,12 @@ namespace SpellBound.Core {
         public static bool ReadBool(ref ReadOnlySpan<byte> buffer) {
             var value = buffer[0] != 0;
             buffer = buffer[1..];
+
             return value;
         }
 
         #endregion
-        
+
         #region Int
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,10 +49,10 @@ namespace SpellBound.Core {
 
             return value;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteIntBitwise(ref Span<byte> buffer, int value) {
-            buffer[0] = (byte)(value);
+            buffer[0] = (byte)value;
             buffer[1] = (byte)(value >> 8);
             buffer[2] = (byte)(value >> 16);
             buffer[3] = (byte)(value >> 24);
@@ -57,6 +63,7 @@ namespace SpellBound.Core {
         public static int ReadIntBitwise(ref ReadOnlySpan<byte> buffer) {
             var value = buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
             buffer = buffer[4..];
+
             return value;
         }
 
@@ -77,7 +84,7 @@ namespace SpellBound.Core {
 
             return value;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteFloatBitwise(ref Span<byte> buffer, float value) {
             var intVal = BitConverter.SingleToInt32Bits(value);
@@ -87,6 +94,7 @@ namespace SpellBound.Core {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReadFloatBitwise(ref ReadOnlySpan<byte> buffer) {
             var intVal = ReadIntBitwise(ref buffer);
+
             return BitConverter.Int32BitsToSingle(intVal);
         }
 
@@ -129,7 +137,7 @@ namespace SpellBound.Core {
 
             return new Vector3(x, y, z);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteVector3Bitwise(ref Span<byte> buffer, in Vector3 v) {
             WriteFloatBitwise(ref buffer, v.x);
@@ -142,6 +150,7 @@ namespace SpellBound.Core {
             var x = ReadFloatBitwise(ref buffer);
             var y = ReadFloatBitwise(ref buffer);
             var z = ReadFloatBitwise(ref buffer);
+
             return new Vector3(x, y, z);
         }
 
@@ -162,7 +171,7 @@ namespace SpellBound.Core {
 
             return new Vector2(x, y);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteVector2Bitwise(ref Span<byte> buffer, in Vector2 v) {
             WriteFloatBitwise(ref buffer, v.x);
@@ -173,6 +182,7 @@ namespace SpellBound.Core {
         public static Vector2 ReadVector2Bitwise(ref ReadOnlySpan<byte> buffer) {
             var x = ReadFloatBitwise(ref buffer);
             var y = ReadFloatBitwise(ref buffer);
+
             return new Vector2(x, y);
         }
 
@@ -197,7 +207,7 @@ namespace SpellBound.Core {
 
             return new Quaternion(x, y, z, w);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteQuaternionBitwise(ref Span<byte> buffer, in Quaternion q) {
             WriteFloatBitwise(ref buffer, q.x);
@@ -212,7 +222,69 @@ namespace SpellBound.Core {
             var y = ReadFloatBitwise(ref buffer);
             var z = ReadFloatBitwise(ref buffer);
             var w = ReadFloatBitwise(ref buffer);
+
             return new Quaternion(x, y, z, w);
+        }
+
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// Serialize a value-type IPacker into a byte[].
+        /// Uses a stack buffer for small messages and falls back to ArrayPool for larger ones.
+        /// </summary>
+        public static byte[] ToBytes<T>(in T obj) where T : IPacker {
+            // Small payloads.
+            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+            var span = stackBuf;
+
+            try {
+                obj.Pack(ref span);
+                var written = stackBuf.Length - span.Length;
+
+                return stackBuf[..written].ToArray();
+            }
+            catch (ArgumentOutOfRangeException) { }
+
+            // Too big so get from the array pool.
+            var size = Math.Max(StackBufferSize * 2, 8192);
+
+            while (true) {
+                var rented = ArrayPool<byte>.Shared.Rent(size);
+
+                try {
+                    var rentedSpan = new Span<byte>(rented, 0, size);
+                    var working = rentedSpan;
+
+                    try {
+                        obj.Pack(ref working);
+                        var written = size - working.Length;
+                        
+                        var result = new byte[written];
+                        Buffer.BlockCopy(rented, 0, result, 0, written);
+
+                        return result;
+                    }
+                    catch (ArgumentOutOfRangeException) { }
+                }
+                finally {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+                
+                size = Math.Min(size * 2, MaxRentedBuffer);
+            }
+        }
+
+        /// <summary>
+        /// Deserialize a struct that implements IPacker from a ReadOnlySpan.
+        /// </summary>
+        public static T FromBytes<T>(ReadOnlySpan<byte> bytes) where T : IPacker, new() {
+            var span = bytes;
+            T obj = new();
+            obj.Unpack(ref span);
+
+            return obj;
         }
 
         #endregion

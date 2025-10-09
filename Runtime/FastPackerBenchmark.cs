@@ -23,7 +23,7 @@ namespace SpellBound.Core {
 
             // Write ints with FastPacker (BitConverter)
             sw.Restart();
-            for (var i = 0; i < Iterations; i++) FastPacker.WriteInt(ref span, i);
+            for (var i = 0; i < Iterations; i++) Packer.WriteInt(ref span, i);
             sw.Stop();
             Debug.Log($"WriteInt (BitConverter) took: {sw.ElapsedMilliseconds} ms");
 
@@ -31,7 +31,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++) {
-                var val = FastPacker.ReadInt(ref readSpan);
+                var val = Packer.ReadInt(ref readSpan);
             }
 
             sw.Stop();
@@ -43,7 +43,7 @@ namespace SpellBound.Core {
 
             // Write ints bitwise
             sw.Restart();
-            for (var i = 0; i < Iterations; i++) FastPacker.WriteIntBitwise(ref span, i);
+            for (var i = 0; i < Iterations; i++) Packer.WriteIntBitwise(ref span, i);
             sw.Stop();
             Debug.Log($"WriteIntBitwise took: {sw.ElapsedMilliseconds} ms");
 
@@ -51,7 +51,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++) {
-                var val = FastPacker.ReadIntBitwise(ref readSpan);
+                var val = Packer.ReadIntBitwise(ref readSpan);
             }
 
             sw.Stop();
@@ -66,7 +66,7 @@ namespace SpellBound.Core {
 
             // Write floats
             sw.Restart();
-            for (var i = 0; i < Iterations; i++) FastPacker.WriteFloat(ref span, i * 0.1f);
+            for (var i = 0; i < Iterations; i++) Packer.WriteFloat(ref span, i * 0.1f);
             sw.Stop();
             Debug.Log($"WriteFloat (BitConverter) took: {sw.ElapsedMilliseconds} ms");
 
@@ -74,7 +74,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++) {
-                var val = FastPacker.ReadFloat(ref readSpan);
+                var val = Packer.ReadFloat(ref readSpan);
             }
 
             sw.Stop();
@@ -86,7 +86,7 @@ namespace SpellBound.Core {
 
             // Write floats bitwise
             sw.Restart();
-            for (var i = 0; i < Iterations; i++) FastPacker.WriteFloatBitwise(ref span, i * 0.1f);
+            for (var i = 0; i < Iterations; i++) Packer.WriteFloatBitwise(ref span, i * 0.1f);
             sw.Stop();
             Debug.Log($"WriteFloatBitwise took: {sw.ElapsedMilliseconds} ms");
 
@@ -94,7 +94,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++) {
-                var val = FastPacker.ReadFloatBitwise(ref readSpan);
+                var val = Packer.ReadFloatBitwise(ref readSpan);
             }
 
             sw.Stop();
@@ -112,7 +112,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++)
-                FastPacker.WriteVector3(ref span, v);
+                Packer.WriteVector3(ref span, v);
             sw.Stop();
             Debug.Log($"WriteVector3 took: {sw.ElapsedMilliseconds} ms");
 
@@ -120,7 +120,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++) {
-                var _ = FastPacker.ReadVector3(ref readSpan);
+                var _ = Packer.ReadVector3(ref readSpan);
             }
             
             sw.Stop();
@@ -134,7 +134,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++)
-                FastPacker.WriteVector3Bitwise(ref span, v);
+                Packer.WriteVector3Bitwise(ref span, v);
             sw.Stop();
             Debug.Log($"WriteVector3Bitwise took: {sw.ElapsedMilliseconds} ms");
 
@@ -142,7 +142,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++) {
-                var _ = FastPacker.ReadVector3Bitwise(ref readSpan);
+                var _ = Packer.ReadVector3Bitwise(ref readSpan);
             }
             
             sw.Stop();
@@ -160,7 +160,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++)
-                FastPacker.WriteQuaternion(ref span, q);
+                Packer.WriteQuaternion(ref span, q);
             sw.Stop();
             Debug.Log($"WriteQuaternion took: {sw.ElapsedMilliseconds} ms");
 
@@ -168,7 +168,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++) {
-                var _ = FastPacker.ReadQuaternion(ref readSpan);
+                var _ = Packer.ReadQuaternion(ref readSpan);
             }
                 
             sw.Stop();
@@ -182,7 +182,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++)
-                FastPacker.WriteQuaternionBitwise(ref span, q);
+                Packer.WriteQuaternionBitwise(ref span, q);
             sw.Stop();
             Debug.Log($"WriteQuaternionBitwise took: {sw.ElapsedMilliseconds} ms");
 
@@ -190,7 +190,7 @@ namespace SpellBound.Core {
             sw.Restart();
 
             for (var i = 0; i < Iterations; i++) {
-                var _ = FastPacker.ReadQuaternionBitwise(ref readSpan);
+                var _ = Packer.ReadQuaternionBitwise(ref readSpan);
             }
                 
             sw.Stop();

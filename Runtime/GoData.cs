@@ -1,5 +1,4 @@
 ﻿using System;
-using PurrNet.Packing;
 using UnityEngine;
 
 namespace SpellBound.Core {
@@ -7,7 +6,7 @@ namespace SpellBound.Core {
     /// This struct represents ANY (networked and not networked) gameobject in a chunk.
     /// </summary>
     [Serializable]
-    public struct GoData : IPackedAuto {
+    public struct GoData {
         public Vector3 position;
         public Vector3 rotation;
         public Vector3 scale;
