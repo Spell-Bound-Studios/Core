@@ -6,8 +6,8 @@ using UnityEngine;
 
 namespace SpellBound.Core {
     /// <summary>
-    /// Contains both bitwise and bit converter calls for the user to determine which they want to use.
-    /// Uses TryWriteBytes to avoid allocations (except for strings).
+    /// Static binary serialization utility using Span-based APIs.
+    /// Provides both BitConverter and bitwise methods for flexibility.
     /// </summary>
     public static class Packer {
         // Starting stack buffer size
@@ -228,14 +228,66 @@ namespace SpellBound.Core {
 
         #endregion
 
-        #region Helpers
+        #region Byte Arrays
+
+        /// <summary>
+        /// Write a byte array with length prefix
+        /// </summary>
+        public static void WriteBytes(ref Span<byte> buffer, ReadOnlySpan<byte> data) {
+            WriteInt(ref buffer, data.Length);
+            data.CopyTo(buffer);
+            buffer = buffer[data.Length..];
+        }
+
+        /// <summary>
+        /// Read a length-prefixed byte array
+        /// </summary>
+        public static byte[] ReadBytes(ref ReadOnlySpan<byte> buffer) {
+            var len = ReadInt(ref buffer);
+            var result = buffer[..len].ToArray();
+            buffer = buffer[len..];
+
+            return result;
+        }
+
+        #endregion
+
+        #region Array Packing
+
+        /// <summary>
+        /// Pack an array of IPacker items with length prefix
+        /// </summary>
+        public static void PackArray<T>(ref Span<byte> buffer, T[] items) where T : IPacker {
+            WriteInt(ref buffer, items.Length);
+            foreach (var item in items) item.Pack(ref buffer);
+        }
+
+        /// <summary>
+        /// Unpack an array of IPacker items
+        /// </summary>
+        public static T[] UnpackArray<T>(ref ReadOnlySpan<byte> buffer) where T : IPacker, new() {
+            var count = ReadInt(ref buffer);
+            var result = new T[count];
+
+            for (var i = 0; i < count; i++) {
+                var item = new T();
+                item.Unpack(ref buffer);
+                result[i] = item;
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region High-Level Helpers
 
         /// <summary>
         /// Serialize a value-type IPacker into a byte[].
-        /// Uses a stack buffer for small messages and falls back to ArrayPool for larger ones.
+        /// Uses stack buffer for small payloads, ArrayPool for larger ones.
         /// </summary>
         public static byte[] ToBytes<T>(in T obj) where T : IPacker {
-            // Small payloads.
+            // Try stack buffer first for small payloads
             Span<byte> stackBuf = stackalloc byte[StackBufferSize];
             var span = stackBuf;
 
@@ -247,7 +299,7 @@ namespace SpellBound.Core {
             }
             catch (ArgumentOutOfRangeException) { }
 
-            // Too big so get from the array pool.
+            // Payload too large, use ArrayPool with exponential growth
             var size = Math.Max(StackBufferSize * 2, 8192);
 
             while (true) {
@@ -260,7 +312,64 @@ namespace SpellBound.Core {
                     try {
                         obj.Pack(ref working);
                         var written = size - working.Length;
-                        
+
+                        var result = new byte[written];
+                        Buffer.BlockCopy(rented, 0, result, 0, written);
+
+                        return result;
+                    }
+                    catch (ArgumentOutOfRangeException) {
+                        Debug.Log("Bigger buffer required from ToBytes in Packer.");
+                    }
+                }
+                finally {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+
+                size = Math.Min(size * 2, MaxRentedBuffer);
+            }
+        }
+
+        /// <summary>
+        /// Deserialize a struct that implements IPacker from a byte array or ReadOnlySpan
+        /// </summary>
+        public static T FromBytes<T>(ReadOnlySpan<byte> bytes) where T : IPacker, new() {
+            var span = bytes;
+            var obj = new T();
+            obj.Unpack(ref span);
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Pack an array directly to bytes (convenience method)
+        /// </summary>
+        public static byte[] PackArrayToBytes<T>(T[] items) where T : IPacker {
+            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+            var span = stackBuf;
+
+            try {
+                PackArray(ref span, items);
+                var written = stackBuf.Length - span.Length;
+
+                return stackBuf[..written].ToArray();
+            }
+            catch (ArgumentOutOfRangeException) { }
+
+            // Need larger buffer
+            var size = Math.Max(StackBufferSize * 2, 8192);
+
+            while (true) {
+                var rented = ArrayPool<byte>.Shared.Rent(size);
+
+                try {
+                    var rentedSpan = new Span<byte>(rented, 0, size);
+                    var working = rentedSpan;
+
+                    try {
+                        PackArray(ref working, items);
+                        var written = size - working.Length;
+
                         var result = new byte[written];
                         Buffer.BlockCopy(rented, 0, result, 0, written);
 
@@ -271,20 +380,18 @@ namespace SpellBound.Core {
                 finally {
                     ArrayPool<byte>.Shared.Return(rented);
                 }
-                
+
                 size = Math.Min(size * 2, MaxRentedBuffer);
             }
         }
 
         /// <summary>
-        /// Deserialize a struct that implements IPacker from a ReadOnlySpan.
+        /// Unpack an array directly from bytes (convenience method)
         /// </summary>
-        public static T FromBytes<T>(ReadOnlySpan<byte> bytes) where T : IPacker, new() {
-            var span = bytes;
-            T obj = new();
-            obj.Unpack(ref span);
+        public static T[] UnpackArrayFromBytes<T>(byte[] bytes) where T : IPacker, new() {
+            ReadOnlySpan<byte> span = bytes;
 
-            return obj;
+            return UnpackArray<T>(ref span);
         }
 
         #endregion

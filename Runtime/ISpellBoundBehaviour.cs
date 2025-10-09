@@ -13,7 +13,7 @@ namespace SpellBound.Core
         public void ReleaseIsClaimed();
         public byte[] PullSbbData(string key);
 
-        public void PushAllSbbData(SbbData[] sbbDatas);
+        public void PushAllSbbData(byte[] sbbDatas);
         
         public void PushOneSbbData(SbbData sbbData);
 
