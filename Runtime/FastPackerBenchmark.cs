@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright 2025 Spellbound Studio Inc.
+
+using System;
 using System.Diagnostics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -122,7 +124,7 @@ namespace SpellBound.Core {
             for (var i = 0; i < Iterations; i++) {
                 var _ = Packer.ReadVector3(ref readSpan);
             }
-            
+
             sw.Stop();
             Debug.Log($"ReadVector3 took: {sw.ElapsedMilliseconds} ms");
 
@@ -144,7 +146,7 @@ namespace SpellBound.Core {
             for (var i = 0; i < Iterations; i++) {
                 var _ = Packer.ReadVector3Bitwise(ref readSpan);
             }
-            
+
             sw.Stop();
             Debug.Log($"ReadVector3Bitwise took: {sw.ElapsedMilliseconds} ms");
         }
@@ -170,7 +172,7 @@ namespace SpellBound.Core {
             for (var i = 0; i < Iterations; i++) {
                 var _ = Packer.ReadQuaternion(ref readSpan);
             }
-                
+
             sw.Stop();
             Debug.Log($"ReadQuaternion took: {sw.ElapsedMilliseconds} ms");
 
@@ -192,7 +194,7 @@ namespace SpellBound.Core {
             for (var i = 0; i < Iterations; i++) {
                 var _ = Packer.ReadQuaternionBitwise(ref readSpan);
             }
-                
+
             sw.Stop();
             Debug.Log($"ReadQuaternionBitwise took: {sw.ElapsedMilliseconds} ms");
         }

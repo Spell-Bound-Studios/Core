@@ -1,3 +1,5 @@
+// Copyright 2025 Spellbound Studio Inc.
+
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -9,37 +11,37 @@ namespace SpellBound.Core {
     /// and any Entity it collides with. These entities should all have SpellBoundComponents,
     /// but the checks should be handle by collision layers, not by this system
     /// </summary>
-    
+
     // The order is critical. 
     // Physics can run multiple times per frame and/or possibly none at all.
     // ProxyCollisionSystem Updates in the SimulationSystemGroup (not the Physics Group) to only update once per frame.
     // It fills the ECB which will playback after the Simulation and LateSimulation System Groups finish Updating.
     // And then ColliderRequestSystem runs early in the next frame, after the ebc has playedback the results of the job.
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(GoDeletionsCleanup))]
+    [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(GoDeletionsCleanup))]
     public partial struct ProxyCollisionSystem : ISystem {
         // Threadsafe way to avoid processing the same collision multiple times
         private NativeParallelHashSet<Entity> _processedEntities;
         private NativeList<Entity> _pendingColliderRequests;
-        
+
         public void OnCreate(ref SystemState state) {
             // These are neccesary for scheduling physics jobs.
             // EndSimulationEntityCommandBufferSystem gives access to the special ecb that playsback automatically.
             // These CANNOT be cached. They must be grabbed at the beginning of each frame.
             state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<SimulationSingleton>();
-            
+
             // System turns on and off with the presence of ProxyEntityTags
             state.RequireForUpdate<ProxyEntityTag>();
-            
+
             // Allocating Hashset
-            _processedEntities = new NativeParallelHashSet<Entity>(capacity: 512, allocator: Allocator.Persistent);
-            _pendingColliderRequests = new NativeList<Entity>(initialCapacity: 64, Allocator.Persistent);
+            _processedEntities = new NativeParallelHashSet<Entity>(512, Allocator.Persistent);
+            _pendingColliderRequests = new NativeList<Entity>(64, Allocator.Persistent);
         }
 
         public void OnDestroy(ref SystemState state) {
             if (_processedEntities.IsCreated)
                 _processedEntities.Dispose();
+
             if (_pendingColliderRequests.IsCreated)
                 _pendingColliderRequests.Dispose();
         }
@@ -49,7 +51,6 @@ namespace SpellBound.Core {
             var sim = SystemAPI.GetSingleton<SimulationSingleton>();
             var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
-            
 
             // Clearing HashSet. We want to reuse the memory, but none of the contents from previous frames.
             _processedEntities.Clear();
@@ -67,10 +68,10 @@ namespace SpellBound.Core {
             var handle = job.Schedule(sim, state.Dependency);
             handle.Complete();
 
-            foreach (var entity in _pendingColliderRequests)
-            {
+            foreach (var entity in _pendingColliderRequests) {
                 if (!state.EntityManager.Exists(entity))
                     continue;
+
                 if (state.EntityManager.HasComponent<PendingDestroyTag>(entity))
                     return;
 
@@ -92,15 +93,14 @@ namespace SpellBound.Core {
                 var aIsProxy = ProxyTagLookup.HasComponent(triggerEvent.EntityA);
                 var bIsProxy = ProxyTagLookup.HasComponent(triggerEvent.EntityB);
 
-                if (!aIsProxy && !bIsProxy) {
-                    return;
-                }
-                
+                if (!aIsProxy && !bIsProxy) return;
+
                 var obstacle = aIsProxy ? triggerEvent.EntityB : triggerEvent.EntityA;
-                
+
                 // Verifying we have not already processed this obstacle.
                 if (!ProcessedEntities.Add(obstacle))
                     return;
+
                 PendingColliderRequests.AddNoResize(obstacle);
             }
         }
