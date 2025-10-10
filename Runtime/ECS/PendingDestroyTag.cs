@@ -1,3 +1,5 @@
+// Copyright 2025 Spellbound Studio Inc.
+
 using Unity.Entities;
 
 namespace SpellBound.Core {
@@ -6,4 +8,3 @@ namespace SpellBound.Core {
     /// </summary>
     public struct PendingDestroyTag : IComponentData { }
 }
-

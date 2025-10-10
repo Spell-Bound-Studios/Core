@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿// Copyright 2025 Spellbound Studio Inc.
+
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SpellBound.Core {
@@ -7,9 +9,9 @@ namespace SpellBound.Core {
         [Immutable] public string presetUid;
         public string objectName;
         public string objectDescription;
-        
+
         [SerializeReference] public List<PresetModule> modules = new();
-        
+
 #if UNITY_EDITOR
         /// <summary>
         /// Creates guids based on asset path for us when something gets updated.
@@ -19,13 +21,12 @@ namespace SpellBound.Core {
 
             if (assetPath == null) {
                 presetUid = string.Empty;
+
                 return;
             }
-            
+
             var assetGuid = UnityEditor.AssetDatabase.GUIDFromAssetPath(assetPath).ToString();
-            if (string.IsNullOrEmpty(presetUid) || presetUid != assetGuid) {
-                presetUid = assetGuid;
-            }
+            if (string.IsNullOrEmpty(presetUid) || presetUid != assetGuid) presetUid = assetGuid;
         }
 #endif
     }

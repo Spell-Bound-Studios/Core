@@ -1,3 +1,5 @@
+// Copyright 2025 Spellbound Studio Inc.
+
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
@@ -17,29 +19,25 @@ namespace SpellBound.Core {
         private void Awake() {
             if (Instance != null && Instance != this) {
                 Destroy(gameObject);
+
                 return;
             }
+
             Instance = this;
         }
 
-        public bool TrySpawnCollider(Entity entity, float3 position, quaternion rotation,  FixedString64Bytes presetUid) {
-            
-            if (_activeColliders.ContainsKey(entity)) {
-                return false;
-            }
+        public bool TrySpawnCollider(
+            Entity entity, float3 position, quaternion rotation, FixedString64Bytes presetUid) {
+            if (_activeColliders.ContainsKey(entity)) return false;
 
-            if (!presetUid.Value.ResolvePreset().TryGetModule(out EntityModule emodule)) {
-                return false;
+            if (!presetUid.Value.ResolvePreset().TryGetModule(out EntityModule emodule)) return false;
 
-            }
-                
             var go = emodule.proxyColliderObj;
-            if (go == null) {
-                ;
-            }
-            
+            if (go == null) ;
+
             _activeColliders[entity] = Instantiate(go, position, rotation);
             numberOfColliders = _activeColliders.Count;
+
             return true;
         }
 
@@ -49,7 +47,6 @@ namespace SpellBound.Core {
                 _activeColliders.Remove(entity);
                 numberOfColliders = _activeColliders.Count;
             }
-            
         }
     }
 }

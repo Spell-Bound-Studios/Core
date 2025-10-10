@@ -1,3 +1,5 @@
+// Copyright 2025 Spellbound Studio Inc.
+
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Transforms;
@@ -11,51 +13,52 @@ namespace SpellBound.Core {
         private IChunkManager _chunkManager;
 
         private void Awake() {
-            if (Instance != null && Instance != this)
-            {
+            if (Instance != null && Instance != this) {
                 Destroy(gameObject);
+
                 return;
             }
+
             Instance = this;
         }
 
-        void OnEnable() {
-            if (!SingletonManager.TryGetSingletonInstance(out _chunkManager)) 
+        private void OnEnable() {
+            if (!SingletonManager.TryGetSingletonInstance(out _chunkManager))
                 return;
-            
+
             Helper.OnEntityInteraction += HandleSwap;
         }
 
-        void OnDisable() {
-            Helper.OnEntityInteraction -= HandleSwap;
-        }
-        
-        public GameObject GetLastInteractor()  => _lastInteractor;
-        
-        void HandleSwap(Entity entity, GameObject interactor) {
-            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-            if (!entityManager.HasComponent<SpellBoundComponent>(entity)
-                || !entityManager.HasComponent<LocalTransform>(entity)) {
+        private void OnDisable() => Helper.OnEntityInteraction -= HandleSwap;
 
+        public GameObject GetLastInteractor() => _lastInteractor;
+
+        private void HandleSwap(Entity entity, GameObject interactor) {
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            if (!entityManager.HasComponent<SpellBoundComponent>(entity)
+                || !entityManager.HasComponent<LocalTransform>(entity))
                 return;
-            }
+
             _lastInteractor = interactor;
             var sbbEntityData = entityManager.GetComponentData<SpellBoundComponent>(entity);
             var sbbDataList = new List<SbbData>();
             var op = sbbEntityData.PresetUiD.Value.ResolvePreset();
+
             foreach (var module in op.modules) {
                 var sbbData = module.GetData(op);
+
                 if (sbbData == null)
                     continue;
+
                 sbbDataList.Add(sbbData.Value);
             }
-            var transformData =  entityManager.GetComponentData<LocalTransform>(entity);
+
+            var transformData = entityManager.GetComponentData<LocalTransform>(entity);
             var chunk = _chunkManager.GetObjectParentChunk(transformData.Position);
-            chunk.SwapInPersistent(sbbEntityData.PresetUiD.Value, sbbEntityData.GenerationIndex, transformData.Position, transformData.Rotation, transformData.Scale, sbbDataList.ToArray());
+
+            chunk.SwapInPersistent(sbbEntityData.PresetUiD.Value, sbbEntityData.GenerationIndex, transformData.Position,
+                transformData.Rotation, transformData.Scale, sbbDataList.ToArray());
         }
-    
     }
 }
-
-
-

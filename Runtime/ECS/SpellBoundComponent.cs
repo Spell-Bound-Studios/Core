@@ -1,3 +1,5 @@
+// Copyright 2025 Spellbound Studio Inc.
+
 using Unity.Collections;
 using Unity.Entities;
 

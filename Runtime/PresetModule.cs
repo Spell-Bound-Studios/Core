@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright 2025 Spellbound Studio Inc.
+
+using System;
 
 namespace SpellBound.Core {
     /// <summary>
@@ -7,7 +9,5 @@ namespace SpellBound.Core {
     [Serializable]
     public abstract class PresetModule {
         public abstract SbbData? GetData(ObjectPreset preset);
-        
     }
 }
-    

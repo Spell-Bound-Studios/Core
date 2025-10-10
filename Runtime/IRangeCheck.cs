@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿// Copyright 2025 Spellbound Studio Inc.
+
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 

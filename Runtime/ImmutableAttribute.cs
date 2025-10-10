@@ -1,9 +1,11 @@
-﻿using UnityEditor;
+﻿// Copyright 2025 Spellbound Studio Inc.
+
+using UnityEditor;
 using UnityEngine;
 
 namespace SpellBound.Core {
     public class ImmutableAttribute : PropertyAttribute { }
-    
+
 #if UNITY_EDITOR
     [CustomPropertyDrawer(typeof(ImmutableAttribute))]
     public class ImmutableDrawer : PropertyDrawer {
