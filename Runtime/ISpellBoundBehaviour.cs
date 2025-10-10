@@ -13,7 +13,7 @@ namespace SpellBound.Core {
 
         public void PushAllSbbData(byte[] sbbDatas);
 
-        public void PushOneSbbData(SbbData sbbData);
+        public void PushOneSbbData(byte[] sbbData);
 
         public GoData ReadNgoData();
 
