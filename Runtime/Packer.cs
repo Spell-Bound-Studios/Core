@@ -135,7 +135,7 @@ namespace SpellBound.Core {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong ReadULongBitwise(ref ReadOnlySpan<byte> buffer) {
-            var value = (ulong)buffer[0]
+            var value = buffer[0]
                         | ((ulong)buffer[1] << 8)
                         | ((ulong)buffer[2] << 16)
                         | ((ulong)buffer[3] << 24)
@@ -181,7 +181,7 @@ namespace SpellBound.Core {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ReadLongBitwise(ref ReadOnlySpan<byte> buffer) {
-            var value = (long)buffer[0]
+            var value = buffer[0]
                         | ((long)buffer[1] << 8)
                         | ((long)buffer[2] << 16)
                         | ((long)buffer[3] << 24)
@@ -333,7 +333,7 @@ namespace SpellBound.Core {
             var len = data?.Length ?? 0;
             WriteInt(ref buffer, len);
 
-            if (len <= 0) 
+            if (len <= 0)
                 return;
 
             data.AsSpan().CopyTo(buffer);
@@ -350,15 +350,17 @@ namespace SpellBound.Core {
         }
 
         /// <summary>
-        /// Read a length-prefixed byte array (never returns null, returns empty array)
+        /// Read a length-prefixed byte array that never returns null and returns an empty array instead.
         /// </summary>
         public static byte[] ReadBytes(ref ReadOnlySpan<byte> buffer) {
             var len = ReadInt(ref buffer);
-            if (len == 0) 
+
+            if (len == 0)
                 return Array.Empty<byte>();
-            
+
             var result = buffer[..len].ToArray();
             buffer = buffer[len..];
+
             return result;
         }
 
@@ -367,32 +369,36 @@ namespace SpellBound.Core {
         #region Array Packing
 
         /// <summary>
-        /// Pack an array of IPacker items with length prefix (null treated as empty)
+        /// Pack an array of IPacker items with a length prefix with a null treated as empty.
         /// </summary>
         public static void PackArray<T>(ref Span<byte> buffer, T[] items) where T : IPacker {
             var count = items?.Length ?? 0;
             WriteInt(ref buffer, count);
-            
-            if (items == null) return;
-            
-            foreach (var item in items) {
+
+            if (items == null) 
+                return;
+
+            foreach (var item in items) 
                 item.Pack(ref buffer);
-            }
         }
 
         /// <summary>
-        /// Unpack an array of IPacker items (never returns null, returns empty array)
+        /// Unpack an array of IPacker items if empty returns a null array.
         /// </summary>
         public static T[] UnpackArray<T>(ref ReadOnlySpan<byte> buffer) where T : IPacker, new() {
             var count = ReadInt(ref buffer);
-            if (count == 0) return Array.Empty<T>();
+
+            if (count == 0) 
+                return Array.Empty<T>();
 
             var result = new T[count];
+
             for (var i = 0; i < count; i++) {
                 var item = new T();
                 item.Unpack(ref buffer);
                 result[i] = item;
             }
+
             return result;
         }
 
@@ -406,27 +412,31 @@ namespace SpellBound.Core {
         public static void PackList<T>(ref Span<byte> buffer, List<T> items) where T : IPacker {
             var count = items?.Count ?? 0;
             WriteInt(ref buffer, count);
-            
-            if (items == null) return;
 
-            foreach (var item in items) {
+            if (items == null) 
+                return;
+
+            foreach (var item in items) 
                 item.Pack(ref buffer);
-            }
         }
 
         /// <summary>
-        /// Unpack a List of IPacker items (never returns null, returns empty list)
+        /// Unpack a List of IPacker items and returns an empty list instead of null.
         /// </summary>
         public static List<T> UnpackList<T>(ref ReadOnlySpan<byte> buffer) where T : IPacker, new() {
             var count = ReadInt(ref buffer);
-            if (count == 0) return new List<T>();
+
+            if (count == 0) 
+                return new List<T>();
 
             var result = new List<T>(count);
+
             for (var i = 0; i < count; i++) {
                 var item = new T();
                 item.Unpack(ref buffer);
                 result.Add(item);
             }
+
             return result;
         }
 
@@ -436,25 +446,27 @@ namespace SpellBound.Core {
         public static void PackIntList(ref Span<byte> buffer, List<int> items) {
             var count = items?.Count ?? 0;
             WriteInt(ref buffer, count);
-            
-            if (items == null) return;
 
-            foreach (var item in items) {
+            if (items == null) 
+                return;
+
+            foreach (var item in items) 
                 WriteInt(ref buffer, item);
-            }
         }
 
         /// <summary>
-        /// Unpack a List of int (never returns null, returns empty list)
+        /// Unpack a List of int and returns an empty list if empty.
         /// </summary>
         public static List<int> UnpackIntList(ref ReadOnlySpan<byte> buffer) {
             var count = ReadInt(ref buffer);
-            if (count == 0) return new List<int>();
+
+            if (count == 0) 
+                return new List<int>();
 
             var result = new List<int>(count);
-            for (var i = 0; i < count; i++) {
+            for (var i = 0; i < count; i++) 
                 result.Add(ReadInt(ref buffer));
-            }
+
             return result;
         }
 
@@ -474,6 +486,7 @@ namespace SpellBound.Core {
             try {
                 obj.Pack(ref span);
                 var written = stackBuf.Length - span.Length;
+
                 return stackBuf[..written].ToArray();
             }
             catch (ArgumentOutOfRangeException) { }
@@ -483,6 +496,7 @@ namespace SpellBound.Core {
 
             while (size <= MaxRentedBuffer) {
                 var rented = ArrayPool<byte>.Shared.Rent(size);
+
                 try {
                     var rentedSpan = new Span<byte>(rented, 0, size);
                     var working = rentedSpan;
@@ -493,10 +507,11 @@ namespace SpellBound.Core {
 
                         var result = new byte[written];
                         Buffer.BlockCopy(rented, 0, result, 0, written);
+
                         return result;
                     }
                     catch (ArgumentOutOfRangeException) {
-                        // Need bigger buffer
+                        // Need a bigger buffer... We can tackle this later.
                     }
                 }
                 finally {
@@ -516,20 +531,22 @@ namespace SpellBound.Core {
             var span = bytes;
             var obj = new T();
             obj.Unpack(ref span);
+
             return obj;
         }
 
         /// <summary>
-        /// Pack an array directly to bytes (convenience method, null treated as empty)
+        /// Pack an array directly to bytes where null is empty.
         /// </summary>
         public static byte[] PackArrayToBytes<T>(T[] items) where T : IPacker {
             var count = items?.Length ?? 0;
-            
+
             // Handle empty/null case
             if (count == 0) {
                 Span<byte> emptyBuf = stackalloc byte[4];
                 var emptySpan = emptyBuf;
                 WriteInt(ref emptySpan, 0);
+
                 return emptyBuf.ToArray();
             }
 
@@ -539,6 +556,7 @@ namespace SpellBound.Core {
             try {
                 PackArray(ref span, items);
                 var written = stackBuf.Length - span.Length;
+
                 return stackBuf[..written].ToArray();
             }
             catch (ArgumentOutOfRangeException) { }
@@ -548,6 +566,7 @@ namespace SpellBound.Core {
 
             while (size <= MaxRentedBuffer) {
                 var rented = ArrayPool<byte>.Shared.Rent(size);
+
                 try {
                     var rentedSpan = new Span<byte>(rented, 0, size);
                     var working = rentedSpan;
@@ -558,6 +577,7 @@ namespace SpellBound.Core {
 
                         var result = new byte[written];
                         Buffer.BlockCopy(rented, 0, result, 0, written);
+
                         return result;
                     }
                     catch (ArgumentOutOfRangeException) { }
@@ -569,15 +589,19 @@ namespace SpellBound.Core {
                 size = Math.Min(size * 2, MaxRentedBuffer);
             }
 
-            throw new InvalidOperationException($"Array payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
+            throw new InvalidOperationException(
+                $"Array payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
         }
 
         /// <summary>
         /// Unpack an array directly from bytes (convenience method, never returns null)
         /// </summary>
         public static T[] UnpackArrayFromBytes<T>(byte[] bytes) where T : IPacker, new() {
-            if (bytes == null || bytes.Length == 0) return Array.Empty<T>();
+            if (bytes == null || bytes.Length == 0) 
+                return Array.Empty<T>();
+
             ReadOnlySpan<byte> span = bytes;
+
             return UnpackArray<T>(ref span);
         }
 
@@ -585,14 +609,18 @@ namespace SpellBound.Core {
         /// Equality check for packed item data.
         /// </summary>
         public static bool AreBytesEqual(byte[] a, byte[] b) {
-            if (a == null && b == null) return true;
+            if (a == null && b == null) 
+                return true;
 
             // If the byte array is null or empty return true.
             // TODO: This potentially has implications on craftable material items but beyond scope for now.
-            if (NoData(a) && NoData(b)) return true;
+            if (NoData(a) && NoData(b)) 
+                return true;
 
-            if (a == null || b == null) return false;
-            if (a.Length != b.Length) return false;
+            if (a == null || b == null) 
+                return false;
+            if (a.Length != b.Length) 
+                return false;
 
             for (var i = 0; i < a.Length; ++i) {
                 if (a[i] != b[i])
