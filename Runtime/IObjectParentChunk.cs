@@ -9,6 +9,7 @@ namespace SpellBound.Core {
     /// </summary>
     public interface IObjectParentChunk {
         public event Action<Bounds> ReParentingCheck;
+        public event Action ChunkReady;
         public Transform GetRegistryTransform();
 
         public void SwapInPersistent(
