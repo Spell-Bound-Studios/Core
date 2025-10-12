@@ -20,6 +20,24 @@ namespace SpellBound.Core {
         // Max heap buffer allowed: 64 MB - tune as needed
         private const int MaxRentedBuffer = 1024 * 1024 * 64;
 
+        #region Byte
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteByte(ref Span<byte> buffer, byte value) {
+            buffer[0] = value;
+            buffer = buffer[1..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte ReadByte(ref ReadOnlySpan<byte> buffer) {
+            var value = buffer[0];
+            buffer = buffer[1..];
+
+            return value;
+        }
+
+        #endregion
+
         #region Bool
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -375,10 +393,10 @@ namespace SpellBound.Core {
             var count = items?.Length ?? 0;
             WriteInt(ref buffer, count);
 
-            if (items == null) 
+            if (items == null)
                 return;
 
-            foreach (var item in items) 
+            foreach (var item in items)
                 item.Pack(ref buffer);
         }
 
@@ -388,7 +406,7 @@ namespace SpellBound.Core {
         public static T[] UnpackArray<T>(ref ReadOnlySpan<byte> buffer) where T : IPacker, new() {
             var count = ReadInt(ref buffer);
 
-            if (count == 0) 
+            if (count == 0)
                 return Array.Empty<T>();
 
             var result = new T[count];
@@ -413,10 +431,10 @@ namespace SpellBound.Core {
             var count = items?.Count ?? 0;
             WriteInt(ref buffer, count);
 
-            if (items == null) 
+            if (items == null)
                 return;
 
-            foreach (var item in items) 
+            foreach (var item in items)
                 item.Pack(ref buffer);
         }
 
@@ -426,7 +444,7 @@ namespace SpellBound.Core {
         public static List<T> UnpackList<T>(ref ReadOnlySpan<byte> buffer) where T : IPacker, new() {
             var count = ReadInt(ref buffer);
 
-            if (count == 0) 
+            if (count == 0)
                 return new List<T>();
 
             var result = new List<T>(count);
@@ -447,10 +465,10 @@ namespace SpellBound.Core {
             var count = items?.Count ?? 0;
             WriteInt(ref buffer, count);
 
-            if (items == null) 
+            if (items == null)
                 return;
 
-            foreach (var item in items) 
+            foreach (var item in items)
                 WriteInt(ref buffer, item);
         }
 
@@ -460,11 +478,12 @@ namespace SpellBound.Core {
         public static List<int> UnpackIntList(ref ReadOnlySpan<byte> buffer) {
             var count = ReadInt(ref buffer);
 
-            if (count == 0) 
+            if (count == 0)
                 return new List<int>();
 
             var result = new List<int>(count);
-            for (var i = 0; i < count; i++) 
+
+            for (var i = 0; i < count; i++)
                 result.Add(ReadInt(ref buffer));
 
             return result;
@@ -597,7 +616,7 @@ namespace SpellBound.Core {
         /// Unpack an array directly from bytes (convenience method, never returns null)
         /// </summary>
         public static T[] UnpackArrayFromBytes<T>(byte[] bytes) where T : IPacker, new() {
-            if (bytes == null || bytes.Length == 0) 
+            if (bytes == null || bytes.Length == 0)
                 return Array.Empty<T>();
 
             ReadOnlySpan<byte> span = bytes;
@@ -609,17 +628,18 @@ namespace SpellBound.Core {
         /// Equality check for packed item data.
         /// </summary>
         public static bool AreBytesEqual(byte[] a, byte[] b) {
-            if (a == null && b == null) 
+            if (a == null && b == null)
                 return true;
 
             // If the byte array is null or empty return true.
             // TODO: This potentially has implications on craftable material items but beyond scope for now.
-            if (NoData(a) && NoData(b)) 
+            if (NoData(a) && NoData(b))
                 return true;
 
-            if (a == null || b == null) 
+            if (a == null || b == null)
                 return false;
-            if (a.Length != b.Length) 
+
+            if (a.Length != b.Length)
                 return false;
 
             for (var i = 0; i < a.Length; ++i) {

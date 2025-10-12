@@ -32,9 +32,11 @@ namespace SpellBound.Core {
 
             var spawnBuffer = SystemAPI.GetBuffer<AddedGoDeletionBuffer>(_goDeletionManager);
 
-            foreach (var goDeletion in spawnBuffer)
+            foreach (var goDeletion in spawnBuffer) {
                 if (!entityManager.HasComponent<PendingDestroyTag>(goDeletion.Value))
                     ecb.AddComponent<PendingDestroyTag>(goDeletion.Value);
+            }
+
             spawnBuffer.Clear();
             ecb.Playback(entityManager);
             ecb.Dispose();

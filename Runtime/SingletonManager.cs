@@ -9,27 +9,27 @@ namespace SpellBound.Core {
     /// Centralized Management of Singletons to handle/log errors better.
     /// </summary>
     public static class SingletonManager {
-        private static readonly Dictionary<Type, object> _singletons = new();
+        private static readonly Dictionary<Type, object> Singletons = new();
 
         /// <summary>
         /// Pretty sure this means we don't need to unregister.
         /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        public static void ClearAll() => _singletons.Clear();
+        public static void ClearAll() => Singletons.Clear();
 
-        public static void RegisterSingleton<T>(T singleton) where T : class => _singletons[typeof(T)] = singleton;
+        public static void RegisterSingleton<T>(T singleton) where T : class => Singletons[typeof(T)] = singleton;
 
-        public static void UnregisterSingleton<T>() where T : class => _singletons.Remove(typeof(T));
+        public static void UnregisterSingleton<T>() where T : class => Singletons.Remove(typeof(T));
 
         public static T GetSingletonInstance<T>() where T : class {
-            if (!_singletons.TryGetValue(typeof(T), out var instance))
+            if (!Singletons.TryGetValue(typeof(T), out var instance))
                 throw new KeyNotFoundException($"Singleton of type {typeof(T)} not found");
 
             return (T)instance;
         }
 
         public static bool TryGetSingletonInstance<T>(out T instance) where T : class {
-            if (!_singletons.TryGetValue(typeof(T), out var obj)) {
+            if (!Singletons.TryGetValue(typeof(T), out var obj)) {
                 instance = null;
 
                 return false;
