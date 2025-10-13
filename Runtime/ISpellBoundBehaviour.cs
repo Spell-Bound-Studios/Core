@@ -33,7 +33,7 @@ namespace SpellBound.Core {
 
         public void ClearIsSwapper();
 
-        public void Register();
+        public void Register(bool isChunkReady);
 
         public void CheckRegistryBounds(Bounds bounds);
 
