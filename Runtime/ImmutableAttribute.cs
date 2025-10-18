@@ -3,7 +3,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     public class ImmutableAttribute : PropertyAttribute { }
 
 #if UNITY_EDITOR

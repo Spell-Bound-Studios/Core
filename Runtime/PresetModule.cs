@@ -2,7 +2,7 @@
 
 using System;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// Purposely empty so that inheritors can describe their own uniqueness.
     /// </summary>

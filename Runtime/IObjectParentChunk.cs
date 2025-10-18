@@ -3,7 +3,7 @@
 using System;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// Contract for registering and unregistering network governed objects.
     /// </summary>

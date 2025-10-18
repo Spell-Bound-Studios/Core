@@ -5,9 +5,8 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
-using Helper = SpellBound.Core.SpellBoundStaticHelper;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     [DisallowMultipleComponent]
     public class ProxyCollider : MonoBehaviour {
         private Entity _proxyEntity;
@@ -53,8 +52,8 @@ namespace SpellBound.Core {
             var geom = new SphereGeometry { Center = float3.zero, Radius = 2f };
 
             var filter = new CollisionFilter {
-                BelongsTo = (uint)Helper.EcsPhysicsLayers.ProxyCollider,
-                CollidesWith = ~(uint)Helper.EcsPhysicsLayers.ProxyCollider,
+                BelongsTo = (uint)SpellboundStaticHelper.EcsPhysicsLayers.ProxyCollider,
+                CollidesWith = ~(uint)SpellboundStaticHelper.EcsPhysicsLayers.ProxyCollider,
                 GroupIndex = 0
             };
 

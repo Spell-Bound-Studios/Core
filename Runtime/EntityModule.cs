@@ -3,7 +3,7 @@
 using System;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     [Serializable]
     public class EntityModule : PresetModule {
         public GameObject entityPrefab;

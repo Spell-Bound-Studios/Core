@@ -4,11 +4,10 @@ using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
-using Helper = SpellBound.Core.SpellBoundStaticHelper;
 
-namespace SpellBound.Core {
-    public class SpellBoundEntityBridge : MonoBehaviour {
-        public static SpellBoundEntityBridge Instance;
+namespace Spellbound.Core {
+    public class SpellboundEntityBridge : MonoBehaviour {
+        public static SpellboundEntityBridge Instance;
         private GameObject _lastInteractor;
         private IChunkManager _chunkManager;
 
@@ -26,22 +25,22 @@ namespace SpellBound.Core {
             if (!SingletonManager.TryGetSingletonInstance(out _chunkManager))
                 return;
 
-            Helper.OnEntityInteraction += HandleSwap;
+            SpellboundStaticHelper.OnEntityInteraction += HandleSwap;
         }
 
-        private void OnDisable() => Helper.OnEntityInteraction -= HandleSwap;
+        private void OnDisable() => SpellboundStaticHelper.OnEntityInteraction -= HandleSwap;
 
         public GameObject GetLastInteractor() => _lastInteractor;
 
         private void HandleSwap(Entity entity, GameObject interactor) {
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            if (!entityManager.HasComponent<SpellBoundComponent>(entity)
+            if (!entityManager.HasComponent<SpellboundComponent>(entity)
                 || !entityManager.HasComponent<LocalTransform>(entity))
                 return;
 
             _lastInteractor = interactor;
-            var sbbEntityData = entityManager.GetComponentData<SpellBoundComponent>(entity);
+            var sbbEntityData = entityManager.GetComponentData<SpellboundComponent>(entity);
             var sbbDataList = new List<SbbData>();
             var op = sbbEntityData.PresetUiD.Value.ResolvePreset();
 

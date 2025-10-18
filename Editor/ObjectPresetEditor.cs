@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     [CustomEditor(typeof(ObjectPreset))]
     public sealed class ObjectPresetEditor : Editor {
         private ReorderableList _modulesList;

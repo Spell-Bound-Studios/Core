@@ -2,7 +2,7 @@
 
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     public interface IInteractable {
         public void Interact(GameObject target);
     }

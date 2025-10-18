@@ -3,7 +3,7 @@
 using Unity.Burst;
 using Unity.Entities;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// This system handles all the deletions of entities, based on their tag.
     /// </summary>

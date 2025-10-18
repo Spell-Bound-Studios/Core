@@ -1,6 +1,6 @@
 ﻿// Copyright 2025 Spellbound Studio Inc.
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     public interface IInteractCancel {
         void CancelInteract();
     }

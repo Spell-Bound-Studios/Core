@@ -3,7 +3,7 @@
 using System;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     public interface IChunkManager {
         public event Action<int> OnChunkCountChanged;
 

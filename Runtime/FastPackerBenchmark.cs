@@ -5,7 +5,7 @@ using System.Diagnostics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     public class FastPackerBenchmark : MonoBehaviour {
         private const int Iterations = 1_000_000;
 

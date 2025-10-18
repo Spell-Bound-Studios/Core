@@ -4,8 +4,8 @@ using System;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace SpellBound.Core {
-    public interface ISpellBoundBehaviour {
+namespace Spellbound.Core {
+    public interface ISpellboundBehaviour {
         public ObjectPreset GetObjectPreset();
 
         public void ReleaseIsClaimed();

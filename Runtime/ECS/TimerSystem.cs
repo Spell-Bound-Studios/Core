@@ -3,7 +3,7 @@
 using Unity.Burst;
 using Unity.Entities;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// ECS System for Managing all ECS Timers.
     /// Role of this System should never change or expand.

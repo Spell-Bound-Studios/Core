@@ -3,8 +3,8 @@
 using Unity.Collections;
 using Unity.Entities;
 
-namespace SpellBound.Core {
-    public struct SpellBoundComponent : IComponentData {
+namespace Spellbound.Core {
+    public struct SpellboundComponent : IComponentData {
         public FixedString64Bytes PresetUiD;
         public int GenerationIndex;
     }

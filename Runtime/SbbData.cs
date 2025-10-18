@@ -2,7 +2,7 @@
 
 using System;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// 
     /// </summary>

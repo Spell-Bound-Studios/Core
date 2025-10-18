@@ -6,7 +6,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// Singleton for Creating and Destroying Temporary Colliders on behalf of Entities.
     /// Could benefit from ObjectPooling.

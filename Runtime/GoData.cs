@@ -3,7 +3,7 @@
 using System;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// This struct represents ANY (networked and not networked) gameobject in a chunk.
     /// </summary>
