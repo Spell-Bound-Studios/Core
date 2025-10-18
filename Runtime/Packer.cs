@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// Static binary serialization utility using Span-based APIs.
     /// Provides both BitConverter and bitwise methods for flexibility.

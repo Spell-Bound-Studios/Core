@@ -2,7 +2,7 @@
 
 using Unity.Entities;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     public struct AddedGoDeletionBuffer : IBufferElementData {
         public Entity Value;
     }

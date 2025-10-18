@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// Centralized Management of Singletons to handle/log errors better.
     /// </summary>

@@ -3,7 +3,7 @@
 using Unity.Entities;
 using Unity.Transforms;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// ECS System to process ColliderRequests from the ProxyCollisionSystem.
     /// </summary>
@@ -19,7 +19,7 @@ namespace SpellBound.Core {
             var entityManager = state.EntityManager;
 
             foreach (var (colliderRequest, transform, sbc, entity) in
-                     SystemAPI.Query<RefRW<ColliderRequest>, RefRO<LocalTransform>, RefRO<SpellBoundComponent>>()
+                     SystemAPI.Query<RefRW<ColliderRequest>, RefRO<LocalTransform>, RefRO<SpellboundComponent>>()
                              .WithNone<PendingDestroyTag>()
                              .WithEntityAccess()) {
                 // Timer counts down the interval before checking if the collider is still needed. 

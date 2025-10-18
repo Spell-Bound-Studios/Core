@@ -5,10 +5,10 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Physics;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// ECS System to schedule Trigger events between ProxyEntityTags (acting as proxy for GameObjects),
-    /// and any Entity it collides with. These entities should all have SpellBoundComponents,
+    /// and any Entity it collides with. These entities should all have SpellboundComponents,
     /// but the checks should be handle by collision layers, not by this system
     /// </summary>
 
@@ -47,7 +47,7 @@ namespace SpellBound.Core {
         }
 
         public void OnUpdate(ref SystemState state) {
-            // Getting sim and ecb. Neccesary for scheduling physics jobs
+            // Getting sim and ecb. Necessary for scheduling physics jobs
             var sim = SystemAPI.GetSingleton<SimulationSingleton>();
             var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);

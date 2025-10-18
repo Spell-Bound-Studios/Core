@@ -4,8 +4,8 @@ using System;
 using Unity.Entities;
 using UnityEngine;
 
-namespace SpellBound.Core {
-    public static class SpellBoundStaticHelper {
+namespace Spellbound.Core {
+    public static class SpellboundStaticHelper {
         public const int ChunkSize = 128;
 
         [Flags]

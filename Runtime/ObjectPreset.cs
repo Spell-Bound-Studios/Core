@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     [CreateAssetMenu(fileName = "Object Preset", menuName = "Spellbound/Presets/ObjectPreset")]
     public class ObjectPreset : ScriptableObject {
         [Immutable] public string presetUid;

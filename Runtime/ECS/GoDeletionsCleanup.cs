@@ -4,7 +4,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateBefore(typeof(ProxyCollisionSystem))]
     public partial struct GoDeletionsCleanup : ISystem, ISystemStartStop {
         private Entity _goDeletionManager;

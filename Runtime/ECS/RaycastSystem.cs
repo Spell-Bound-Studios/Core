@@ -8,9 +8,8 @@ using Unity.Mathematics;
 using Unity.Physics;
 using UnityEngine;
 using Object = UnityEngine.Object;
-using Helper = SpellBound.Core.SpellBoundStaticHelper;
 
-namespace SpellBound.Core {
+namespace Spellbound.Core {
     /// <summary>
     /// ECS/Gameobject observer system that performs raycasts and invokes out changes in the object preset.
     /// </summary>
@@ -21,7 +20,7 @@ namespace SpellBound.Core {
         private bool _firedNullEvent;
 
         private const uint PhysicsLayer = 1u << 30;
-        private const uint PhysicsLayerMask = (uint)Helper.EcsPhysicsLayers.Interactable;
+        private const uint PhysicsLayerMask = (uint)SpellboundStaticHelper.EcsPhysicsLayers.Interactable;
         private const uint PhysicsRaycastDistance = 10;
         public static event Action<ObjectPreset> OnRaycastHitObjPreset;
         public static event Action<FixedString64Bytes> OnNgoIdHit;
@@ -128,10 +127,10 @@ namespace SpellBound.Core {
             if (hitEcs.Entity == Entity.Null || !em.Exists(hitEcs.Entity))
                 return false;
 
-            if (!em.HasComponent<SpellBoundComponent>(hitEcs.Entity))
+            if (!em.HasComponent<SpellboundComponent>(hitEcs.Entity))
                 return false;
 
-            var sbbEcs = em.GetComponentData<SpellBoundComponent>(hitEcs.Entity);
+            var sbbEcs = em.GetComponentData<SpellboundComponent>(hitEcs.Entity);
             var preset = sbbEcs.PresetUiD.Value.ResolvePreset();
 
             distance = math.distance(start, hitEcs.Position);
@@ -149,7 +148,7 @@ namespace SpellBound.Core {
             if (!Physics.Raycast(start, direction, out var hitMono, PhysicsRaycastDistance))
                 return false;
 
-            if (!hitMono.collider.TryGetComponent<ISpellBoundBehaviour>(out var sbbMono))
+            if (!hitMono.collider.TryGetComponent<ISpellboundBehaviour>(out var sbbMono))
                 return false;
 
             op = sbbMono.GetObjectPreset();
