@@ -10,9 +10,9 @@ namespace Spellbound.Core.Console {
     public class ConsoleCommandAttribute : Attribute {
         public string Name { get; }
         public string[] Aliases { get; }
-        
+
         /// <summary>
-        /// Constructor.
+        /// Attribute to add to classes.
         /// </summary>
         public ConsoleCommandAttribute(string name, params string[] aliases) {
             Name = name;

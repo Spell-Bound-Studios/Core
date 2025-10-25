@@ -15,13 +15,11 @@ namespace Spellbound.Core.Console {
         public static CommandRegistry Instance => _instance ??= new CommandRegistry();
 
         // Stores all of our commands that implement the interface ICommand.
-        private readonly Dictionary<string, ICommand> _commands =
-                new Dictionary<string, ICommand>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ICommand> _commands = new(StringComparer.OrdinalIgnoreCase);
 
         // Stores the aliases that get registered via the ConsoleCommandAttribute.
-        private readonly Dictionary<string, string> _aliases =
-                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        
+        private readonly Dictionary<string, string> _aliases = new(StringComparer.OrdinalIgnoreCase);
+
         private CommandRegistry() { }
         public static CommandRegistry CreateInstance() => new();
 
@@ -83,9 +81,10 @@ namespace Spellbound.Core.Console {
 
             // Register aliases
             if (aliases != null) {
-                foreach (var alias in aliases)
+                foreach (var alias in aliases) {
                     if (!string.IsNullOrWhiteSpace(alias))
                         _aliases[alias.ToLower()] = commandName;
+                }
             }
 
             Debug.Log($"Registered command: {commandName}" +
@@ -106,8 +105,8 @@ namespace Spellbound.Core.Console {
                     .Where(kvp => kvp.Value == commandName)
                     .Select(kvp => kvp.Key)
                     .ToList();
-            
-            foreach (var alias in aliasesToRemove) 
+
+            foreach (var alias in aliasesToRemove)
                 _aliases.Remove(alias);
 
             return _commands.Remove(commandName);
@@ -130,7 +129,7 @@ namespace Spellbound.Core.Console {
                 return true;
 
             // Check aliases
-            if (_aliases.TryGetValue(name, out var commandName)) 
+            if (_aliases.TryGetValue(name, out var commandName))
                 return _commands.TryGetValue(commandName, out command);
 
             command = null;

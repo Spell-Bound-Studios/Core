@@ -7,13 +7,13 @@ namespace Spellbound.Core.Console {
     public struct CommandResult {
         public bool Success { get; }
         public string Message { get; }
-        
+
         public CommandResult(bool success, string message = "") {
             Success = success;
             Message = message ?? string.Empty;
         }
-        
-        public static CommandResult Ok(string message = "") => new CommandResult(true, message);
-        public static CommandResult Fail(string message) => new CommandResult(false, message);
+
+        public static CommandResult Ok(string message = "") => new(true, message);
+        public static CommandResult Fail(string message) => new(false, message);
     }
 }
