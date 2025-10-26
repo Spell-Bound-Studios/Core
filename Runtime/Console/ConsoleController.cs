@@ -11,15 +11,15 @@ namespace Spellbound.Core.Console {
     /// Handles input, execution, and UI coordination.
     /// </summary>
     public class ConsoleController : MonoBehaviour {
-        [Header("UI References")] 
-        [SerializeField] private GameObject consolePanel;
+        [Header("UI References"), SerializeField]
+        private GameObject consolePanel;
 
         [SerializeField] private TMP_InputField inputField;
         [SerializeField] private TextMeshProUGUI outputText;
         [SerializeField] private ScrollRect scrollRect;
+        [SerializeField] private RectTransform contentContainer;
 
-        [Header("Settings")] 
-        [SerializeField] private int maxOutputLines = 100;
+        [Header("Settings"), SerializeField] private int maxOutputLines = 100;
 
         private readonly List<string> _outputHistory = new();
         private readonly List<string> _commandHistory = new();
@@ -40,28 +40,27 @@ namespace Spellbound.Core.Console {
         /// TEMPORARY
         /// </summary>
         [SerializeField] private KeyCode toggleKey = KeyCode.BackQuote;
+
         private void Update() {
-            if (Input.GetKeyDown(toggleKey)) {
-                ToggleConsole();
-            }
-            
-            if (!IsOpen) 
+            if (Input.GetKeyDown(toggleKey)) ToggleConsole();
+
+            if (!IsOpen)
                 return;
 
-            if (Input.GetKeyDown(KeyCode.UpArrow)) 
+            if (Input.GetKeyDown(KeyCode.UpArrow))
                 NavigateHistoryUp();
-            
+
             else if (Input.GetKeyDown(KeyCode.DownArrow))
                 NavigateHistoryDown();
         }
 
         private void OnEnable() {
-            if (inputField != null) 
+            if (inputField != null)
                 inputField.onSubmit.AddListener(OnSubmitInput);
         }
 
         private void OnDisable() {
-            if (inputField != null) 
+            if (inputField != null)
                 inputField.onSubmit.RemoveListener(OnSubmitInput);
         }
 
@@ -82,15 +81,15 @@ namespace Spellbound.Core.Console {
         public void CloseConsole() => SetConsoleActive(false);
 
         /// <summary>
-        /// Set console active state.
+        /// Set the console active state.
         /// </summary>
         private void SetConsoleActive(bool active) {
-            if (consolePanel == null) 
+            if (consolePanel == null)
                 return;
 
             consolePanel.SetActive(active);
 
-            if (!active || inputField == null) 
+            if (!active || inputField == null)
                 return;
 
             // Focus input field when opening
@@ -99,7 +98,7 @@ namespace Spellbound.Core.Console {
         }
 
         /// <summary>
-        /// Called when user submits input.
+        /// Called when the user submits input.
         /// </summary>
         private void OnSubmitInput(string input) {
             if (string.IsNullOrWhiteSpace(input)) {
@@ -131,12 +130,12 @@ namespace Spellbound.Core.Console {
         }
 
         /// <summary>
-        /// Navigate through command history (call from input system).
+        /// Navigate through the command history.
         /// </summary>
         public void NavigateHistoryUp() => NavigateCommandHistory(-1);
 
         /// <summary>
-        /// Navigate through command history (call from input system).
+        /// Navigate through the command history.
         /// </summary>
         public void NavigateHistoryDown() => NavigateCommandHistory(1);
 
@@ -204,14 +203,14 @@ namespace Spellbound.Core.Console {
                 }
             }
 
-            if (currentPart.Length > 0) 
+            if (currentPart.Length > 0)
                 parts.Add(currentPart);
 
             return parts.ToArray();
         }
 
         /// <summary>
-        /// Navigate through command history.
+        /// Navigate through the command history.
         /// </summary>
         private void NavigateCommandHistory(int direction) {
             if (_commandHistory.Count == 0 || inputField == null)
@@ -229,13 +228,17 @@ namespace Spellbound.Core.Console {
         }
 
         /// <summary>
-        /// Scroll output to bottom.
+        /// Scroll output to bottom
         /// </summary>
         private void ScrollToBottom() {
-            if (scrollRect == null) 
+            if (scrollRect == null || contentContainer == null || outputText == null) 
                 return;
-
+            
+            var textHeight = outputText.preferredHeight;
+            contentContainer.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, textHeight);
+            
             Canvas.ForceUpdateCanvases();
+            
             scrollRect.verticalNormalizedPosition = 0f;
         }
 
@@ -245,7 +248,7 @@ namespace Spellbound.Core.Console {
         private void LogInput(string message) => AddOutput($"<color=#00FF00>{message}</color>");
 
         /// <summary>
-        /// Log standard output to console.
+        /// Log standard output to the console.
         /// </summary>
         public void LogOutput(string message) => AddOutput(message);
 
@@ -255,17 +258,17 @@ namespace Spellbound.Core.Console {
         public void LogError(string message) => AddOutput($"<color=#FF4444>{message}</color>");
 
         /// <summary>
-        /// Add text to output display.
+        /// Add text to the output display.
         /// </summary>
         private void AddOutput(string message) {
             _outputHistory.Add(message);
 
             // Trim old entries
-            if (_outputHistory.Count > maxOutputLines) 
+            if (_outputHistory.Count > maxOutputLines)
                 _outputHistory.RemoveAt(0);
 
             // Update display
-            if (outputText != null) 
+            if (outputText != null)
                 outputText.text = string.Join("\n", _outputHistory);
         }
 
@@ -274,7 +277,8 @@ namespace Spellbound.Core.Console {
         /// </summary>
         public void ClearOutput() {
             _outputHistory.Clear();
-            if (outputText != null) 
+
+            if (outputText != null)
                 outputText.text = "";
         }
     }
