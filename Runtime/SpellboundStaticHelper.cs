@@ -24,11 +24,5 @@ namespace Spellbound.Core {
 
         public static void InvokeOnEntityDamage(Entity entity) => OnEntityDamage?.Invoke(entity);
         
-        public static Vector3Int WorldToChunk(Vector3 pos) =>
-                new(
-                    Mathf.FloorToInt((pos.x - 1) / ChunkSize),
-                    Mathf.FloorToInt((pos.y - 1) / ChunkSize),
-                    Mathf.FloorToInt((pos.z - 1) / ChunkSize)
-                );
     }
 }
