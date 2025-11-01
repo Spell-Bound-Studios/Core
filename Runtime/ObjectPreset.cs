@@ -14,7 +14,7 @@ namespace Spellbound.Core {
 
 #if UNITY_EDITOR
         /// <summary>
-        /// Creates guids based on asset path for us when something gets updated.
+        /// Creates guids based on an asset path for us when something gets updated.
         /// </summary>
         private void OnValidate() {
             var assetPath = UnityEditor.AssetDatabase.GetAssetPath(this);
