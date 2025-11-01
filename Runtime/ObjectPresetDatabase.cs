@@ -11,7 +11,7 @@ namespace Spellbound.Core {
     /// </summary>
     public sealed class ObjectPresetDatabase : MonoBehaviour {
         private readonly Dictionary<string, ObjectPreset> _presets = new();
-        private readonly Dictionary<(string uid, Type moduleType), PresetModule> _moduleLookup = new();
+        readonly Dictionary<(string uid, Type moduleType), PresetModule> _moduleLookup = new();
 
         private void Awake() {
             DontDestroyOnLoad(gameObject);
