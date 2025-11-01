@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace Spellbound.Core {
     public static class SpellboundStaticHelper {
-        public const int ChunkSize = 128;
 
         [Flags]
         public enum EcsPhysicsLayers : uint {

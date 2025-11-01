@@ -33,6 +33,7 @@ namespace Spellbound.Core {
             if (!presetUid.Value.ResolvePreset().TryGetModule(out EntityModule emodule)) return false;
 
             var go = emodule.proxyColliderObj;
+
             if (go == null) return false;
 
             _activeColliders[entity] = Instantiate(go, position, rotation);
