@@ -7,7 +7,8 @@ using UnityEngine;
 namespace Spellbound.Core.Console {
     /// <summary>
     /// Registry that maps preset object names to their UIDs.
-    /// Enables console commands to resolve "apple" → presetUid.
+    /// This is the actual API that a custom command class would interface with. This is also where we would make
+    /// adjustments to 
     /// </summary>
     public static class PresetConsoleRegistry {
         private static readonly Dictionary<string, string> NameToUid = new();
@@ -29,7 +30,7 @@ namespace Spellbound.Core.Console {
         /// Scans all ObjectPresets in Resources and registers any with ConsoleModules.
         /// This likely needs to become more flexible, but I think it is a good working prototype.
         /// </summary>
-        public static void RegisterAllPresets() {
+        private static void RegisterAllPresets() {
             var allPresets = Resources.LoadAll<ObjectPreset>("");
             var registeredCount = 0;
 
@@ -52,21 +53,14 @@ namespace Spellbound.Core.Console {
         /// This will be called internally once all presets are gathered.
         /// </summary>
         private static void RegisterPreset(ObjectPreset preset) {
-            var key = preset.objectName.ToLower();
+            var key = preset.objectName.ToLower().Replace(" ", "_");
 
             if (NameToUid.ContainsKey(key))
                 Debug.LogWarning(
                     $"[PresetConsoleRegistry] Duplicate preset name '{preset.objectName}' - " +
-                    $"overwriting previous registration");
+                     "overwriting previous registration");
 
             NameToUid[key] = preset.presetUid;
-            
-            if (!preset.objectName.Contains(" ")) 
-                return;
-            
-            // "Raging Berserker Helm" → "raging_berserker_helm"
-            var underscoreKey = preset.objectName.ToLower().Replace(" ", "_");
-            NameToUid[underscoreKey] = preset.presetUid;
         }
 
         /// <summary>
@@ -113,7 +107,7 @@ namespace Spellbound.Core.Console {
         }
 
         /// <summary>
-        /// Clears all registered presets (for testing purposes).
+        /// Clears all registered presets for whatever reason lol.
         /// </summary>
         public static void Clear() {
             NameToUid.Clear();

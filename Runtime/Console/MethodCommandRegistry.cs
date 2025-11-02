@@ -36,24 +36,30 @@ namespace Spellbound.Core.Console {
         }
 
         /// <summary>
-        /// Scans all loaded assemblies for methods with [ConsoleCommand] attribute.
+        /// Scans all loaded assemblies for methods with the [ConsoleCommand] attribute.
         /// </summary>
         private static void DiscoverAllMethods() {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             var registeredCount = 0;
 
             foreach (var assembly in assemblies) {
+                // Skip editor assemblies and third-party plugins
+                var assemblyName = assembly.GetName().Name;
+                if (ShouldSkipAssembly(assemblyName))
+                    continue;
+
                 try {
                     var types = assembly.GetTypes();
 
                     foreach (var type in types) {
-                        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic |
+                        var methods = type
+                                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic |
                                                       BindingFlags.Instance | BindingFlags.Static);
 
                         foreach (var method in methods) {
                             var attribute = method.GetCustomAttribute<ConsoleCommandMethodAttribute>();
 
-                            if (attribute == null) 
+                            if (attribute == null)
                                 continue;
 
                             RegisterMethod(method, attribute);
@@ -68,6 +74,21 @@ namespace Spellbound.Core.Console {
             }
 
             Debug.Log($"[MethodCommandRegistry] Registered {registeredCount} console command methods");
+        }
+
+        /// <summary>
+        /// Determines if an assembly should be skipped during discovery.
+        /// </summary>
+        private static bool ShouldSkipAssembly(string assemblyName) {
+            // Skip Unity editor assemblies...
+            if (assemblyName.StartsWith("UnityEditor"))
+                return true;
+
+            // Skip third-party editor plugins...
+            return assemblyName.Contains("Editor") && 
+                   (assemblyName.StartsWith("JetBrains") || 
+                    assemblyName.StartsWith("Unity.") ||
+                    assemblyName.Contains(".Editor."));
         }
 
         /// <summary>

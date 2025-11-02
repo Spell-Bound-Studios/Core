@@ -22,15 +22,29 @@ namespace Spellbound.Core.Console {
             if (preset == null) 
                 return CommandResult.Fail($"Failed to resolve preset: '{targetName}'");
             
+            var quantity = 1;
+            if (args.Length > 0 && int.TryParse(args[0], out var parsedQty))
+                quantity = parsedQty;
+            else if (preset.TryGetModule<ConsoleModule>(out var module))
+                quantity = module.defaultQuantity;
+            
             var moduleTypes = preset.modules
                     .Where(m => m != null)
                     .Select(m => m.GetType())
                     .ToList();
 
             foreach (var moduleType in moduleTypes) {
-                if (MethodCommandRegistry.TryGetMethodHandler(commandName, moduleType, out var method)) {
-                    return InvokeMethod(method, preset, presetUid, args);
+                if (!MethodCommandRegistry.TryGetMethodHandler(commandName, moduleType, out var method)) continue;
+
+                // Call the method 'quantity' times... Is this a placeholder? I'm not sure yet. But I think other games
+                // do it like this.
+                for (var i = 0; i < quantity; i++) {
+                    var result = InvokeMethod(method, preset, presetUid);
+                    if (!result.Success)
+                        return result;  // Stop on first failure
                 }
+            
+                return CommandResult.Ok($"Spawned {quantity}x {preset.objectName}");
             }
 
             return CommandResult.Fail($"No handler found for '{commandName}' with preset '{targetName}'");
@@ -40,12 +54,15 @@ namespace Spellbound.Core.Console {
         /// Invokes the discovered method with appropriate arguments.
         /// </summary>
         private static CommandResult InvokeMethod(
-            System.Reflection.MethodInfo method, ObjectPreset preset, string presetUid, string[] args) {
+            System.Reflection.MethodInfo method, ObjectPreset preset, string presetUid) {
             try {
                 var instance = MethodCommandRegistry.GetMethodInstance(method);
                 
                 preset.TryGetModule<ConsoleModule>(out var consoleModule);
                 
+                // This is powerful. It uses reflection to get the parameters of the specified method or constructor.
+                // https://learn.microsoft.com/en-us/dotnet/api/system.reflection.methodbase.getparameters?view=net-9.0
+                // This will allow us to interpret intent from the command line.
                 var methodParams = method.GetParameters();
                 var invokeArgs = new object[methodParams.Length];
 
@@ -55,27 +72,30 @@ namespace Spellbound.Core.Console {
                 for (var i = 0; i < methodParams.Length; i++) {
                     var param = methodParams[i];
 
+                    // See if we have a preset uid or not.
                     if (param.ParameterType == typeof(string) && param.Name == "presetUid")
                         invokeArgs[i] = presetUid;
+                    
+                    // See if we have a positional argument.
                     else if (param.ParameterType == typeof(Vector3))
                         invokeArgs[i] = GetExecutionPosition(consoleModule);
+                    
+                    // See if we have a rotational argument. (Identity because I don't know how we would do this lol)
                     else if (param.ParameterType == typeof(Quaternion))
                         invokeArgs[i] = Quaternion.identity;
+                    
+                    // See if we have a value argument. (scale)
                     else if (param.ParameterType == typeof(float))
-                        invokeArgs[i] = 1f; // Default scale
-                    else if (param.ParameterType == typeof(int)) {
-                        // Try to parse quantity from args
-                        if (args.Length > 0 && int.TryParse(args[0], out var qty))
-                            invokeArgs[i] = qty;
-                        else
-                            invokeArgs[i] = consoleModule?.defaultQuantity ?? 1;
-                    }
+                        invokeArgs[i] = 1f;
+                    
+                    // IDK - what to do with arrays yet so null.
                     else if (param.ParameterType.IsArray) {
-                        // Default to null/empty for arrays
                         invokeArgs[i] = null;
                     }
                     else
-                        invokeArgs[i] = param.HasDefaultValue ? param.DefaultValue : null;
+                        invokeArgs[i] = param.HasDefaultValue 
+                                ? param.DefaultValue
+                                : null;
                 }
                 
                 method.Invoke(instance, invokeArgs);
@@ -113,7 +133,7 @@ namespace Spellbound.Core.Console {
 
             var ray = camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
 
-            if (Physics.Raycast(ray, out var hit, 1000f))
+            if (Physics.Raycast(ray, out var hit, 100f))
                 return hit.point;
 
             return camera.transform.position + camera.transform.forward * 5f;
