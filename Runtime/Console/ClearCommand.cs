@@ -3,7 +3,7 @@
 using UnityEngine;
 
 namespace Spellbound.Core.Console {
-    [ConsoleCommand("clear", "cls")]
+    [ConsoleCommandClass("clear", "cls")]
     public class ClearCommand : ICommand {
         public string Name => "clear";
         public string Description => "Clears the console output";
@@ -18,7 +18,6 @@ namespace Spellbound.Core.Console {
             console.ClearOutput();
 
             return CommandResult.Ok();
-
         }
     }
 }
