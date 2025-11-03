@@ -57,6 +57,7 @@ namespace Spellbound.Core.Console {
             System.Reflection.MethodInfo method, ObjectPreset preset, string presetUid) {
             try {
                 var instance = MethodCommandRegistry.GetMethodInstance(method);
+                    
                 
                 preset.TryGetModule<ConsoleModule>(out var consoleModule);
                 

@@ -160,7 +160,6 @@ namespace Spellbound.Core.Console {
             var remainingArgs = args.Skip(1).ToArray();
 
             return ConsoleCommandRouter.RouteCommand(commandName, targetName, remainingArgs);
-
         }
 
         /// <summary>
