@@ -1,7 +1,7 @@
 ﻿// Copyright 2025 Spellbound Studio Inc.
 
 namespace Spellbound.Core.Console {
-    [ConsoleCommand("help", "?", "h")]
+    [ConsoleCommandClass("help", "?", "h")]
     public class HelpCommand : ICommand {
         public string Name => "help";
         public string Description => "Lists all available commands or shows help for a specific command";
@@ -9,7 +9,6 @@ namespace Spellbound.Core.Console {
 
         public CommandResult Execute(string[] args) {
             if (args.Length == 0) {
-                // List all commands
                 var commands = CommandRegistry.Instance.GetAllCommands();
                 var helpText = "Available commands:\n";
 
@@ -20,8 +19,7 @@ namespace Spellbound.Core.Console {
 
                 return CommandResult.Ok(helpText);
             }
-
-            // Show help for a specific command.
+            
             var commandName = args[0];
 
             if (!CommandRegistry.Instance.TryGetCommand(commandName, out var command))

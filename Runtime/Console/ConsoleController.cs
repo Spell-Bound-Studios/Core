@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Spellbound Studio Inc.
 
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -143,34 +144,19 @@ namespace Spellbound.Core.Console {
         /// Execute a command string.
         /// </summary>
         private void ExecuteCommand(string input) {
-            // Parse command and arguments
-            var parts = ParseInput(input);
+            try {
+                var result = CommandRegistry.Instance.ExecuteCommand(input);
 
-            if (parts.Length == 0)
-                return;
-
-            var commandName = parts[0];
-            var args = new string[parts.Length - 1];
-            System.Array.Copy(parts, 1, args, 0, args.Length);
-
-            // Try to find and execute command
-            if (CommandRegistry.Instance.TryGetCommand(commandName, out var command)) {
-                try {
-                    var result = command.Execute(args);
-
-                    if (result.Success) {
-                        if (!string.IsNullOrEmpty(result.Message))
-                            LogOutput(result.Message);
-                    }
-                    else
-                        LogError(result.Message);
+                if (result.Success) {
+                    if (!string.IsNullOrEmpty(result.Message))
+                        LogOutput(result.Message);
                 }
-                catch (System.Exception ex) {
-                    LogError($"Error executing command: {ex.Message}");
-                }
+                else
+                    LogError(result.Message);
             }
-            else
-                LogError($"Unknown command: '{commandName}'. Type 'help' for available commands.");
+            catch (Exception ex) {
+                LogError($"Error executing command: {ex.Message}");
+            }
         }
 
         /// <summary>

@@ -47,11 +47,11 @@ namespace Spellbound.Core.Console {
         public void AutoRegisterCommandsFromAssembly(Assembly assembly) {
             var commandTypes = assembly.GetTypes()
                     .Where(t => t.IsClass && !t.IsAbstract && typeof(ICommand).IsAssignableFrom(t))
-                    .Where(t => t.GetCustomAttribute<ConsoleCommandAttribute>() != null);
+                    .Where(t => t.GetCustomAttribute<ConsoleCommandClassAttribute>() != null);
 
             foreach (var type in commandTypes) {
                 try {
-                    var attribute = type.GetCustomAttribute<ConsoleCommandAttribute>();
+                    var attribute = type.GetCustomAttribute<ConsoleCommandClassAttribute>();
                     var command = (ICommand)Activator.CreateInstance(type);
 
                     Register(command, attribute.Aliases);
@@ -135,6 +135,31 @@ namespace Spellbound.Core.Console {
             command = null;
 
             return false;
+        }
+
+        /// <summary>
+        /// Execute a command - routes to either class-based or method-based handlers.
+        /// </summary>
+        public CommandResult ExecuteCommand(string input) {
+            var parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length == 0)
+                return CommandResult.Fail("Empty command");
+
+            var commandName = parts[0];
+            var args = parts.Skip(1).ToArray();
+            
+            if (TryGetCommand(commandName, out var command)) 
+                return command.Execute(args);
+
+            // If not, try to route it as a method-based command
+            if (args.Length <= 0) 
+                return CommandResult.Fail($"Unknown command: '{commandName}'");
+
+            var targetName = args[0];
+            var remainingArgs = args.Skip(1).ToArray();
+
+            return ConsoleCommandRouter.RouteCommand(commandName, targetName, remainingArgs);
         }
 
         /// <summary>
