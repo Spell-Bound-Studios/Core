@@ -4,141 +4,259 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Spellbound.Core.Console {
     /// <summary>
     /// The main controller for the developer console.
-    /// Handles input, execution, and UI coordination.
+    /// Handles input configuration, execution, and UI coordination.
+    /// Intended to work with UnityEngine.InputSystem and TMPro text objects.
     /// </summary>
+    /// <remarks>
+    /// If you're having trouble adding this to your game logic, be sure to check the docs where we provide an
+    /// example of how you might incorporate this into an MVVM or MVC UI architecture. If you have any feedback on how
+    /// to make this better, please feel free to post something in the discord.
+    ///
+    /// Cheers,
+    /// Judsin
+    /// </remarks>
     public class ConsoleController : MonoBehaviour {
-        [Header("UI References"), SerializeField]
-        private GameObject consolePanel;
+        [Header("Config"), SerializeField, Tooltip("Configurable value.")]
+        private int maxOutputLines = 100;
 
-        [SerializeField] private TMP_InputField inputField;
-        [SerializeField] private TextMeshProUGUI outputText;
-        [SerializeField] private ScrollRect scrollRect;
+        [Header("GameObject References"), SerializeField, Tooltip("A text input gameobject.")]
+        private TMP_InputField inputField;
+
+        [SerializeField, Tooltip("Where the input text gets displayed.")]
+        private TextMeshProUGUI outputText;
+
+        [SerializeField, Tooltip("Enables scrolling capability.")]
+        private ScrollRect scrollRect;
+
         [SerializeField] private RectTransform contentContainer;
 
-        [Header("Settings"), SerializeField] private int maxOutputLines = 100;
+        [Header("Input Actions"), SerializeField, Tooltip("Action to toggle the console.")]
+        private InputActionReference toggleAction;
+
+        [SerializeField, Tooltip("Action to navigate to the previous command.")]
+        private InputActionReference historyUpAction;
+
+        [SerializeField, Tooltip("Action to navigate to the next command.")]
+        private InputActionReference historyDownAction;
 
         private readonly List<string> _outputHistory = new();
         private readonly List<string> _commandHistory = new();
         private int _commandHistoryIndex = -1;
+        private bool _isVisible;
+        private CanvasGroup _canvasGroup;
 
-        public bool IsOpen => consolePanel != null && consolePanel.activeSelf;
+        // Public Helper
+        public bool IsVisible => _isVisible;
 
-        private void Awake() {
-            // Initialize command registry
-            CommandRegistry.Instance.AutoRegisterCommands();
-
-            // Hide console initially
-            if (consolePanel != null)
-                consolePanel.SetActive(false);
-        }
+        // Public Helper
+        public CanvasGroup CanvasGroup => _canvasGroup;
 
         /// <summary>
-        /// TEMPORARY
+        /// Event fired when console visibility changes.
+        /// Example: Subscribe to disable player input when the console opens.
         /// </summary>
-        [SerializeField] private KeyCode toggleKey = KeyCode.BackQuote;
+        public event Action<bool> OnVisibilityChanged = delegate { };
 
-        private void Update() {
-            if (Input.GetKeyDown(toggleKey)) ToggleConsole();
+        #region Unity Lifecycle
 
-            if (!IsOpen)
-                return;
+        private void Awake() {
+            CommandRegistry.Instance.AutoRegisterCommands();
 
-            if (Input.GetKeyDown(KeyCode.UpArrow))
-                NavigateHistoryUp();
-
-            else if (Input.GetKeyDown(KeyCode.DownArrow))
-                NavigateHistoryDown();
+            SetVisibilityImmediate(false);
         }
 
         private void OnEnable() {
             if (inputField != null)
                 inputField.onSubmit.AddListener(OnSubmitInput);
+
+            if (toggleAction != null && toggleAction.action != null) {
+                toggleAction.action.performed += OnTogglePerformed;
+                toggleAction.action.Enable();
+            }
+
+            if (historyUpAction != null && historyUpAction.action != null)
+                historyUpAction.action.performed += OnHistoryUpPerformed;
+
+            if (historyDownAction != null && historyDownAction.action != null)
+                historyDownAction.action.performed += OnHistoryDownPerformed;
         }
 
         private void OnDisable() {
             if (inputField != null)
                 inputField.onSubmit.RemoveListener(OnSubmitInput);
+
+            if (toggleAction != null && toggleAction.action != null)
+                toggleAction.action.performed -= OnTogglePerformed;
+
+            if (historyUpAction != null && historyUpAction.action != null)
+                historyUpAction.action.performed -= OnHistoryUpPerformed;
+
+            if (historyDownAction != null && historyDownAction.action != null)
+                historyDownAction.action.performed -= OnHistoryDownPerformed;
         }
+
+        #endregion
+
+        #region Public API
 
         /// <summary>
         /// Toggle console visibility.
-        /// Call this from your game's input system.
+        /// Intended to be called externally.
         /// </summary>
-        public void ToggleConsole() => SetConsoleActive(!IsOpen);
+        public void ToggleConsole() => SetVisibility(!_isVisible);
 
         /// <summary>
         /// Open the console.
+        /// Intended to be called externally.
         /// </summary>
-        public void OpenConsole() => SetConsoleActive(true);
+        public void OpenConsole() => SetVisibility(true);
 
         /// <summary>
         /// Close the console.
+        /// Intended to be called externally.
         /// </summary>
-        public void CloseConsole() => SetConsoleActive(false);
+        public void CloseConsole() => SetVisibility(false);
+
+        /// <summary>
+        /// Navigate through the command history by going to the previous command submitted.
+        /// Intended to be called externally.
+        /// </summary>
+        public void NavigateHistoryUp() => NavigateCommandHistory(-1);
+
+        /// <summary>
+        /// Navigate through the command history by going to the next command submitted.
+        /// Intended to be called externally.
+        /// </summary>
+        public void NavigateHistoryDown() => NavigateCommandHistory(1);
+
+        /// <summary>
+        /// Bypasses the Show and Hide protected virtual methods.
+        /// Intended to be called externally.
+        /// </summary>
+        public void SetVisibilityImmediate(bool visible) {
+            _isVisible = visible;
+
+            if (_canvasGroup == null)
+                return;
+
+            _canvasGroup.alpha = visible
+                    ? 1f
+                    : 0f;
+            _canvasGroup.interactable = visible;
+            _canvasGroup.blocksRaycasts = visible;
+        }
+
+        /// <summary>
+        /// Clear the console output.
+        /// </summary>
+        public void ClearOutput() {
+            _outputHistory.Clear();
+
+            if (outputText != null)
+                outputText.text = "";
+        }
+
+        #endregion
+
+        #region Protected Methods
 
         /// <summary>
         /// Set the console active state.
         /// </summary>
-        private void SetConsoleActive(bool active) {
-            if (consolePanel == null)
+        protected virtual void SetVisibility(bool visible) {
+            if (_isVisible == visible)
                 return;
 
-            consolePanel.SetActive(active);
+            _isVisible = visible;
 
-            if (!active || inputField == null)
-                return;
+            if (visible) {
+                historyUpAction?.action?.Enable();
+                historyDownAction?.action?.Enable();
 
-            // Focus input field when opening
-            inputField.Select();
-            inputField.ActivateInputField();
+                ShowUI();
+
+                if (inputField != null) {
+                    inputField.Select();
+                    inputField.ActivateInputField();
+                }
+            }
+            else {
+                historyUpAction?.action?.Disable();
+                historyDownAction?.action?.Disable();
+
+                HideUI();
+            }
+
+            OnVisibilityChanged.Invoke(visible);
         }
+
+        /// <summary>
+        /// Override for custom show animations.
+        /// </summary>
+        protected virtual void ShowUI() {
+            if (_canvasGroup == null)
+                return;
+
+            _canvasGroup.alpha = 1f;
+            _canvasGroup.interactable = true;
+            _canvasGroup.blocksRaycasts = true;
+        }
+
+        /// <summary>
+        /// Override for custom hide animations.
+        /// </summary>
+        protected virtual void HideUI() {
+            if (_canvasGroup == null)
+                return;
+
+            _canvasGroup.alpha = 0f;
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
+        }
+
+        #endregion
+
+        #region Internal Methods No Touchy
+
+        private void OnTogglePerformed(InputAction.CallbackContext context) => ToggleConsole();
+        private void OnHistoryUpPerformed(InputAction.CallbackContext context) => NavigateHistoryUp();
+        private void OnHistoryDownPerformed(InputAction.CallbackContext context) => NavigateHistoryDown();
 
         /// <summary>
         /// Called when the user submits input.
         /// </summary>
         private void OnSubmitInput(string input) {
             if (string.IsNullOrWhiteSpace(input)) {
-                // Re-focus if empty submit
                 if (inputField != null)
                     inputField.ActivateInputField();
 
                 return;
             }
 
-            // Echo the command
+            // Echo the command.
             LogInput($"> {input}");
 
-            // Add to command history
+            // Add to the command history.
             _commandHistory.Add(input);
             _commandHistoryIndex = _commandHistory.Count;
 
-            // Execute the command
+            // Execute the command.
             ExecuteCommand(input);
 
-            // Clear and refocus input
+            // Clear and refocus input.
             if (inputField != null) {
                 inputField.text = string.Empty;
                 inputField.ActivateInputField();
             }
 
-            // Scroll to bottom
             ScrollToBottom();
         }
-
-        /// <summary>
-        /// Navigate through the command history.
-        /// </summary>
-        public void NavigateHistoryUp() => NavigateCommandHistory(-1);
-
-        /// <summary>
-        /// Navigate through the command history.
-        /// </summary>
-        public void NavigateHistoryDown() => NavigateCommandHistory(1);
 
         /// <summary>
         /// Execute a command string.
@@ -160,42 +278,6 @@ namespace Spellbound.Core.Console {
         }
 
         /// <summary>
-        /// Parse input string into command and arguments.
-        /// Handles quoted strings as single arguments.
-        /// </summary>
-        private string[] ParseInput(string input) {
-            var parts = new List<string>();
-            var inQuotes = false;
-            var currentPart = "";
-
-            foreach (var c in input) {
-                switch (c) {
-                    case '"':
-                        inQuotes = !inQuotes;
-
-                        break;
-                    case ' ' when !inQuotes: {
-                        if (currentPart.Length > 0) {
-                            parts.Add(currentPart);
-                            currentPart = "";
-                        }
-
-                        break;
-                    }
-                    default:
-                        currentPart += c;
-
-                        break;
-                }
-            }
-
-            if (currentPart.Length > 0)
-                parts.Add(currentPart);
-
-            return parts.ToArray();
-        }
-
-        /// <summary>
         /// Navigate through the command history.
         /// </summary>
         private void NavigateCommandHistory(int direction) {
@@ -214,17 +296,17 @@ namespace Spellbound.Core.Console {
         }
 
         /// <summary>
-        /// Scroll output to bottom
+        /// Scroll output to the bottom.
         /// </summary>
         private void ScrollToBottom() {
-            if (scrollRect == null || contentContainer == null || outputText == null) 
+            if (scrollRect == null || contentContainer == null || outputText == null)
                 return;
-            
+
             var textHeight = outputText.preferredHeight;
             contentContainer.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, textHeight);
-            
+
             Canvas.ForceUpdateCanvases();
-            
+
             scrollRect.verticalNormalizedPosition = 0f;
         }
 
@@ -236,12 +318,12 @@ namespace Spellbound.Core.Console {
         /// <summary>
         /// Log standard output to the console.
         /// </summary>
-        public void LogOutput(string message) => AddOutput(message);
+        private void LogOutput(string message) => AddOutput(message);
 
         /// <summary>
         /// Log error to console.
         /// </summary>
-        public void LogError(string message) => AddOutput($"<color=#FF4444>{message}</color>");
+        private void LogError(string message) => AddOutput($"<color=#FF4444>{message}</color>");
 
         /// <summary>
         /// Add text to the output display.
@@ -249,23 +331,13 @@ namespace Spellbound.Core.Console {
         private void AddOutput(string message) {
             _outputHistory.Add(message);
 
-            // Trim old entries
             if (_outputHistory.Count > maxOutputLines)
                 _outputHistory.RemoveAt(0);
 
-            // Update display
             if (outputText != null)
                 outputText.text = string.Join("\n", _outputHistory);
         }
 
-        /// <summary>
-        /// Clear the console output.
-        /// </summary>
-        public void ClearOutput() {
-            _outputHistory.Clear();
-
-            if (outputText != null)
-                outputText.text = "";
-        }
+        #endregion
     }
 }
