@@ -36,15 +36,6 @@ namespace Spellbound.Core.Console {
 
         [SerializeField] private RectTransform contentContainer;
 
-        [Header("Input Actions"), SerializeField, Tooltip("Action to toggle the console.")]
-        private InputActionReference toggleAction;
-
-        [SerializeField, Tooltip("Action to navigate to the previous command.")]
-        private InputActionReference historyUpAction;
-
-        [SerializeField, Tooltip("Action to navigate to the next command.")]
-        private InputActionReference historyDownAction;
-
         private readonly List<string> _outputHistory = new();
         private readonly List<string> _commandHistory = new();
         private int _commandHistoryIndex = -1;
@@ -74,36 +65,34 @@ namespace Spellbound.Core.Console {
         private void OnEnable() {
             if (inputField != null)
                 inputField.onSubmit.AddListener(OnSubmitInput);
-
-            if (toggleAction != null && toggleAction.action != null) {
-                toggleAction.action.performed += OnTogglePerformed;
-                toggleAction.action.Enable();
-            }
-
-            if (historyUpAction != null && historyUpAction.action != null)
-                historyUpAction.action.performed += OnHistoryUpPerformed;
-
-            if (historyDownAction != null && historyDownAction.action != null)
-                historyDownAction.action.performed += OnHistoryDownPerformed;
         }
 
         private void OnDisable() {
             if (inputField != null)
                 inputField.onSubmit.RemoveListener(OnSubmitInput);
-
-            if (toggleAction != null && toggleAction.action != null)
-                toggleAction.action.performed -= OnTogglePerformed;
-
-            if (historyUpAction != null && historyUpAction.action != null)
-                historyUpAction.action.performed -= OnHistoryUpPerformed;
-
-            if (historyDownAction != null && historyDownAction.action != null)
-                historyDownAction.action.performed -= OnHistoryDownPerformed;
         }
 
         #endregion
 
         #region Public API
+
+        /// <summary>
+        /// Users can subscribe this to some input or button.
+        /// Intended to be used by a user that wants to subscribe this to an input.
+        /// </summary>
+        public void OnTogglePerformed(InputAction.CallbackContext context) => ToggleConsole();
+
+        /// <summary>
+        /// Users can subscribe this to some input or button.
+        /// Intended to be used by a user that wants to subscribe this to an input.
+        /// </summary>
+        public void OnHistoryUpPerformed(InputAction.CallbackContext context) => NavigateHistoryUp();
+        
+        /// <summary>
+        /// Users can subscribe this to some input or button.
+        /// Intended to be used by a user that wants to subscribe this to an input.
+        /// </summary>
+        public void OnHistoryDownPerformed(InputAction.CallbackContext context) => NavigateHistoryDown();
 
         /// <summary>
         /// Toggle console visibility.
@@ -176,9 +165,6 @@ namespace Spellbound.Core.Console {
             _isVisible = visible;
 
             if (visible) {
-                historyUpAction?.action?.Enable();
-                historyDownAction?.action?.Enable();
-
                 ShowUI();
 
                 if (inputField != null) {
@@ -186,12 +172,8 @@ namespace Spellbound.Core.Console {
                     inputField.ActivateInputField();
                 }
             }
-            else {
-                historyUpAction?.action?.Disable();
-                historyDownAction?.action?.Disable();
-
+            else
                 HideUI();
-            }
 
             OnVisibilityChanged.Invoke(visible);
         }
@@ -223,10 +205,6 @@ namespace Spellbound.Core.Console {
         #endregion
 
         #region Internal Methods No Touchy
-
-        private void OnTogglePerformed(InputAction.CallbackContext context) => ToggleConsole();
-        private void OnHistoryUpPerformed(InputAction.CallbackContext context) => NavigateHistoryUp();
-        private void OnHistoryDownPerformed(InputAction.CallbackContext context) => NavigateHistoryDown();
 
         /// <summary>
         /// Called when the user submits input.
