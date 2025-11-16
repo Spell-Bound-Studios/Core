@@ -60,6 +60,7 @@ namespace Spellbound.Core.Console {
             CommandRegistry.Instance.AutoRegisterCommands();
 
             SetVisibilityImmediate(false);
+            ConsoleLogger.Initialize(this);
         }
 
         private void OnEnable() {
@@ -296,12 +297,12 @@ namespace Spellbound.Core.Console {
         /// <summary>
         /// Log standard output to the console.
         /// </summary>
-        private void LogOutput(string message) => AddOutput(message);
+        public void LogOutput(string message) => AddOutput(message);
 
         /// <summary>
         /// Log error to console.
         /// </summary>
-        private void LogError(string message) => AddOutput($"<color=#FF4444>{message}</color>");
+        public void LogError(string message) => AddOutput($"<color=#FF4444>{message}</color>");
 
         /// <summary>
         /// Add text to the output display.
