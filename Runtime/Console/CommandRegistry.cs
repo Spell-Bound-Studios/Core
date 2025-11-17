@@ -149,10 +149,15 @@ namespace Spellbound.Core.Console {
             var commandName = parts[0];
             var args = parts.Skip(1).ToArray();
             
+            // Checks ICommand.
             if (TryGetCommand(commandName, out var command)) 
                 return command.Execute(args);
+            
+            // Checks utility commands.
+            if (PresetCommandRegistry.HasUtilityCommand(commandName))
+                return PresetCommandRegistry.ExecuteUtilityCommand(commandName, args);
 
-            // If not, try to route it as a method-based command
+            // Otherwise route as a preset command.
             if (args.Length <= 0) 
                 return CommandResult.Fail($"Unknown command: '{commandName}'");
 

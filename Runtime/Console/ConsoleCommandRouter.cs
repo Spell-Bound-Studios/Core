@@ -34,7 +34,8 @@ namespace Spellbound.Core.Console {
                     .ToList();
 
             foreach (var moduleType in moduleTypes) {
-                if (!MethodCommandRegistry.TryGetMethodHandler(commandName, moduleType, out var method)) continue;
+                if (!PresetCommandRegistry.TryGetPresetHandler(commandName, moduleType, out var method)) 
+                    continue;
 
                 // Call the method 'quantity' times... Is this a placeholder? I'm not sure yet. But I think other games
                 // do it like this.
@@ -56,7 +57,7 @@ namespace Spellbound.Core.Console {
         private static CommandResult InvokeMethod(
             System.Reflection.MethodInfo method, ObjectPreset preset, string presetUid) {
             try {
-                var instance = MethodCommandRegistry.GetMethodInstance(method);
+                var instance = PresetCommandRegistry.GetMethodInstance(method);
                     
                 
                 preset.TryGetModule<ConsoleModule>(out var consoleModule);

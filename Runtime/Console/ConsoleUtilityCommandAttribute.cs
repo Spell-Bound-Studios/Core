@@ -19,15 +19,9 @@ namespace Spellbound.Core.Console {
         /// </summary>
         public string Description { get; }
 
-        /// <summary>
-        /// Optional aliases for this command.
-        /// </summary>
-        public string[] Aliases { get; }
-
-        public ConsoleUtilityCommandAttribute(string commandName, string description = null, params string[] aliases) {
+        public ConsoleUtilityCommandAttribute(string commandName, string description = null) {
             CommandName = commandName;
             Description = description ?? $"Executes {commandName}";
-            Aliases = aliases ?? Array.Empty<string>();
         }
     }
 }
