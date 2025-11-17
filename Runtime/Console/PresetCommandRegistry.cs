@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ namespace Spellbound.Core.Console {
         /// <summary>
         /// Utility command handlers indexed by commandName only.
         /// </summary>
-        private static readonly Dictionary<string, MethodInfo> UtilityHandlers = new();
+        private static readonly Dictionary<string, UtilityCommandInfo> UtilityHandlers = new();
         
         /// <summary>
         /// All registered command names (for duplicate detection across all types).
@@ -143,8 +144,14 @@ namespace Spellbound.Core.Console {
                 Debug.LogError($"[PresetCommandRegistry] Duplicate command name '{commandName}' - skipping {method.DeclaringType?.Name}.{method.Name}");
                 return false;
             }
+            
+            var commandInfo = new UtilityCommandInfo {
+                Method = method,
+                DeclaringClass = method.DeclaringType,
+                Description = attr.Description
+            };
 
-            if (!UtilityHandlers.TryAdd(commandName, method)) {
+            if (!UtilityHandlers.TryAdd(commandName, commandInfo)) {
                 Debug.LogWarning($"[PresetCommandRegistry] Duplicate utility handler for '{commandName}'");
                 return false;
             }
@@ -188,29 +195,53 @@ namespace Spellbound.Core.Console {
             if (!_isInitialized)
                 Initialize();
 
-            if (!UtilityHandlers.TryGetValue(commandName.ToLower(), out var method)) {
+            if (!UtilityHandlers.TryGetValue(commandName.ToLower(), out var commandInfo))
                 return CommandResult.Fail($"Unknown utility command: {commandName}");
-            }
 
             try {
+                var method = commandInfo.Method;
                 var parsedArgs = ParseArguments(method, args);
-                if (parsedArgs == null) {
+                if (parsedArgs == null)
                     return CommandResult.Fail(GetUsageString(method));
-                }
-
-                // Invoke (static method, so instance is null)
+                
                 var result = method.Invoke(null, parsedArgs);
 
-                if (result != null) {
-                    return CommandResult.Ok(result.ToString());
-                }
-
-                return CommandResult.Ok($"Executed: {commandName}");
+                return result != null 
+                        ? CommandResult.Ok(result.ToString()) 
+                        : CommandResult.Ok($"Executed: {commandName}");
             }
             catch (Exception ex) {
                 var innerEx = ex.InnerException ?? ex;
                 return CommandResult.Fail($"Error executing {commandName}: {innerEx.Message}");
             }
+        }
+        
+        /// <summary>
+        /// Get all utility commands from a specific class.
+        /// Returns tuples of (commandName, description).
+        /// </summary>
+        public static IEnumerable<(string commandName, string description)> GetUtilityCommandsByClass(Type classType) {
+            if (!_isInitialized)
+                Initialize();
+
+            return UtilityHandlers
+                    .Where(kvp => kvp.Value.DeclaringClass == classType)
+                    .Select(kvp => (kvp.Key, kvp.Value.Description))
+                    .OrderBy(tuple => tuple.Key);
+        }
+
+        /// <summary>
+        /// Get all utility commands from a class by name (convenience method).
+        /// Returns tuples of (commandName, description).
+        /// </summary>
+        public static IEnumerable<(string commandName, string description)> GetUtilityCommandsByClassName(string className) {
+            if (!_isInitialized)
+                Initialize();
+
+            return UtilityHandlers
+                    .Where(kvp => kvp.Value.DeclaringClass?.Name.Equals(className, StringComparison.OrdinalIgnoreCase) == true)
+                    .Select(kvp => (kvp.Key, kvp.Value.Description))
+                    .OrderBy(tuple => tuple.Key);
         }
 
         #endregion
@@ -233,7 +264,7 @@ namespace Spellbound.Core.Console {
 
             foreach (var param in parameters) {
                 if (argIndex >= args.Length) {
-                    // Check for default value
+                    // Check for the default value
                     if (param.HasDefaultValue) {
                         parsedArgs.Add(param.DefaultValue);
                         continue;
