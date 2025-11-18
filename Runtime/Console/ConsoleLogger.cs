@@ -7,14 +7,12 @@ namespace Spellbound.Core.Console {
     /// </summary>
     public static class ConsoleLogger {
         private static ConsoleController _consoleControllerInstance;
-        
+
         /// <summary>
         /// Initialize the logger with a console instance.
         /// Called automatically by ConsoleController on Awake.
         /// </summary>
-        internal static void Initialize(ConsoleController console) {
-            _consoleControllerInstance = console;
-        }
+        internal static void Initialize(ConsoleController console) => _consoleControllerInstance = console;
 
         /// <summary>
         /// Print a message to the developer console.

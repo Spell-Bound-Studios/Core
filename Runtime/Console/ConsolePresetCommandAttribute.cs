@@ -19,7 +19,7 @@ namespace Spellbound.Core.Console {
         /// Only presets with this module will be routed to this method.
         /// </summary>
         public Type RequiredModuleType { get; }
-        
+
         public ConsolePresetCommandAttribute(string commandName, Type requiredModuleType) {
             CommandName = commandName;
             RequiredModuleType = requiredModuleType;

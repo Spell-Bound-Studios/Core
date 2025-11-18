@@ -18,22 +18,23 @@ namespace Spellbound.Core.Console {
 
             try {
                 // Handle nullable types
-                if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
                     targetType = Nullable.GetUnderlyingType(targetType);
-                }
 
                 // String
                 if (targetType == typeof(string)) {
                     result = arg;
+
                     return true;
                 }
 
                 // Int
                 if (targetType == typeof(int)) {
-                    if (!int.TryParse(arg, out var intVal)) 
+                    if (!int.TryParse(arg, out var intVal))
                         return false;
 
                     result = intVal;
+
                     return true;
                 }
 
@@ -43,6 +44,7 @@ namespace Spellbound.Core.Console {
                         return false;
 
                     result = floatVal;
+
                     return true;
                 }
 
@@ -52,6 +54,7 @@ namespace Spellbound.Core.Console {
                         return false;
 
                     result = doubleVal;
+
                     return true;
                 }
 
@@ -59,37 +62,42 @@ namespace Spellbound.Core.Console {
                 if (targetType == typeof(bool)) {
                     if (bool.TryParse(arg, out var boolVal)) {
                         result = boolVal;
+
                         return true;
                     }
+
                     // Support 1/0
                     if (arg == "1" || arg.Equals("true", StringComparison.OrdinalIgnoreCase)) {
                         result = true;
+
                         return true;
                     }
 
-                    if (arg != "0" && !arg.Equals("false", StringComparison.OrdinalIgnoreCase)) 
+                    if (arg != "0" && !arg.Equals("false", StringComparison.OrdinalIgnoreCase))
                         return false;
 
                     result = false;
+
                     return true;
                 }
 
                 // Byte
                 if (targetType == typeof(byte)) {
-                    if (!byte.TryParse(arg, out var byteVal)) 
+                    if (!byte.TryParse(arg, out var byteVal))
                         return false;
 
                     result = byteVal;
+
                     return true;
                 }
 
                 // Enum
-                if (targetType is not { IsEnum: true }) 
+                if (targetType is not { IsEnum: true })
                     return false;
 
                 result = Enum.Parse(targetType, arg, true);
-                return true;
 
+                return true;
             }
             catch {
                 return false;
@@ -116,6 +124,7 @@ namespace Spellbound.Core.Console {
                 return false;
 
             result = new Vector3(x, y, z);
+
             return true;
         }
 
@@ -136,6 +145,7 @@ namespace Spellbound.Core.Console {
                 return false;
 
             result = new Vector2(x, y);
+
             return true;
         }
 
@@ -150,8 +160,9 @@ namespace Spellbound.Core.Console {
             if (type == typeof(string)) return "string";
             if (type == typeof(byte)) return "byte";
             if (type == typeof(Vector3)) return "Vector3";
-            return type == typeof(Vector2) 
-                    ? "Vector2" 
+
+            return type == typeof(Vector2)
+                    ? "Vector2"
                     : type.Name;
         }
     }

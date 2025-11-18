@@ -15,10 +15,12 @@ namespace Spellbound.Core.Console {
         public static CommandRegistry Instance => _instance ??= new CommandRegistry();
 
         // Stores all of our commands that implement the interface ICommand.
-        private readonly Dictionary<string, ICommand> _commands = CommandRegistryUtilities.CreateCaseInsensitiveDictionary<ICommand>();
+        private readonly Dictionary<string, ICommand> _commands =
+                CommandRegistryUtilities.CreateCaseInsensitiveDictionary<ICommand>();
 
         // Stores the aliases that get registered via the ConsoleCommandAttribute.
-        private readonly Dictionary<string, string> _aliases = CommandRegistryUtilities.CreateCaseInsensitiveDictionary<string>();
+        private readonly Dictionary<string, string> _aliases =
+                CommandRegistryUtilities.CreateCaseInsensitiveDictionary<string>();
 
         private CommandRegistry() { }
         public static CommandRegistry CreateInstance() => new();
@@ -75,12 +77,14 @@ namespace Spellbound.Core.Console {
 
             if (!_commands.TryAdd(commandName, command)) {
                 CommandRegistryUtilities.LogDuplicateCommand(commandName, $"ICommand: {command.GetType().Name}");
+
                 return;
             }
-            
+
             if (aliases != null) {
                 foreach (var alias in aliases) {
                     var normalizedAlias = CommandRegistryUtilities.NormalizeCommandName(alias);
+
                     if (normalizedAlias != null)
                         _aliases[normalizedAlias] = commandName;
                 }
@@ -94,9 +98,10 @@ namespace Spellbound.Core.Console {
         /// </summary>
         public bool Unregister(string commandName) {
             var normalizedName = CommandRegistryUtilities.NormalizeCommandName(commandName);
+
             if (normalizedName == null)
                 return false;
-            
+
             var aliasesToRemove = _aliases
                     .Where(kvp => kvp.Value == normalizedName)
                     .Select(kvp => kvp.Key)
@@ -113,9 +118,10 @@ namespace Spellbound.Core.Console {
         /// </summary>
         public bool TryGetCommand(string name, out ICommand command) {
             var normalizedName = CommandRegistryUtilities.NormalizeCommandName(name);
-            
+
             if (normalizedName == null) {
                 command = null;
+
                 return false;
             }
 
@@ -124,7 +130,8 @@ namespace Spellbound.Core.Console {
                 return true;
 
             // Check aliases
-            return _aliases.TryGetValue(normalizedName, out var commandName) && _commands.TryGetValue(commandName, out command);
+            return _aliases.TryGetValue(normalizedName, out var commandName) &&
+                   _commands.TryGetValue(commandName, out command);
         }
 
         /// <summary>
@@ -138,11 +145,11 @@ namespace Spellbound.Core.Console {
 
             var commandName = parts[0];
             var args = parts.Skip(1).ToArray();
-    
+
             // Check ICommand
-            if (TryGetCommand(commandName, out var command)) 
+            if (TryGetCommand(commandName, out var command))
                 return command.Execute(args);
-    
+
             // Check utility commands
             if (AttributeCommandRegistry.HasUtilityCommand(commandName))
                 return AttributeCommandRegistry.ExecuteUtilityCommand(commandName, args);
@@ -153,10 +160,12 @@ namespace Spellbound.Core.Console {
 
             // Preset commands require a target
             if (args.Length == 0)
-                return CommandResult.Fail($"Command '{commandName}' requires a target.\nUsage: {commandName} <target> [quantity]");
+                return CommandResult.Fail(
+                    $"Command '{commandName}' requires a target.\nUsage: {commandName} <target> [quantity]");
 
             var targetName = args[0];
             var remainingArgs = args.Skip(1).ToArray();
+
             return ConsoleCommandRouter.RouteCommand(commandName, targetName, remainingArgs);
         }
 

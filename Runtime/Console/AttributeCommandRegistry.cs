@@ -15,13 +15,15 @@ namespace Spellbound.Core.Console {
         /// <summary>
         /// Preset command handlers indexed by (commandName, moduleType).
         /// </summary>
-        private static readonly Dictionary<(string commandName, Type moduleType), MethodCommandInfo> PresetHandlers = new();
-        
+        private static readonly Dictionary<(string commandName, Type moduleType), MethodCommandInfo> PresetHandlers =
+                new();
+
         /// <summary>
         /// Utility command handlers indexed by commandName only.
         /// </summary>
-        private static readonly Dictionary<string, MethodCommandInfo> UtilityHandlers = CommandRegistryUtilities.CreateCaseInsensitiveDictionary<MethodCommandInfo>();
-        
+        private static readonly Dictionary<string, MethodCommandInfo> UtilityHandlers =
+                CommandRegistryUtilities.CreateCaseInsensitiveDictionary<MethodCommandInfo>();
+
         /// <summary>
         /// All registered command names.
         /// </summary>
@@ -65,21 +67,27 @@ namespace Spellbound.Core.Console {
                         foreach (var method in methods) {
                             // Check for preset command
                             var presetAttr = method.GetCustomAttribute<ConsolePresetCommandAttribute>();
+
                             if (presetAttr != null) {
-                                var commandInfo = CreateCommandInfo(method, presetAttr.CommandName, null, presetAttr.RequiredModuleType);
+                                var commandInfo = CreateCommandInfo(method, presetAttr.CommandName, null,
+                                    presetAttr.RequiredModuleType);
+
                                 if (RegisterPresetCommand(commandInfo, presetAttr))
                                     presetCount++;
+
                                 continue;
                             }
 
                             // Check for utility command
                             var utilityAttr = method.GetCustomAttribute<ConsoleUtilityCommandAttribute>();
 
-                            if (utilityAttr == null) 
+                            if (utilityAttr == null)
                                 continue;
 
                             {
-                                var commandInfo = CreateCommandInfo(method, utilityAttr.CommandName, utilityAttr.Description, null);
+                                var commandInfo = CreateCommandInfo(method, utilityAttr.CommandName,
+                                    utilityAttr.Description, null);
+
                                 if (RegisterUtilityCommand(commandInfo, utilityAttr))
                                     utilityCount++;
                             }
@@ -91,32 +99,33 @@ namespace Spellbound.Core.Console {
                 }
             }
 
-            CommandRegistryUtilities.LogDiscoverySummary("AttributeCommandRegistry", 
-                ("preset command(s)", presetCount), 
+            CommandRegistryUtilities.LogDiscoverySummary("AttributeCommandRegistry",
+                ("preset command(s)", presetCount),
                 ("utility command(s)", utilityCount));
         }
-        
+
         /// <summary>
         /// Creates a unified MethodCommandInfo from method metadata.
         /// </summary>
         private static MethodCommandInfo CreateCommandInfo(
-            MethodInfo method, string commandName, string description, Type requiredModuleType) {
-            return new MethodCommandInfo {
-                Method = method,
-                DeclaringClass = method.DeclaringType,
-                Description = description ?? $"Executes {commandName}",
-                RequiredModuleType = requiredModuleType
-            };
-        }
+            MethodInfo method, string commandName, string description, Type requiredModuleType) =>
+                new() {
+                    Method = method,
+                    DeclaringClass = method.DeclaringType,
+                    Description = description ?? $"Executes {commandName}",
+                    RequiredModuleType = requiredModuleType
+                };
 
         /// <summary>
         /// Private method that will register any preset commands that have been added.
         /// </summary>
         private static bool RegisterPresetCommand(MethodCommandInfo commandInfo, ConsolePresetCommandAttribute attr) {
             var commandName = CommandRegistryUtilities.NormalizeCommandName(attr.CommandName);
-            
+
             if (commandName == null) {
-                Debug.LogError($"[AttributeCommandRegistry] Invalid command name for {commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name}");
+                Debug.LogError(
+                    $"[AttributeCommandRegistry] Invalid command name for {commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name}");
+
                 return false;
             }
 
@@ -124,47 +133,57 @@ namespace Spellbound.Core.Console {
             var key = (commandName, attr.RequiredModuleType);
 
             if (!PresetHandlers.TryAdd(key, commandInfo)) {
-                Debug.LogWarning($"[AttributeCommandRegistry] Duplicate preset handler for '{commandName}' with module {attr.RequiredModuleType.Name}");
+                Debug.LogWarning(
+                    $"[AttributeCommandRegistry] Duplicate preset handler for '{commandName}' with module {attr.RequiredModuleType.Name}");
+
                 return false;
             }
 
             AllCommandNames.Add(commandName);
-            
+
             CommandRegistryUtilities.LogCommandRegistered(
-                commandName, 
+                commandName,
                 $"{commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name} [Module: {attr.RequiredModuleType.Name}]");
-            
+
             return true;
         }
-        
+
         /// <summary>
         /// Private method that will register any utility commands via an attribute that have been added.
         /// </summary>
         private static bool RegisterUtilityCommand(MethodCommandInfo commandInfo, ConsoleUtilityCommandAttribute attr) {
             var commandName = CommandRegistryUtilities.NormalizeCommandName(attr.CommandName);
-            
+
             if (commandName == null) {
-                Debug.LogError($"[AttributeCommandRegistry] Invalid command name for {commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name}");
+                Debug.LogError(
+                    $"[AttributeCommandRegistry] Invalid command name for {commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name}");
+
                 return false;
             }
-            
+
             if (!commandInfo.Method.IsStatic) {
-                Debug.LogError($"[AttributeCommandRegistry] Utility command {commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name} must be static - skipping");
+                Debug.LogError(
+                    $"[AttributeCommandRegistry] Utility command {commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name} must be static - skipping");
+
                 return false;
             }
 
             // Check for duplicates.
             if (!UtilityHandlers.TryAdd(commandName, commandInfo)) {
-                CommandRegistryUtilities.LogDuplicateCommand(commandName, $"{commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name}");
+                CommandRegistryUtilities.LogDuplicateCommand(commandName,
+                    $"{commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name}");
+
                 return false;
             }
 
             AllCommandNames.Add(commandName);
-            
-            CommandRegistryUtilities.LogCommandRegistered(commandName, $"{commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name}");
+
+            CommandRegistryUtilities.LogCommandRegistered(commandName,
+                $"{commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name}");
+
             return true;
         }
-        
+
         #region Preset Command API
 
         /// <summary>
@@ -175,10 +194,11 @@ namespace Spellbound.Core.Console {
                 Initialize();
 
             var normalizedName = CommandRegistryUtilities.NormalizeCommandName(commandName);
+
             return normalizedName != null &&
                    PresetHandlers.Keys.Any(key => key.commandName == normalizedName);
         }
-        
+
         /// <summary>
         /// Attempts to find a preset command handler for the given command and module type.
         /// </summary>
@@ -187,21 +207,26 @@ namespace Spellbound.Core.Console {
                 Initialize();
 
             var normalizedName = CommandRegistryUtilities.NormalizeCommandName(commandName);
+
             if (normalizedName == null) {
                 method = null;
+
                 return false;
             }
 
             var key = (normalizedName, moduleType);
+
             if (PresetHandlers.TryGetValue(key, out var commandInfo)) {
                 method = commandInfo.Method;
+
                 return true;
             }
 
             method = null;
+
             return false;
         }
-        
+
         #endregion
 
         #region Utility Command API
@@ -214,6 +239,7 @@ namespace Spellbound.Core.Console {
                 Initialize();
 
             var normalizedName = CommandRegistryUtilities.NormalizeCommandName(commandName);
+
             return normalizedName != null && UtilityHandlers.ContainsKey(normalizedName);
         }
 
@@ -225,13 +251,13 @@ namespace Spellbound.Core.Console {
                 Initialize();
 
             var normalizedName = CommandRegistryUtilities.NormalizeCommandName(commandName);
-            
+
             if (normalizedName == null || !UtilityHandlers.TryGetValue(normalizedName, out var commandInfo))
                 return CommandResult.Fail($"Unknown utility command: '{commandName}'");
 
             return ExecuteMethodCommand(commandInfo, args, commandName);
         }
-        
+
         /// <summary>
         /// Get all utility commands from a specific class.
         /// Returns tuples of (commandName, description).
@@ -250,12 +276,15 @@ namespace Spellbound.Core.Console {
         /// Get all utility commands from a class by name.
         /// Returns tuples of (commandName, description).
         /// </summary>
-        public static IEnumerable<(string commandName, string description)> GetUtilityCommandsByClassName(string className) {
+        public static IEnumerable<(string commandName, string description)> GetUtilityCommandsByClassName(
+            string className) {
             if (!_isInitialized)
                 Initialize();
 
             return UtilityHandlers
-                    .Where(kvp => kvp.Value.DeclaringClass?.Name.Equals(className, StringComparison.OrdinalIgnoreCase) == true)
+                    .Where(kvp =>
+                            kvp.Value.DeclaringClass?.Name.Equals(className, StringComparison.OrdinalIgnoreCase) ==
+                            true)
                     .Select(kvp => (kvp.Key, kvp.Value.Description))
                     .OrderBy(tuple => tuple.Key);
         }
@@ -268,30 +297,34 @@ namespace Spellbound.Core.Console {
         /// Executes a method command with parsed arguments.
         /// Unified execution logic for both preset and utility commands.
         /// </summary>
-        private static CommandResult ExecuteMethodCommand(MethodCommandInfo commandInfo, string[] args, string commandName) {
+        private static CommandResult ExecuteMethodCommand(
+            MethodCommandInfo commandInfo, string[] args, string commandName) {
             var parsedArgs = ParseArguments(commandInfo.Method, args);
 
             if (parsedArgs == null) {
                 var usage = GetUsageString(commandInfo.Method, commandName);
+
                 return CommandResult.Fail($"Invalid arguments.\n{usage}");
             }
 
             try {
                 // Recall: For static methods (utility commands), the instance is null.
                 // Recall: For instance methods (preset commands), the caller resolves the instance.
-                var instance = commandInfo.Method.IsStatic 
-                        ? null 
+                var instance = commandInfo.Method.IsStatic
+                        ? null
                         : GetMethodInstance(commandInfo.Method);
-                
+
                 commandInfo.Method.Invoke(instance, parsedArgs);
+
                 return CommandResult.Ok($"Executed {commandName}");
             }
             catch (Exception ex) {
                 Debug.LogError($"[AttributeCommandRegistry] Failed to execute command {commandName}: {ex.Message}");
+
                 return CommandResult.Fail($"Execution failed: {ex.Message}");
             }
         }
-        
+
         /// <summary>
         /// Parse string arguments into typed parameters for a method.
         /// Shared by both preset and utility commands.
@@ -309,10 +342,12 @@ namespace Spellbound.Core.Console {
                 if (argIndex >= args.Length) {
                     if (param.HasDefaultValue) {
                         parsedArgs.Add(param.DefaultValue);
+
                         continue;
                     }
 
                     ConsoleLogger.PrintError($"Missing required parameter: {param.Name}");
+
                     return null;
                 }
 
@@ -321,10 +356,12 @@ namespace Spellbound.Core.Console {
                     if (CommandParameterParser.TryParseVector3(args, argIndex, out var vec3)) {
                         parsedArgs.Add(vec3);
                         argIndex += 3;
+
                         continue;
                     }
 
                     ConsoleLogger.PrintError($"Invalid Vector3 for parameter {param.Name}. Expected: x y z");
+
                     return null;
                 }
 
@@ -333,10 +370,12 @@ namespace Spellbound.Core.Console {
                     if (CommandParameterParser.TryParseVector2(args, argIndex, out var vec2)) {
                         parsedArgs.Add(vec2);
                         argIndex += 2;
+
                         continue;
                     }
 
                     ConsoleLogger.PrintError($"Invalid Vector2 for parameter {param.Name}. Expected: x y");
+
                     return null;
                 }
 
@@ -355,11 +394,13 @@ namespace Spellbound.Core.Console {
                         }
                         else {
                             ConsoleLogger.PrintError($"Invalid {elementType.Name} in list: {args[argIndex]}");
+
                             return null;
                         }
                     }
 
                     parsedArgs.Add(list);
+
                     continue;
                 }
 
@@ -367,10 +408,13 @@ namespace Spellbound.Core.Console {
                 if (CommandParameterParser.TryParse(args[argIndex], param.ParameterType, out var parsed)) {
                     parsedArgs.Add(parsed);
                     argIndex++;
+
                     continue;
                 }
 
-                ConsoleLogger.PrintError($"Invalid {CommandParameterParser.GetTypeName(param.ParameterType)} for parameter {param.Name}: {args[argIndex]}");
+                ConsoleLogger.PrintError(
+                    $"Invalid {CommandParameterParser.GetTypeName(param.ParameterType)} for parameter {param.Name}: {args[argIndex]}");
+
                 return null;
             }
 
@@ -384,19 +428,20 @@ namespace Spellbound.Core.Console {
             var usage = $"Usage: {commandName}";
 
             var parameters = method.GetParameters();
+
             foreach (var param in parameters) {
                 var typeName = CommandParameterParser.GetTypeName(param.ParameterType);
 
                 if (param.ParameterType == typeof(Vector3))
                     usage += $" <{param.Name}_x> <{param.Name}_y> <{param.Name}_z>";
-                
+
                 else if (param.ParameterType == typeof(Vector2))
                     usage += $" <{param.Name}_x> <{param.Name}_y>";
-                
+
                 else if (param.HasDefaultValue)
                     usage += $" [{param.Name}:{typeName}]";
-                
-                else 
+
+                else
                     usage += $" <{param.Name}:{typeName}>";
             }
 
@@ -420,10 +465,13 @@ namespace Spellbound.Core.Console {
 
                 if (instance != null) {
                     MethodInstances[method] = instance;
+
                     return instance;
                 }
 
-                Debug.LogError($"[PresetCommandRegistry] No instance of {method.DeclaringType?.Name} found in scene for method {method.Name}");
+                Debug.LogError(
+                    $"[PresetCommandRegistry] No instance of {method.DeclaringType?.Name} found in scene for method {method.Name}");
+
                 return null;
             }
 
@@ -431,11 +479,13 @@ namespace Spellbound.Core.Console {
                 if (method.DeclaringType != null) {
                     var instance = Activator.CreateInstance(method.DeclaringType);
                     MethodInstances[method] = instance;
+
                     return instance;
                 }
             }
             catch (Exception ex) {
-                Debug.LogError($"[PresetCommandRegistry] Failed to create instance of {method.DeclaringType?.Name}: {ex.Message}");
+                Debug.LogError(
+                    $"[PresetCommandRegistry] Failed to create instance of {method.DeclaringType?.Name}: {ex.Message}");
             }
 
             return null;

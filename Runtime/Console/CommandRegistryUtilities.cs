@@ -46,10 +46,10 @@ namespace Spellbound.Core.Console {
         /// Normalizes a command name to lowercase for consistent lookups.
         /// Returns null if the name is invalid.
         /// </summary>
-        public static string NormalizeCommandName(string name) => string.IsNullOrWhiteSpace(name) 
-                ? null 
-                : name.ToLower();
-        
+        public static string NormalizeCommandName(string name) =>
+                string.IsNullOrWhiteSpace(name)
+                        ? null
+                        : name.ToLower();
 
         /// <summary>
         /// Creates a case-insensitive string dictionary for storing commands.

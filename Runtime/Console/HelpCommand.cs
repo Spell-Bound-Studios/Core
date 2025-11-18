@@ -19,7 +19,7 @@ namespace Spellbound.Core.Console {
 
                 return CommandResult.Ok(helpText);
             }
-            
+
             var commandName = args[0];
 
             if (!CommandRegistry.Instance.TryGetCommand(commandName, out var command))
