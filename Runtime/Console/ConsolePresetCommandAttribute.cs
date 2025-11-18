@@ -8,7 +8,7 @@ namespace Spellbound.Core.Console {
     /// The method will only be called if the target preset has the specified module type.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    public class ConsoleCommandMethodAttribute : Attribute {
+    public class ConsolePresetCommandAttribute : Attribute {
         /// <summary>
         /// The command name that triggers this method.
         /// </summary>
@@ -19,8 +19,8 @@ namespace Spellbound.Core.Console {
         /// Only presets with this module will be routed to this method.
         /// </summary>
         public Type RequiredModuleType { get; }
-        
-        public ConsoleCommandMethodAttribute(string commandName, Type requiredModuleType) {
+
+        public ConsolePresetCommandAttribute(string commandName, Type requiredModuleType) {
             CommandName = commandName;
             RequiredModuleType = requiredModuleType;
         }

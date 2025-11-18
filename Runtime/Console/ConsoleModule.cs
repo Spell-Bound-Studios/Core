@@ -10,8 +10,7 @@ namespace Spellbound.Core.Console {
     /// </summary>
     [Serializable]
     public class ConsoleModule : PresetModule {
-        [Header("Console Command Registration")] 
-        [Tooltip("Automatically register this preset with the console system.")]
+        [Header("Console Command Registration"), Tooltip("Automatically register this preset with the console system.")]
         public bool autoRegister = true;
 
         [Header("Spawn Settings"), Tooltip("Where command takes place.")]
@@ -19,10 +18,10 @@ namespace Spellbound.Core.Console {
 
         [Tooltip("Default quantity if not specified in command.")]
         public int defaultQuantity = 1;
-        
+
         public override SbbData? GetData(ObjectPreset preset) => throw new NotImplementedException();
     }
-    
+
     public enum SpawnLocation {
         AtCrosshair
     }

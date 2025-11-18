@@ -88,7 +88,7 @@ namespace Spellbound.Core.Console {
         /// Intended to be used by a user that wants to subscribe this to an input.
         /// </summary>
         public void OnHistoryUpPerformed(InputAction.CallbackContext context) => NavigateHistoryUp();
-        
+
         /// <summary>
         /// Users can subscribe this to some input or button.
         /// Intended to be used by a user that wants to subscribe this to an input.
