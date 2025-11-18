@@ -14,8 +14,8 @@ namespace Spellbound.Core.Console {
         public string Usage => "list";
 
         public CommandResult Execute(string[] args) {
-            var presetNames = PresetConsoleRegistry.GetAllPresetNames();
-            var count = PresetConsoleRegistry.GetPresetCount();
+            var presetNames = PresetResolver.GetAllPresetNames();
+            var count = PresetResolver.GetPresetCount();
 
             if (count == 0)
                 return CommandResult.Ok("No spawnable presets registered.");

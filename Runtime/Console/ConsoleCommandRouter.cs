@@ -14,7 +14,7 @@ namespace Spellbound.Core.Console {
         /// Executes a console command by routing it to the appropriate handler.
         /// </summary>
         public static CommandResult RouteCommand(string commandName, string targetName, string[] args) {
-            if (!PresetConsoleRegistry.TryResolvePresetUid(targetName, out var presetUid))
+            if (!PresetResolver.TryResolvePresetUid(targetName, out var presetUid))
                 return CommandResult.Fail($"Unknown target: '{targetName}'");
             
             var preset = presetUid.ResolvePreset();
@@ -34,7 +34,7 @@ namespace Spellbound.Core.Console {
                     .ToList();
 
             foreach (var moduleType in moduleTypes) {
-                if (!PresetCommandRegistry.TryGetPresetHandler(commandName, moduleType, out var method)) 
+                if (!AttributeCommandRegistry.TryGetPresetHandler(commandName, moduleType, out var method)) 
                     continue;
 
                 // Call the method 'quantity' times... Is this a placeholder? I'm not sure yet. But I think other games
@@ -57,7 +57,7 @@ namespace Spellbound.Core.Console {
         private static CommandResult InvokeMethod(
             System.Reflection.MethodInfo method, ObjectPreset preset, string presetUid) {
             try {
-                var instance = PresetCommandRegistry.GetMethodInstance(method);
+                var instance = AttributeCommandRegistry.GetMethodInstance(method);
                     
                 
                 preset.TryGetModule<ConsoleModule>(out var consoleModule);

@@ -15,10 +15,10 @@ namespace Spellbound.Core.Console {
         public static CommandRegistry Instance => _instance ??= new CommandRegistry();
 
         // Stores all of our commands that implement the interface ICommand.
-        private readonly Dictionary<string, ICommand> _commands = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ICommand> _commands = CommandRegistryUtilities.CreateCaseInsensitiveDictionary<ICommand>();
 
         // Stores the aliases that get registered via the ConsoleCommandAttribute.
-        private readonly Dictionary<string, string> _aliases = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _aliases = CommandRegistryUtilities.CreateCaseInsensitiveDictionary<string>();
 
         private CommandRegistry() { }
         public static CommandRegistry CreateInstance() => new();
@@ -36,7 +36,7 @@ namespace Spellbound.Core.Console {
                     AutoRegisterCommandsFromAssembly(assembly);
                 }
                 catch (Exception ex) {
-                    Debug.LogWarning($"Failed to load commands from assembly {assembly.FullName}: {ex.Message}");
+                    CommandRegistryUtilities.LogAssemblyScanError(assembly.FullName, ex.Message);
                 }
             }
         }
@@ -69,72 +69,62 @@ namespace Spellbound.Core.Console {
             if (command == null)
                 throw new ArgumentNullException(nameof(command));
 
-            if (string.IsNullOrWhiteSpace(command.Name))
-                throw new ArgumentException("Command name cannot be null or empty");
+            CommandRegistryUtilities.ValidateCommandName(command.Name, nameof(command.Name));
 
-            var commandName = command.Name.ToLower();
+            var commandName = CommandRegistryUtilities.NormalizeCommandName(command.Name);
 
-            if (_commands.ContainsKey(commandName))
-                Debug.LogWarning($"Command '{commandName}' is already registered. Overwriting.");
-
-            _commands[commandName] = command;
-
-            // Register aliases
+            if (!_commands.TryAdd(commandName, command)) {
+                CommandRegistryUtilities.LogDuplicateCommand(commandName, $"ICommand: {command.GetType().Name}");
+                return;
+            }
+            
             if (aliases != null) {
                 foreach (var alias in aliases) {
-                    if (!string.IsNullOrWhiteSpace(alias))
-                        _aliases[alias.ToLower()] = commandName;
+                    var normalizedAlias = CommandRegistryUtilities.NormalizeCommandName(alias);
+                    if (normalizedAlias != null)
+                        _aliases[normalizedAlias] = commandName;
                 }
             }
 
-            Debug.Log($"Registered command: {commandName}" +
-                      (aliases?.Length > 0 ? $" (aliases: {string.Join(", ", aliases)})" : ""));
+            CommandRegistryUtilities.LogCommandRegistered(commandName, command.GetType().Name, aliases);
         }
 
         /// <summary>
-        /// Unregister a command
+        /// Unregister a command.
         /// </summary>
         public bool Unregister(string commandName) {
-            if (string.IsNullOrWhiteSpace(commandName))
+            var normalizedName = CommandRegistryUtilities.NormalizeCommandName(commandName);
+            if (normalizedName == null)
                 return false;
-
-            commandName = commandName.ToLower();
-
-            // Remove aliases
+            
             var aliasesToRemove = _aliases
-                    .Where(kvp => kvp.Value == commandName)
+                    .Where(kvp => kvp.Value == normalizedName)
                     .Select(kvp => kvp.Key)
                     .ToList();
 
             foreach (var alias in aliasesToRemove)
                 _aliases.Remove(alias);
 
-            return _commands.Remove(commandName);
+            return _commands.Remove(normalizedName);
         }
 
         /// <summary>
         /// Try to get a command by name or alias.
         /// </summary>
         public bool TryGetCommand(string name, out ICommand command) {
-            if (string.IsNullOrWhiteSpace(name)) {
+            var normalizedName = CommandRegistryUtilities.NormalizeCommandName(name);
+            
+            if (normalizedName == null) {
                 command = null;
-
                 return false;
             }
 
-            name = name.ToLower();
-
             // Check direct command name
-            if (_commands.TryGetValue(name, out command))
+            if (_commands.TryGetValue(normalizedName, out command))
                 return true;
 
             // Check aliases
-            if (_aliases.TryGetValue(name, out var commandName))
-                return _commands.TryGetValue(commandName, out command);
-
-            command = null;
-
-            return false;
+            return _aliases.TryGetValue(normalizedName, out var commandName) && _commands.TryGetValue(commandName, out command);
         }
 
         /// <summary>
@@ -148,22 +138,25 @@ namespace Spellbound.Core.Console {
 
             var commandName = parts[0];
             var args = parts.Skip(1).ToArray();
-            
-            // Checks ICommand.
+    
+            // Check ICommand
             if (TryGetCommand(commandName, out var command)) 
                 return command.Execute(args);
-            
-            // Checks utility commands.
-            if (PresetCommandRegistry.HasUtilityCommand(commandName))
-                return PresetCommandRegistry.ExecuteUtilityCommand(commandName, args);
+    
+            // Check utility commands
+            if (AttributeCommandRegistry.HasUtilityCommand(commandName))
+                return AttributeCommandRegistry.ExecuteUtilityCommand(commandName, args);
 
-            // Otherwise route as a preset command.
-            if (args.Length <= 0) 
-                return CommandResult.Fail($"Unknown command: '{commandName}'");
+            // Check if it's a known preset command
+            if (!AttributeCommandRegistry.HasPresetCommand(commandName))
+                return CommandResult.Fail($"Unknown command: '{commandName}'\nType 'help' for available commands.");
+
+            // Preset commands require a target
+            if (args.Length == 0)
+                return CommandResult.Fail($"Command '{commandName}' requires a target.\nUsage: {commandName} <target> [quantity]");
 
             var targetName = args[0];
             var remainingArgs = args.Skip(1).ToArray();
-
             return ConsoleCommandRouter.RouteCommand(commandName, targetName, remainingArgs);
         }
 

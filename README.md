@@ -14,3 +14,32 @@ The console command class is constructed via the ICommand interface and implemen
 
 ### ConsoleUtilityCommand
 The console utility command is simply a method level attribute that allows the user to call methods with said attribute in the console.
+
+### Core Infrastructure
+* CommandRegistry.cs
+* PresetCommandRegistry.cs
+* PresetConsoleRegistry.cs
+* ConsoleCommandRouter.cs
+
+### Command System
+* ICommand.cs
+* CommandResult.cs
+* CommandParameterParser.cs
+* UtilityCommandInfo.cs
+
+### Attributes
+* ConsoleCommandClassAttribute.cs
+* ConsolePresetCommandAttribute.cs
+* ConsoleUtilityCommandAttribute.cs
+
+### Built-in Commands
+* HelpCommand.cs
+* ListCommand.cs
+* ClearCommand.cs
+
+### UI/Controller
+* ConsoleController.cs
+* ConsoleLogger.cs
+
+### Preset Integration
+* ConsoleModule.cs

@@ -7,11 +7,10 @@ using UnityEngine;
 namespace Spellbound.Core.Console {
     /// <summary>
     /// Registry that maps preset object names to their UIDs.
-    /// This is the actual API that a custom command class would interface with. This is also where we would make
-    /// adjustments to 
+    /// Provides lookup functionality for resolving preset names to their unique identifiers.
     /// </summary>
-    public static class PresetConsoleRegistry {
-        private static readonly Dictionary<string, string> NameToUid = new();
+    public static class PresetResolver {
+        private static readonly Dictionary<string, string> NameToUid = CommandRegistryUtilities.CreateCaseInsensitiveDictionary<string>();
         private static bool _isInitialized;
 
         /// <summary>
@@ -45,7 +44,7 @@ namespace Spellbound.Core.Console {
                 registeredCount++;
             }
 
-            Debug.Log($"[PresetConsoleRegistry] Registered {registeredCount} console-accessible presets");
+            CommandRegistryUtilities.LogDiscoverySummary("PresetResolver", registeredCount);
         }
 
         /// <summary>
@@ -70,7 +69,13 @@ namespace Spellbound.Core.Console {
             if (!_isInitialized)
                 Initialize();
 
-            return NameToUid.TryGetValue(objectName.ToLower(), out presetUid);
+            var normalizedName = objectName?.ToLower().Replace(" ", "_");
+
+            if (!string.IsNullOrEmpty(normalizedName)) 
+                return NameToUid.TryGetValue(normalizedName, out presetUid);
+
+            presetUid = null;
+            return false;
         }
         
         /// <summary>
@@ -103,7 +108,7 @@ namespace Spellbound.Core.Console {
             if (!_isInitialized)
                 Initialize();
 
-            return NameToUid.Count;
+            return NameToUid.Values.Distinct().Count();
         }
 
         /// <summary>
