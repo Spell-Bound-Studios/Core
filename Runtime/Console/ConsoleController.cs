@@ -40,13 +40,9 @@ namespace Spellbound.Core.Console {
         private readonly List<string> _commandHistory = new();
         private int _commandHistoryIndex = -1;
         private bool _isVisible;
-        private CanvasGroup _canvasGroup;
 
         // Public Helper
         public bool IsVisible => _isVisible;
-
-        // Public Helper
-        public CanvasGroup CanvasGroup => _canvasGroup;
 
         /// <summary>
         /// Event fired when console visibility changes.
@@ -131,15 +127,7 @@ namespace Spellbound.Core.Console {
         /// </summary>
         public void SetVisibilityImmediate(bool visible) {
             _isVisible = visible;
-
-            if (_canvasGroup == null)
-                return;
-
-            _canvasGroup.alpha = visible
-                    ? 1f
-                    : 0f;
-            _canvasGroup.interactable = visible;
-            _canvasGroup.blocksRaycasts = visible;
+            OnVisibilityChanged.Invoke(visible);
         }
 
         /// <summary>
@@ -183,24 +171,16 @@ namespace Spellbound.Core.Console {
         /// Override for custom show animations.
         /// </summary>
         protected virtual void ShowUI() {
-            if (_canvasGroup == null)
-                return;
-
-            _canvasGroup.alpha = 1f;
-            _canvasGroup.interactable = true;
-            _canvasGroup.blocksRaycasts = true;
+            if (inputField != null)
+                inputField.enabled = true;
         }
 
         /// <summary>
         /// Override for custom hide animations.
         /// </summary>
         protected virtual void HideUI() {
-            if (_canvasGroup == null)
-                return;
-
-            _canvasGroup.alpha = 0f;
-            _canvasGroup.interactable = false;
-            _canvasGroup.blocksRaycasts = false;
+            if (inputField != null)
+                inputField.enabled = false;
         }
 
         #endregion
