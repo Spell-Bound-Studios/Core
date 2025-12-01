@@ -1,6 +1,7 @@
 ﻿// Copyright 2025 Spellbound Studio Inc.
 
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -33,6 +34,8 @@ namespace Spellbound.Core {
             var assetGuid = UnityEditor.AssetDatabase.GUIDFromAssetPath(assetPath).ToString();
             if (string.IsNullOrEmpty(presetUid) || presetUid != assetGuid) 
                 presetUid = assetGuid;
+            
+            EditorUtility.SetDirty(this);
         }
 #endif
     }
