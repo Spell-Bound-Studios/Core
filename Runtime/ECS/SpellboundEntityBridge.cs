@@ -5,7 +5,11 @@ using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
+    /// <summary>
+    /// SpellboundEntityBridge is a MonoBehaviour that lives in the scene and acts as a bridge between Spellbound
+    /// GameObjects and Entities. It allows users to interact with entities as if they were GameObjects.
+    /// </summary>
     public class SpellboundEntityBridge : MonoBehaviour {
         public static SpellboundEntityBridge Instance;
         private GameObject _lastInteractor;

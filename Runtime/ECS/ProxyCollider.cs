@@ -6,7 +6,12 @@ using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
+    /// <summary>
+    /// ProxyCollider is an essential script for the ECS portion of Core. It is a MonoBehaviour that is intended to live
+    /// on dynamic GameObjects so that it can place colliders on top of entities when said GameObject is moving around
+    /// in the world.
+    /// </summary>
     [DisallowMultipleComponent]
     public class ProxyCollider : MonoBehaviour {
         private Entity _proxyEntity;

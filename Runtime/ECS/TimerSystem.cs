@@ -3,9 +3,10 @@
 using Unity.Burst;
 using Unity.Entities;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     /// <summary>
-    /// ECS System for Managing all ECS Timers.
+    /// ECS System for Managing all ECS Timers. This system is responsible for ticking down any TimerComponents that
+    /// have been added to an entity. When the time expires, it removes the TimerComponent.
     /// Role of this System should never change or expand.
     /// Only changes could be the Update Order, and when the structural changes (RemoveComponent) should occur.
     /// </summary>
@@ -25,7 +26,9 @@ namespace Spellbound.Core {
                              .WithNone<PendingDestroyTag>()
                              .WithEntityAccess()) {
                 timerComponent.ValueRW.TimeRemaining -= SystemAPI.Time.DeltaTime;
-                if (timerComponent.ValueRW.TimeRemaining <= 0) ecb.RemoveComponent<TimerComponent>(entity);
+                
+                if (timerComponent.ValueRW.TimeRemaining <= 0) 
+                    ecb.RemoveComponent<TimerComponent>(entity);
             }
 
             ecb.Playback(entityManager);

@@ -5,6 +5,9 @@ using Unity.Entities;
 using UnityEngine;
 
 namespace Spellbound.Core {
+    /// <summary>
+    /// WIP Helper methods. Likely won't make it to main for the time being.
+    /// </summary>
     public static class SpellboundStaticHelper {
 
         [Flags]
@@ -22,6 +25,5 @@ namespace Spellbound.Core {
                 OnEntityInteraction?.Invoke(entity, interactor);
 
         public static void InvokeOnEntityDamage(Entity entity) => OnEntityDamage?.Invoke(entity);
-        
     }
 }

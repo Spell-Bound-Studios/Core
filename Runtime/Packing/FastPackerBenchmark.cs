@@ -5,8 +5,13 @@ using System.Diagnostics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Spellbound.Core {
-    public class FastPackerBenchmark : MonoBehaviour {
+namespace Spellbound.Core.Packing {
+    /// <summary>
+    /// FastPackerBenchmark is attached to a prefab in the prefabs folder and simply runs a quick benchmark of the
+    /// available packing methods found in the core system. This script can and should be ignored for any game design
+    /// purposes and exists only as a series of unit tests.
+    /// </summary>
+    public sealed class FastPackerBenchmark : MonoBehaviour {
         private const int Iterations = 1_000_000;
 
         private void Start() {

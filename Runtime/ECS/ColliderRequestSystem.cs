@@ -3,9 +3,10 @@
 using Unity.Entities;
 using Unity.Transforms;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     /// <summary>
-    /// ECS System to process ColliderRequests from the ProxyCollisionSystem.
+    /// ColliderRequestSystem is an essential script for the ECS portion of Core. It is the responsible system for
+    /// calling the ColliderPoolManager and processes ColliderRequests from the ProxyCollisionSystem.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateBefore(typeof(ProxyCollisionSystem))]
     public partial struct ColliderRequestSystem : ISystem {
@@ -32,7 +33,7 @@ namespace Spellbound.Core {
                     ecb.RemoveComponent<ColliderRequest>(entity);
                 }
 
-                // IsSpawnRequest will be true if it's a new request or if a ProxyCollider is still triggering it
+                // IsSpawnRequest will be true if it's a new request or if a ProxyCollider is still triggering it.
                 else {
                     ColliderPoolManager.Instance.TrySpawnCollider(
                         entity,

@@ -5,18 +5,18 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Physics;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     /// <summary>
     /// ECS System to schedule Trigger events between ProxyEntityTags (acting as proxy for GameObjects),
     /// and any Entity it collides with. These entities should all have SpellboundComponents,
-    /// but the checks should be handle by collision layers, not by this system
+    /// but the checks should be handled by collision layers, not by this system
     /// </summary>
 
     // The order is critical. 
     // Physics can run multiple times per frame and/or possibly none at all.
     // ProxyCollisionSystem Updates in the SimulationSystemGroup (not the Physics Group) to only update once per frame.
-    // It fills the ECB which will playback after the Simulation and LateSimulation System Groups finish Updating.
-    // And then ColliderRequestSystem runs early in the next frame, after the ebc has playedback the results of the job.
+    // It fills the ECB which will play back after the Simulation and LateSimulation System Groups finish Updating.
+    // And then ColliderRequestSystem runs early in the next frame, after the ebc has playback the results of the job.
     [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(GoDeletionsCleanup))]
     public partial struct ProxyCollisionSystem : ISystem {
         // Threadsafe way to avoid processing the same collision multiple times
@@ -24,8 +24,8 @@ namespace Spellbound.Core {
         private NativeList<Entity> _pendingColliderRequests;
 
         public void OnCreate(ref SystemState state) {
-            // These are neccesary for scheduling physics jobs.
-            // EndSimulationEntityCommandBufferSystem gives access to the special ecb that playsback automatically.
+            // These are necessary for scheduling physics jobs.
+            // EndSimulationEntityCommandBufferSystem gives access to the special ecb that playback automatically.
             // These CANNOT be cached. They must be grabbed at the beginning of each frame.
             state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<SimulationSingleton>();
@@ -47,7 +47,7 @@ namespace Spellbound.Core {
         }
 
         public void OnUpdate(ref SystemState state) {
-            // Getting sim and ecb. Necessary for scheduling physics jobs
+            // Getting sim and ecb. Necessary for scheduling physics jobs.
             var sim = SystemAPI.GetSingleton<SimulationSingleton>();
             var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);

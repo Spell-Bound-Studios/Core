@@ -4,7 +4,11 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
+    /// <summary>
+    /// GoDeletionsCleanup is an essential script for the ECS portion of Core. It is the responsible system for handling
+    /// anything in the AddedGoDeletionBuffer and scheduling it for deletion.
+    /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateBefore(typeof(ProxyCollisionSystem))]
     public partial struct GoDeletionsCleanup : ISystem, ISystemStartStop {
         private Entity _goDeletionManager;

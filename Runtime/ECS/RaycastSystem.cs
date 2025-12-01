@@ -9,9 +9,12 @@ using Unity.Physics;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     /// <summary>
-    /// ECS/Gameobject observer system that performs raycasts and invokes out changes in the object preset.
+    /// RaycastSystem is an essential script for the ECS portion of Core. It is responsible for performing a raycast
+    /// each frame that differentiates between Entities and GameObjects that can be subscribed to in game logic via
+    /// events. It is, in essence, the ECS and GameObject observer system that performs raycasts and invokes out changes
+    /// in the object preset.
     /// </summary>
     [UpdateInGroup(typeof(LateSimulationSystemGroup)), BurstCompile]
     public partial class RaycastSystem : SystemBase, ISystemStartStop {
@@ -34,7 +37,8 @@ namespace Spellbound.Core {
         public void OnStopRunning(ref SystemState state) { }
 
         protected override void OnUpdate() {
-            if (_playerCamera == null) _playerCamera = Object.FindFirstObjectByType<Camera>();
+            if (_playerCamera == null) 
+                _playerCamera = Object.FindFirstObjectByType<Camera>();
 
             // Calculate camera current position and where you want the raycast to go.
             var start = _playerCamera.transform.position;

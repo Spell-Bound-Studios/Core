@@ -5,7 +5,7 @@ using System.Text;
 namespace Spellbound.Core.Console {
     /// <summary>
     /// Lists all spawnable presets registered with the console.
-    /// This is currently using the word spawn and probably needs some love but I think it's fine for now.
+    /// This is currently using the word spawn and probably needs some love, but I think it's fine for now.
     /// </summary>
     [ConsoleCommandClass("list", "ls")]
     public class ListCommand : ICommand {

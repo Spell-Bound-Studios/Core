@@ -2,7 +2,7 @@
 
 using Unity.Entities;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     /// <summary>
     /// Tag for Entities to be destroyed
     /// </summary>

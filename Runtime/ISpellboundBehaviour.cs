@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Spellbound.Core {
+    /// <summary>
+    /// ISpellboundBehaviour is a working prototype for ECS/GameObject linkage.
+    /// </summary>
     public interface ISpellboundBehaviour {
         public ObjectPreset GetObjectPreset();
 
