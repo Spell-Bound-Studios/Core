@@ -6,10 +6,11 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     /// <summary>
-    /// Singleton for Creating and Destroying Temporary Colliders on behalf of Entities.
-    /// Could benefit from ObjectPooling.
+    /// ColliderPoolManager is an essential script for the ECS portion of Core.
+    /// It is a singleton for creating and destroying temporary colliders on behalf of entities.
+    /// TODO: Could benefit from ObjectPooling.
     /// </summary>
     public class ColliderPoolManager : MonoBehaviour {
         public static ColliderPoolManager Instance;

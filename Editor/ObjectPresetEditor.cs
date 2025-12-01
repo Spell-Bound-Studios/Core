@@ -8,6 +8,10 @@ using UnityEditorInternal;
 using UnityEngine;
 
 namespace Spellbound.Core {
+    /// <summary>
+    /// ObjectPresetEditor is the enabler for ObjectPresets of all types to be seen and rendered in the inspector.
+    /// This class should remain in the editor folder and not changed.
+    /// </summary>
     [CustomEditor(typeof(ObjectPreset))]
     public sealed class ObjectPresetEditor : Editor {
         private ReorderableList _modulesList;

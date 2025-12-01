@@ -1,11 +1,12 @@
 ﻿// Copyright 2025 Spellbound Studio Inc.
 
 using System;
+using Spellbound.Core.Packing;
 using UnityEngine;
 
 namespace Spellbound.Core {
     /// <summary>
-    /// This struct represents ANY (networked and not networked) gameobject in a chunk.
+    /// This struct represents ANY (networked and not networked) game object in a chunk.
     /// </summary>
     [Serializable]
     public struct GoData : IPacker {
