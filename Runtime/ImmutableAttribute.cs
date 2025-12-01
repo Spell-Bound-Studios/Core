@@ -4,6 +4,10 @@ using UnityEditor;
 using UnityEngine;
 
 namespace Spellbound.Core {
+    /// <summary>
+    /// This class adds the [Immutable] tag to something that is exposed in the inspector but you don't want modified.
+    /// It will gray out the field and make it unselectable.
+    /// </summary>
     public class ImmutableAttribute : PropertyAttribute { }
 
 #if UNITY_EDITOR

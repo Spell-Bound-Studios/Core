@@ -4,6 +4,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Spellbound.Core {
+    /// <summary>
+    /// ObjectPreset is the root of most "objects" that a player would want in game. It comes equipped with some baseline
+    /// utility but also offers a modules field where additional modules that inherit from PresetModule can be loaded
+    /// like MonoBehaviours.
+    /// </summary>
     [CreateAssetMenu(fileName = "Object Preset", menuName = "Spellbound/Presets/ObjectPreset")]
     public class ObjectPreset : ScriptableObject {
         [Immutable] public string presetUid;
