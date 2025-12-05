@@ -10,7 +10,7 @@ namespace Spellbound.Core {
         /// </summary>
         [ConsolePresetCommand("spawn", typeof(GameObjectModule))]
         public static void SpawnObjectPreset(
-            string presetUid, Vector3 spawnPosition, float scale,  SbbData spawnData) {
+            string presetUid, Vector3 spawnPosition,  SbbData spawnData) {
             
             if (!SingletonManager.TryGetSingletonInstance<IChunkManager>(out var icm)) {
                 Debug.LogError("The singleton manager does not contain an IChunkManager. Please ensure you implement" +
@@ -23,8 +23,7 @@ namespace Spellbound.Core {
             iChunk.SpawnPersistent(
                 presetUid, 
                 spawnPosition, 
-                Quaternion.identity, 
-                scale, 
+                Quaternion.identity,
                 new[] {
                     spawnData
                 });
