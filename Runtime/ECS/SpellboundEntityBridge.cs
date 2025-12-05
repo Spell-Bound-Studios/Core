@@ -61,7 +61,7 @@ namespace Spellbound.Core.ECS {
             var chunk = _chunkManager.GetObjectParentChunk(transformData.Position);
 
             chunk.SwapInPersistent(sbbEntityData.PresetUiD.Value, sbbEntityData.GenerationIndex, transformData.Position,
-                transformData.Rotation, transformData.Scale, sbbDataList.ToArray());
+                transformData.Rotation, sbbDataList.ToArray());
         }
     }
 }

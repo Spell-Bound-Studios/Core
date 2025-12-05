@@ -13,10 +13,9 @@ namespace Spellbound.Core {
         public Transform GetRegistryTransform();
 
         public void SwapInPersistent(
-            string presetUid, int generationIndex, Vector3 position, Quaternion rotation, float scale,
-            SbbData[] sbbDatas);
+            string presetUid, int generationIndex, Vector3 position, Quaternion rotation, SbbData[] sbbDatas);
 
         public void SpawnPersistent(
-            string presetUid, Vector3 position, Quaternion rotation, float scale, SbbData[] sbbDatas);
+            string presetUid, Vector3 position, Quaternion rotation, SbbData[] sbbDatas);
     }
 }
