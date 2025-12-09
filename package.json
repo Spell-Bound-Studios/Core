@@ -1,8 +1,8 @@
 ﻿{
   "name": "com.spellboundstudios.core",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "displayName": "SpellBound Core",
-  "description": "Core backbone for all SpellBound systems.",
+  "description": "Core backbone for all Spellbound systems and packages.",
   "unity": "6000.0",
   "unityRelease": "40f1",
   "dependencies": {
