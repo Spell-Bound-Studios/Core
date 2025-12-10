@@ -53,7 +53,7 @@ The package includes two prefabs for different scenarios:
 - Works out-of-the-box - just drag into scene and hit play
 
 **Controls:**
-- `C` - Toggle console
+- **`` ` ``** (Backtick/Tilde) - Toggle console
 - `Up Arrow` - Previous command
 - `Down Arrow` - Next command
 
@@ -304,7 +304,7 @@ The console supports both Unity input systems via preprocessor directives:
 using UnityEngine.InputSystem;
 
 void Update() {
-    if (Keyboard.current.cKey.wasPressedThisFrame)
+    if (Keyboard.current.BackQuote.wasPressedThisFrame)
         console.ToggleConsole();
 }
 #endif
@@ -314,7 +314,7 @@ void Update() {
 ```csharp
 #if ENABLE_LEGACY_INPUT_MANAGER
 void Update() {
-    if (Input.GetKeyDown(KeyCode.C))
+    if (Input.GetKeyDown(KeyCode.BackQuote))
         console.ToggleConsole();
 }
 #endif
@@ -331,12 +331,12 @@ public class DualInputExample : MonoBehaviour {
     
 #if ENABLE_INPUT_SYSTEM
     void Update() {
-        if (Keyboard.current?.cKey.wasPressedThisFrame ?? false)
+        if (Keyboard.current?.BackQuote.wasPressedThisFrame ?? false)
             console.ToggleConsole();
     }
 #elif ENABLE_LEGACY_INPUT_MANAGER
     void Update() {
-        if (Input.GetKeyDown(KeyCode.C))
+        if (Input.GetKeyDown(KeyCode.BackQuote))
             console.ToggleConsole();
     }
 #endif
@@ -645,7 +645,7 @@ public class GameConsoleManager : MonoBehaviour {
     }
     #else
     private void Update() {
-        if (Input.GetKeyDown(KeyCode.C))
+        if (Input.GetKeyDown(KeyCode.BackQuote))
             console.ToggleConsole();
             
         if (console.IsVisible) {

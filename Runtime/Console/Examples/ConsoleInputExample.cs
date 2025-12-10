@@ -21,12 +21,13 @@ namespace Spellbound.Core.Console.Examples {
     /// input/ui architecture. This is just an example script of how you can use and leverage
     /// the console API.
     /// </summary>
-    [RequireComponent(typeof(ConsoleController))]
     public class ConsoleInputExample : MonoBehaviour {
         private ConsoleController _console;
+        private GameObject _consolePrefab;
 
         private void Awake() {
-            _console = GetComponent<ConsoleController>();
+            _console = GetComponentInChildren<ConsoleController>();
+            _consolePrefab = _console.gameObject;
             
             // Ensure EventSystem exists (user must configure input module manually)
             if (EventSystem.current != null) 
@@ -48,7 +49,7 @@ namespace Spellbound.Core.Console.Examples {
             ConsoleLogger.PrintToConsole("=== Developer Console Example ===");
             ConsoleLogger.PrintToConsole("");
             ConsoleLogger.PrintToConsole("Controls:");
-            ConsoleLogger.PrintToConsole("  [C] - Toggle console visibility");
+            ConsoleLogger.PrintToConsole("  [`] - Toggle console visibility");
             ConsoleLogger.PrintToConsole("  [Up Arrow] - Previous command");
             ConsoleLogger.PrintToConsole("  [Down Arrow] - Next command");
             ConsoleLogger.PrintToConsole("");
@@ -67,8 +68,12 @@ namespace Spellbound.Core.Console.Examples {
                 return;
 
             // Toggle console
-            if (Keyboard.current.cKey.wasPressedThisFrame)
+            if (Keyboard.current.backquoteKey.wasPressedThisFrame) {
                 _console.ToggleConsole();
+                
+                if (_consolePrefab != null)
+                    _consolePrefab.SetActive(_console.IsVisible);
+            }
             
             if (!_console.IsVisible) 
                 return;
@@ -83,7 +88,7 @@ namespace Spellbound.Core.Console.Examples {
 #elif ENABLE_LEGACY_INPUT_MANAGER
         private void Update() {
             // Toggle console
-            if (Input.GetKeyDown(KeyCode.C))
+            if (Input.GetKeyDown(KeyCode.BackQuote))
                 _console.ToggleConsole();
             
             if (!_console.IsVisible) 
