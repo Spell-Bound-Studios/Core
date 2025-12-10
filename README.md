@@ -4,104 +4,195 @@
 
 # Introduction
 
+The Spellbound Core system is the only dependency of all Spellbound Unity packages. It comes equipped with some handy abstractions, attributes, and helpers that are leveraged across our systems. Feel free to build on top of them in your own game as this package is completely free. It also comes with a console that all packages and future packages make use of for added features and functionality.
 
+The Spellbound Console System provides a powerful, extensible command-line interface for Unity games. It's designed with clean architecture principles, separating the console API from input handling to give you flexibility.
 
 ---
 
-## Console sOverview
+## Console System Overview
 
-The Spellbound Console System provides a powerful command-line interface for Unity games. It supports three types of commands:
+The console supports three types of commands:
 
-1. **ICommand Classes** - Self-contained command implementations (e.g., `help`, `clear`, `list`)
-2. **Utility Commands** - Static methods that can be called directly (e.g., `terraform_flatten`)
-3. **Preset Commands** - Methods that operate on ObjectPresets with specific modules (e.g., `spawn sword`)
+1. **ICommand Classes** - Self-contained command implementations (e.g., `help`, `clear`)
+2. **Utility Commands** - Static methods decorated with `[ConsoleUtilityCommand]`
+3. **Preset Commands** - Methods that operate on ObjectPresets with specific modules
 
 ### Key Features
 - ✅ Automatic command discovery via attributes
 - ✅ Type-safe parameter parsing (int, float, bool, Vector3, Vector2, enums, etc.)
-- ✅ Command aliases
-- ✅ Command history navigation (up/down arrows)
+- ✅ Command aliasing
+- ✅ Command history navigation
+- ✅ Dual input system support (Legacy & New Input System)
+- ✅ Clean API separation - no input polling in core controller
 - ✅ Extensible architecture
-- ✅ Clean separation of concerns
+- Auto-complete coming soon
+
+### Included Commands
+The Core package aims to be as lightweight as possible and therefore only comes with two simple commands:
+- **help** - Lists all available commands
+- **clear** - Clears console output
+
+Each Spellbound package you download will come with more built-in commands and will auto register with the console for seamless integration.
 
 ---
 
 ## Quick Start
 
-### 1. Add ConsoleController to Your Scene
+### Two Prefabs, Two Use Cases
 
-1. Create a Canvas with a UI setup for the console
-2. Add `ConsoleController` component
-3. Assign required references:
-    - `inputField` - TMP_InputField for user input
-    - `outputText` - TextMeshProUGUI for output display
-    - `scrollRect` - ScrollRect for scrolling
-    - `contentContainer` - RectTransform for content sizing
+The package includes two prefabs for different scenarios:
 
-### 2. Wire Up Input
+#### 1. ConsoleCanvas (Example Prefab)
+**Use this for:** Quick testing and learning how the system works
 
-```csharp
-// In your input action asset or input manager:
-consoleToggleAction.performed += consoleController.OnTogglePerformed;
-consoleHistoryUpAction.performed += consoleController.OnHistoryUpPerformed;
-consoleHistoryDownAction.performed += consoleController.OnHistoryDownPerformed;
-```
+**What it includes:**
+- Pre-configured Canvas with EventSystem
+- ConsoleController with UI already wired up
+- `ConsoleInputExample` script demonstrating input integration
+- Works out-of-the-box - just drag into scene and hit play
 
-### 3. Start Using Commands
+**Controls:**
+- `C` - Toggle console
+- `Up Arrow` - Previous command
+- `Down Arrow` - Next command
 
-Open the console and try:
-```
-> help
-> list
-> clear
-```
+#### 2. ConsolePrefab (Production Prefab)
+**Use this for:** Integrating into your existing game UI
+
+**What it includes:**
+- Console UI hierarchy with ConsoleController
+- Input fields and output text already configured
+- NO input handling script - ready for your integration
+
+**How to use:**
+1. Drag ConsolePrefab into your existing Canvas
+2. Ensure your scene has an EventSystem
+3. Click the EventSystem and press "Replace with InputSystemUIInputModule" (or "Add Default Input Module") if the module doesn't exist
+4. Hook up your input system to ConsoleController's public API by dragging and dropping InputActionReferences that can be found on your InputAction asset dropdown
 
 ---
 
-## Command Types
+## Integration Guide
 
-### ICommand Classes
+### Option 1: Quick Start (Example)
 
-Best for: Standalone utility commands that don't need external context.
+Just drag `ConsoleCanvas` into your scene. Done! It works immediately with keyboard input.
 
-**Examples:** `help`, `clear`, `list`, custom help commands
+### Option 2: Custom Integration (Production)
 
-**Characteristics:**
-- Self-contained logic
-- Support aliases
-- Auto-registered via `[ConsoleCommandClass]` attribute
-- Implement `ICommand` interface
+1. **Add the ConsolePrefab to your Canvas**
+   ```
+   YourCanvas
+   ├── YourExistingUI
+   └── ConsolePrefab (drag here)
+   ```
 
-### Utility Commands
+2. **Configure EventSystem**
+    - Select EventSystem in Hierarchy
+   
 
-Best for: Static helper methods, debug utilities, system commands.
+3. **Hook Up Your Input**
 
-**Examples:** Terrain manipulation, stats display, debug toggles
+   **With New Input System (Unity 6+):**
+   ```csharp
+   using UnityEngine.InputSystem;
+   
+   public class YourInputHandler : MonoBehaviour {
+       [SerializeField] private ConsoleController console;
+       [SerializeField] private InputActionReference toggleConsoleAction;
+       
+       private void OnEnable() {
+           toggleConsoleAction.action.performed += console.OnTogglePerformed;
+       }
+       
+       private void OnDisable() {
+           toggleConsoleAction.action.performed -= console.OnTogglePerformed;
+       }
+   }
+   ```
 
-**Characteristics:**
-- Must be static methods
-- Decorated with `[ConsoleUtilityCommand]`
-- No preset/target required
-- Called directly: `commandname arg1 arg2`
+   **With Legacy Input Manager:**
+   ```csharp
+   void Update() {
+       if (Input.GetKeyDown(KeyCode.C))
+           console.ToggleConsole();
+   }
+   ```
 
-### Preset Commands
+4. **Optional: Disable Player Input When Console Opens**
+   ```csharp
+   void Start() {
+       console.OnVisibilityChanged += OnConsoleVisibilityChanged;
+   }
+   
+   void OnConsoleVisibilityChanged(bool isVisible) {
+       if (isVisible)
+           // playerInput represents the ActionInputs ActionMap type
+           playerInput.Disable();
+       else
+           playerInput.Enable();
+   }
+   ```
 
-Best for: Commands that operate on game objects/presets.
+---
 
-**Examples:** `spawn`, `delete`, `modify`
+## ConsoleController API
 
-**Characteristics:**
-- Can be static or instance methods
-- Decorated with `[ConsolePresetCommand]`
-- Require a preset target: `commandname targetname [args]`
-- Only called if preset has required module type
+The `ConsoleController` provides a clean public API - it does NOT poll input itself. This separation allows you to integrate it however you want.
+
+### Public Methods
+
+```csharp
+// Toggle visibility
+void ToggleConsole()
+void OpenConsole()
+void CloseConsole()
+
+// Command history navigation
+void NavigateHistoryUp()
+void NavigateHistoryDown()
+
+// Set visibility without animation hooks
+void SetVisibilityImmediate(bool visible)
+
+// Clear output
+void ClearOutput()
+
+// For Input System integration
+void OnTogglePerformed(InputAction.CallbackContext context)
+void OnHistoryUpPerformed(InputAction.CallbackContext context)
+void OnHistoryDownPerformed(InputAction.CallbackContext context)
+```
+
+### Properties & Events
+
+```csharp
+// Check if console is visible
+bool IsVisible { get; }
+
+// Subscribe to visibility changes
+event Action<bool> OnVisibilityChanged
+```
+
+### Protected Virtual Methods For Custom Overrides
+
+```csharp
+// Override for custom show/hide animations
+protected virtual void ShowUI()
+protected virtual void HideUI()
+protected virtual void SetVisibility(bool visible)
+```
 
 ---
 
 ## Creating Commands
 
-### Creating an ICommand Class
+### ICommand Classes
 
+Best for: Standalone utility commands that don't need external context.
+
+**Example:**
 ```csharp
 using Spellbound.Core.Console;
 
@@ -132,30 +223,27 @@ public class MyCommand : ICommand {
 > mycmd test       (alias)
 ```
 
-### Creating a Utility Command
+### Utility Commands
 
+Best for: Static helper methods, debug utilities, system commands. We like to call this "DX" for Designer Interface - where these methods typically wrap internal systems that you have written. You will find that they are easily to integrate into the console and can provide you with powerful utility and debugging in your game.
+
+**Example:**
 ```csharp
 using Spellbound.Core.Console;
 using UnityEngine;
 
-public static class MyUtilities {
+public static class GameUtilities {
     
     [ConsoleUtilityCommand("setgravity", "Sets physics gravity")]
     public static void SetGravity(float x, float y, float z) {
         Physics.gravity = new Vector3(x, y, z);
-        Debug.Log($"Gravity set to ({x}, {y}, {z})");
-    }
-
-    [ConsoleUtilityCommand("resetgravity", "Resets gravity to default")]
-    public static void ResetGravity() {
-        Physics.gravity = new Vector3(0, -9.81f, 0);
-        Debug.Log("Gravity reset to default");
+        ConsoleLogger.PrintToConsole($"Gravity set to ({x}, {y}, {z})");
     }
 
     [ConsoleUtilityCommand("timescale", "Sets time scale")]
     public static void SetTimeScale(float scale = 1f) {
         Time.timeScale = Mathf.Clamp(scale, 0f, 10f);
-        Debug.Log($"Time scale set to {Time.timeScale}");
+        ConsoleLogger.PrintToConsole($"Time scale set to {Time.timeScale}");
     }
 }
 ```
@@ -163,13 +251,17 @@ public static class MyUtilities {
 **Usage in console:**
 ```
 > setgravity 0 -20 0
-> resetgravity
 > timescale 0.5
 > timescale          (uses default: 1)
 ```
 
-### Creating a Preset Command
+### Preset Commands
 
+Best for: Commands that operate on game objects/presets. This is an advanced feature for games using the ObjectPreset system.
+
+This is a bit more advanced because it builds on our preset object system. However, if you're already using our other packages or building off of this one you will find that it comes naturally because it utilizes the "console module" type that you can add to your object preset scriptable objects. Now you're able to easily spawn, add, or remove items from your gameworld via the console!
+
+**Example:**
 ```csharp
 using Spellbound.Core.Console;
 using UnityEngine;
@@ -184,13 +276,7 @@ public class GameObjectSpawner : MonoBehaviour {
         var obj = Instantiate(preset.prefab, position, rotation);
         obj.transform.localScale = Vector3.one * scale;
         
-        Debug.Log($"Spawned {preset.objectName} at {position}");
-    }
-
-    [ConsolePresetCommand("delete", typeof(ConsoleModule))]
-    public void DeleteObject(string presetUid) {
-        // Your delete logic here
-        Debug.Log($"Deleted {presetUid}");
+        ConsoleLogger.PrintToConsole($"Spawned {preset.objectName} at {position}");
     }
 }
 ```
@@ -204,34 +290,56 @@ public class GameObjectSpawner : MonoBehaviour {
 ```
 > spawn sword
 > spawn sword 5     (spawns 5 swords)
-> delete sword
 ```
 
-### Creating a Custom Help Command
+---
 
+## Input System Support
+
+The console supports both Unity input systems via preprocessor directives:
+
+### New Input System (Unity 6+)
 ```csharp
-using System.Text;
-using Spellbound.Core.Console;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
 
-[ConsoleCommandClass("terraform", "tf")]
-public class TerraformHelpCommand : ICommand {
-    public string Name => "terraform";
-    public string Description => "List all terraform commands";
-    public string Usage => "terraform";
+void Update() {
+    if (Keyboard.current.cKey.wasPressedThisFrame)
+        console.ToggleConsole();
+}
+#endif
+```
 
-    public CommandResult Execute(string[] args) {
-        // Get all utility commands from a specific class
-        var commands = AttributeCommandRegistry.GetUtilityCommandsByClass(typeof(TerrainSystem));
+### Legacy Input Manager
+```csharp
+#if ENABLE_LEGACY_INPUT_MANAGER
+void Update() {
+    if (Input.GetKeyDown(KeyCode.C))
+        console.ToggleConsole();
+}
+#endif
+```
 
-        var sb = new StringBuilder();
-        sb.AppendLine("=== Terraform Commands ===");
-        sb.AppendLine();
+### Both Systems
+```csharp
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
-        foreach (var (commandName, description) in commands)
-            sb.AppendLine($"{commandName,-25} {description}");
-
-        return CommandResult.Ok(sb.ToString());
+public class DualInputExample : MonoBehaviour {
+    [SerializeField] private ConsoleController console;
+    
+#if ENABLE_INPUT_SYSTEM
+    void Update() {
+        if (Keyboard.current?.cKey.wasPressedThisFrame ?? false)
+            console.ToggleConsole();
     }
+#elif ENABLE_LEGACY_INPUT_MANAGER
+    void Update() {
+        if (Input.GetKeyDown(KeyCode.C))
+            console.ToggleConsole();
+    }
+#endif
 }
 ```
 
@@ -242,6 +350,12 @@ public class TerraformHelpCommand : ICommand {
 ### Core Components
 
 ```
+ConsoleController
+├── UI management
+├── Command execution coordination
+├── Public API for external input
+└── Output display
+
 CommandRegistry
 ├── Manages ICommand implementations
 ├── Routes commands to appropriate handlers
@@ -253,120 +367,39 @@ AttributeCommandRegistry
 ├── Handles method invocation and parameter parsing
 └── Caches method instances
 
-PresetResolver
+PresetResolver (Optional - for preset commands)
 ├── Maps preset names to UIDs
 ├── Scans Resources for ObjectPresets with ConsoleModule
 └── Provides TryResolvePresetUid()
 
-ConsoleCommandRouter
+ConsoleCommandRouter (Optional - for preset commands)
 ├── Routes preset commands to handler methods
 ├── Checks module type requirements
 ├── Handles quantity multiplier
 └── Provides execution context (position, rotation, etc.)
-
-ConsoleController
-├── UI management
-├── Input handling
-├── Command execution
-└── Output display
 ```
 
 ### Command Flow
 
 ```
-User Input: "spawn sword 5"
+User Input: "help"
      ↓
-ConsoleController.ExecuteCommand()
+ConsoleController.OnSubmitInput()
      ↓
 CommandRegistry.ExecuteCommand()
      ↓
-[Checks ICommand] → Not found
+[Checks ICommand] → Found HelpCommand!
      ↓
-[Checks Utility Command] → Not found
+HelpCommand.Execute()
      ↓
-[Checks Preset Command] → Found!
+Returns CommandResult
      ↓
-ConsoleCommandRouter.RouteCommand()
-     ↓
-PresetResolver.TryResolvePresetUid("sword")
-     ↓
-AttributeCommandRegistry.TryGetPresetHandler("spawn", typeof(ConsoleModule))
-     ↓
-Invokes method 5 times
-     ↓
-Returns success
+ConsoleController displays output
 ```
 
 ---
 
-## API Reference
-
-### CommandResult
-
-Result object returned by all commands.
-
-```csharp
-// Success
-return CommandResult.Ok();
-return CommandResult.Ok("Success message");
-
-// Failure
-return CommandResult.Fail("Error message");
-```
-
-### ConsoleLogger
-
-Static utility for printing to console from anywhere in your code.
-
-```csharp
-ConsoleLogger.PrintToConsole("Info message");
-ConsoleLogger.PrintError("Error message");
-
-if (ConsoleLogger.IsInitialized) {
-    // Safe to use
-}
-```
-
-### AttributeCommandRegistry
-
-Query utility commands programmatically.
-
-```csharp
-// Get all utility commands from a class
-var commands = AttributeCommandRegistry.GetUtilityCommandsByClass(typeof(MyClass));
-
-// Get by class name
-var commands = AttributeCommandRegistry.GetUtilityCommandsByClassName("MyClass");
-
-// Check if utility command exists
-bool exists = AttributeCommandRegistry.HasUtilityCommand("mycommand");
-
-// Check if preset command exists
-bool exists = AttributeCommandRegistry.HasPresetCommand("spawn");
-```
-
-### PresetResolver
-
-Query registered presets.
-
-```csharp
-// Resolve preset name to UID
-if (PresetResolver.TryResolvePresetUid("sword", out string uid)) {
-    var preset = uid.ResolvePreset();
-}
-
-// Get all preset names
-var names = PresetResolver.GetAllPresetNames();
-
-// Get count
-int count = PresetResolver.GetPresetCount();
-```
-
----
-
-## Advanced Usage
-
-### Parameter Types Supported
+## Supported Parameter Types
 
 Utility and preset commands automatically parse these types:
 
@@ -378,7 +411,6 @@ Utility and preset commands automatically parse these types:
 - `byte`
 - `Vector3` (consumes 3 args: x y z)
 - `Vector2` (consumes 2 args: x y)
-- `List<T>` (consumes all remaining args)
 - Any `enum` type
 
 **Example:**
@@ -404,72 +436,36 @@ public static void ApplyDamage(float amount, string damageType = "physical") {
 }
 ```
 
-### Preset Command Context
+---
 
-Preset commands receive context from the system:
+## ConsoleLogger API
+
+Static utility for printing to console from anywhere in your code.
 
 ```csharp
-[ConsolePresetCommand("spawn", typeof(ConsoleModule))]
-public void SpawnObject(string presetUid, Vector3 position, Quaternion rotation, float scale) {
-    // presetUid - automatically provided
-    // position  - from crosshair raycast (configurable via ConsoleModule.spawnLocation)
-    // rotation  - Quaternion.identity
-    // scale     - 1.0f
+// Print messages
+ConsoleLogger.PrintToConsole("Info message");
+ConsoleLogger.PrintError("Error message");
+
+// Check if initialized
+if (ConsoleLogger.IsInitialized) {
+    ConsoleLogger.PrintToConsole("Console is ready");
 }
 ```
 
-### Error Handling
+---
+
+## CommandResult
+
+Result object returned by all command executions.
 
 ```csharp
-public CommandResult Execute(string[] args) {
-    try {
-        DoSomethingRisky();
-        return CommandResult.Ok("Success!");
-    }
-    catch (Exception ex) {
-        return CommandResult.Fail($"Failed: {ex.Message}");
-    }
-}
-```
+// Success
+return CommandResult.Ok();
+return CommandResult.Ok("Success message");
 
-### Console Visibility Events
-
-```csharp
-void Start() {
-    var console = FindObjectOfType();
-    console.OnVisibilityChanged += OnConsoleVisibilityChanged;
-}
-
-void OnConsoleVisibilityChanged(bool isVisible) {
-    if (isVisible) {
-        // Disable player input
-        playerInput.Disable();
-    } else {
-        // Re-enable player input
-        playerInput.Enable();
-    }
-}
-```
-
-### Manual Command Registration
-
-```csharp
-// Register a command instance manually
-var myCommand = new MyCommand();
-CommandRegistry.Instance.Register(myCommand, "alias1", "alias2");
-
-// Unregister
-CommandRegistry.Instance.Unregister("mycommand");
-```
-
-### Programmatic Command Execution
-
-```csharp
-// Execute from code
-var result = CommandRegistry.Instance.ExecuteCommand("help");
-if (result.Success) {
-    Debug.Log(result.Message);
-}
+// Failure
+return CommandResult.Fail("Error message");
 ```
 
 ---
@@ -480,9 +476,28 @@ if (result.Success) {
 
 - **ICommand** for standalone utilities (help, clear, stats display)
 - **Utility Commands** for static helper methods (debug toggles, system commands)
-- **Preset Commands** for object manipulation (spawn, delete, modify)
+- **Preset Commands** for object manipulation (requires ObjectPreset system)
 
-### 2. Provide Good Descriptions
+### 2. Keep ConsoleController Pure
+
+Don't add input polling to ConsoleController. Use the example scripts as templates for your own input handling.
+
+```csharp
+// ✅ Good - separate input handler
+public class MyInputHandler : MonoBehaviour {
+    void Update() {
+        if (MyInput.ConsoleToggle())
+            console.ToggleConsole();
+    }
+}
+
+// ❌ Bad - modifying ConsoleController
+public class ConsoleController : MonoBehaviour {
+    void Update() { /* input polling */ }
+}
+```
+
+### 3. Provide Good Descriptions
 
 ```csharp
 // ✅ Good
@@ -492,17 +507,17 @@ if (result.Success) {
 [ConsoleUtilityCommand("setfov", "Sets FOV")]
 ```
 
-### 3. Use Default Parameters for Optional Args
+### 4. Use Default Parameters for Optional Args
 
 ```csharp
-// ✅ Good - allows: spawn sword  OR  spawn sword 5
-public void Spawn(string presetUid, int quantity = 1)
+// ✅ Good - allows: damage 50  OR  damage 50 fire
+public static void ApplyDamage(float amount, string type = "physical")
 
-// ❌ Bad - always requires quantity
-public void Spawn(string presetUid, int quantity)
+// ❌ Bad - always requires type
+public static void ApplyDamage(float amount, string type)
 ```
 
-### 4. Validate Input
+### 5. Validate Input
 
 ```csharp
 [ConsoleUtilityCommand("setvolume")]
@@ -512,26 +527,20 @@ public static void SetVolume(float volume) {
 }
 ```
 
-### 5. Group Related Commands
+### 6. Subscribe to Visibility Events
 
 ```csharp
-// ✅ Good - all audio commands in one class
-public static class AudioCommands {
-    [ConsoleUtilityCommand("volume")] public static void SetVolume(float v) { }
-    [ConsoleUtilityCommand("mute")] public static void Mute() { }
-    [ConsoleUtilityCommand("unmute")] public static void Unmute() { }
+void Start() {
+    console.OnVisibilityChanged += OnConsoleVisibilityChanged;
 }
-```
 
-### 6. Create Help Commands for Command Groups
-
-```csharp
-// ✅ Provide a way to discover related commands
-[ConsoleCommandClass("audio")]
-public class AudioHelpCommand : ICommand {
-    public CommandResult Execute(string[] args) {
-        var commands = AttributeCommandRegistry.GetUtilityCommandsByClass(typeof(AudioCommands));
-        // Format and return
+void OnConsoleVisibilityChanged(bool isVisible) {
+    if (isVisible) {
+        // Disable gameplay input
+        playerController.enabled = false;
+    } else {
+        // Re-enable gameplay input
+        playerController.enabled = true;
     }
 }
 ```
@@ -540,44 +549,145 @@ public class AudioHelpCommand : ICommand {
 
 ## Troubleshooting
 
+### "Can't type in the input field"
+
+**Problem:** Input field doesn't respond to typing  
+
+**Solution:**
+1. Ensure your scene has an EventSystem
+2. Select EventSystem in Hierarchy
+3. Click "Replace with InputSystemUIInputModule" (Unity 6+) or "Add Default Input Module" (older Unity)
+
 ### "Unknown command" for utility commands
 
 **Problem:** Utility command not found  
+
 **Solution:** Ensure method is `static` and has `[ConsoleUtilityCommand]` attribute
 
 ### "No handler found" for preset commands
 
 **Problem:** Preset command not routing  
+
 **Solution:**
 1. Check preset has `ConsoleModule` with `autoRegister = true`
 2. Verify preset is in a Resources folder
 3. Ensure method has `[ConsolePresetCommand]` with correct module type
 
-### Commands not auto-registering
+---
 
-**Problem:** Commands don't show up  
-**Solution:**
-1. Ensure `CommandRegistry.Instance.AutoRegisterCommands()` is called (done in ConsoleController.Awake)
-2. Check that AttributeCommandRegistry initializes before scene load
-3. Verify namespace is `Spellbound.Core.Console`
+## Example: Creating a Custom Help Command
 
-### Parameter parsing errors
+```csharp
+using System.Linq;
+using System.Text;
+using Spellbound.Core.Console;
 
-**Problem:** "Invalid arguments" errors  
-**Solution:**
-1. Check parameter types are supported
-2. Ensure correct number of arguments
-3. Use correct format for Vector3/Vector2 (space-separated)
+[ConsoleCommandClass("audiohelp", "ah")]
+public class AudioHelpCommand : ICommand {
+    public string Name => "audiohelp";
+    public string Description => "Lists all audio-related commands";
+    public string Usage => "audiohelp";
+
+    public CommandResult Execute(string[] args) {
+        // Get all utility commands from AudioCommands class
+        var commands = AttributeCommandRegistry.GetUtilityCommandsByClass(typeof(AudioCommands));
+
+        var sb = new StringBuilder();
+        sb.AppendLine("=== Audio Commands ===");
+        sb.AppendLine();
+
+        foreach (var (commandName, description) in commands)
+            sb.AppendLine($"{commandName,-25} {description}");
+
+        return CommandResult.Ok(sb.ToString());
+    }
+}
+```
+
+---
+
+## Example: Full Custom Integration
+
+Here's a complete example of integrating the console into your game:
+
+```csharp
+using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
+using Spellbound.Core.Console;
+
+public class GameConsoleManager : MonoBehaviour {
+    [SerializeField] private ConsoleController console;
+    [SerializeField] private GameObject playerController;
+    
+    #if ENABLE_INPUT_SYSTEM
+    [SerializeField] private InputActionReference toggleAction;
+    [SerializeField] private InputActionReference historyUpAction;
+    [SerializeField] private InputActionReference historyDownAction;
+    #endif
+    
+    private void Awake() {
+        console.OnVisibilityChanged += OnConsoleVisibilityChanged;
+    }
+    
+    #if ENABLE_INPUT_SYSTEM
+    private void OnEnable() {
+        toggleAction.action.performed += console.OnTogglePerformed;
+        historyUpAction.action.performed += console.OnHistoryUpPerformed;
+        historyDownAction.action.performed += console.OnHistoryDownPerformed;
+    }
+    
+    private void OnDisable() {
+        toggleAction.action.performed -= console.OnTogglePerformed;
+        historyUpAction.action.performed -= console.OnHistoryUpPerformed;
+        historyDownAction.action.performed -= console.OnHistoryDownPerformed;
+    }
+    #else
+    private void Update() {
+        if (Input.GetKeyDown(KeyCode.C))
+            console.ToggleConsole();
+            
+        if (console.IsVisible) {
+            if (Input.GetKeyDown(KeyCode.UpArrow))
+                console.NavigateHistoryUp();
+            if (Input.GetKeyDown(KeyCode.DownArrow))
+                console.NavigateHistoryDown();
+        }
+    }
+    #endif
+    
+    private void OnConsoleVisibilityChanged(bool isVisible) {
+        // Disable player when console is open
+        if (playerController != null)
+            playerController.SetActive(!isVisible);
+            
+        // You could also disable input actions here
+        #if ENABLE_INPUT_SYSTEM
+        if (isVisible)
+            DisableGameplayInput();
+        else
+            EnableGameplayInput();
+        #endif
+    }
+    
+    #if ENABLE_INPUT_SYSTEM
+    private void DisableGameplayInput() {
+        // Your gameplay input disable logic
+    }
+    
+    private void EnableGameplayInput() {
+        // Your gameplay input enable logic
+    }
+    #endif
+}
+```
 
 ---
 
 ## Support
 
-For questions, issues, or feature requests, please contact Spellbound Studio or post in the Discord.
-
-**Version:** 1.0  
-**Unity Version:** 2021.3+  
-**Dependencies:** TextMeshPro, Unity Input System
+For questions, issues, or feature requests, please contact reach out to us on Discord.
 
 ---
 
