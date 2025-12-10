@@ -225,7 +225,7 @@ public class MyCommand : ICommand {
 
 ### Utility Commands
 
-Best for: Static helper methods, debug utilities, system commands.
+Best for: Static helper methods, debug utilities, system commands. We like to call this "DX" for Designer Interface - where these methods typically wrap internal systems that you have written. You will find that they are easily to integrate into the console and can provide you with powerful utility and debugging in your game.
 
 **Example:**
 ```csharp
@@ -258,6 +258,8 @@ public static class GameUtilities {
 ### Preset Commands
 
 Best for: Commands that operate on game objects/presets. This is an advanced feature for games using the ObjectPreset system.
+
+This is a bit more advanced because it builds on our preset object system. However, if you're already using our other packages or building off of this one you will find that it comes naturally because it utilizes the "console module" type that you can add to your object preset scriptable objects. Now you're able to easily spawn, add, or remove items from your gameworld via the console!
 
 **Example:**
 ```csharp
@@ -550,6 +552,7 @@ void OnConsoleVisibilityChanged(bool isVisible) {
 ### "Can't type in the input field"
 
 **Problem:** Input field doesn't respond to typing  
+
 **Solution:**
 1. Ensure your scene has an EventSystem
 2. Select EventSystem in Hierarchy
@@ -558,31 +561,17 @@ void OnConsoleVisibilityChanged(bool isVisible) {
 ### "Unknown command" for utility commands
 
 **Problem:** Utility command not found  
+
 **Solution:** Ensure method is `static` and has `[ConsoleUtilityCommand]` attribute
 
 ### "No handler found" for preset commands
 
 **Problem:** Preset command not routing  
+
 **Solution:**
 1. Check preset has `ConsoleModule` with `autoRegister = true`
 2. Verify preset is in a Resources folder
 3. Ensure method has `[ConsolePresetCommand]` with correct module type
-
-### Console won't open
-
-**Problem:** Nothing happens when pressing toggle key  
-**Solution:**
-1. Check that ConsoleInputExample (or your custom input handler) is attached
-2. Verify the input key in your input handler code
-3. Check console logs for any initialization errors
-
-### Commands not auto-registering
-
-**Problem:** Commands don't show up  
-**Solution:**
-1. Ensure `CommandRegistry.Instance.AutoRegisterCommands()` is called (done automatically in ConsoleController.Awake)
-2. Verify namespace is correct
-3. Check that attribute is spelled correctly
 
 ---
 
@@ -656,7 +645,7 @@ public class GameConsoleManager : MonoBehaviour {
     }
     #else
     private void Update() {
-        if (Input.GetKeyDown(KeyCode.BackQuote))
+        if (Input.GetKeyDown(KeyCode.C))
             console.ToggleConsole();
             
         if (console.IsVisible) {
@@ -698,11 +687,7 @@ public class GameConsoleManager : MonoBehaviour {
 
 ## Support
 
-For questions, issues, or feature requests, please contact Spellbound Studio or post in the Discord.
-
-**Version:** 1.0  
-**Unity Version:** Unity 6+  
-**Dependencies:** TextMeshPro, Unity Input System (or Legacy Input Manager)
+For questions, issues, or feature requests, please contact reach out to us on Discord.
 
 ---
 
