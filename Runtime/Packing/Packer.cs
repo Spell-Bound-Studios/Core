@@ -488,6 +488,76 @@ namespace Spellbound.Core.Packing {
 
             return result;
         }
+        
+        /// <summary>
+        /// Pack a List directly to bytes where null is empty.
+        /// </summary>
+        public static byte[] PackListToBytes<T>(List<T> items) where T : IPacker {
+            var count = items?.Count ?? 0;
+
+            // Handle empty/null case
+            if (count == 0) {
+                Span<byte> emptyBuf = stackalloc byte[4];
+                var emptySpan = emptyBuf;
+                WriteInt(ref emptySpan, 0);
+
+                return emptyBuf.ToArray();
+            }
+
+            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+            var span = stackBuf;
+
+            try {
+                PackList(ref span, items);
+                var written = stackBuf.Length - span.Length;
+
+                return stackBuf[..written].ToArray();
+            }
+            catch (ArgumentOutOfRangeException) { }
+
+            // Need larger buffer
+            var size = Math.Max(StackBufferSize * 2, 8192);
+
+            while (size <= MaxRentedBuffer) {
+                var rented = ArrayPool<byte>.Shared.Rent(size);
+
+                try {
+                    var rentedSpan = new Span<byte>(rented, 0, size);
+                    var working = rentedSpan;
+
+                    try {
+                        PackList(ref working, items);
+                        var written = size - working.Length;
+
+                        var result = new byte[written];
+                        Buffer.BlockCopy(rented, 0, result, 0, written);
+
+                        return result;
+                    }
+                    catch (ArgumentOutOfRangeException) { }
+                }
+                finally {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+
+                size = Math.Min(size * 2, MaxRentedBuffer);
+            }
+
+            throw new InvalidOperationException(
+                $"List payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
+        }
+
+        /// <summary>
+        /// Unpack a List directly from bytes (convenience method, never returns null)
+        /// </summary>
+        public static List<T> UnpackListFromBytes<T>(byte[] bytes) where T : IPacker, new() {
+            if (bytes == null || bytes.Length == 0)
+                return new List<T>();
+
+            ReadOnlySpan<byte> span = bytes;
+
+            return UnpackList<T>(ref span);
+        }
 
         #endregion
 
