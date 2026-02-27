@@ -89,7 +89,7 @@ namespace Spellbound.Core.Console {
                         _aliases[normalizedAlias] = commandName;
                 }
             }
-
+            
             CommandRegistryUtilities.LogCommandRegistered(commandName, command.GetType().Name, aliases);
         }
 

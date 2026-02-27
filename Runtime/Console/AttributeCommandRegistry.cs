@@ -140,7 +140,7 @@ namespace Spellbound.Core.Console {
             }
 
             AllCommandNames.Add(commandName);
-
+            
             CommandRegistryUtilities.LogCommandRegistered(
                 commandName,
                 $"{commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name} [Module: {attr.RequiredModuleType.Name}]");

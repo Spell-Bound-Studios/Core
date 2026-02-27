@@ -13,6 +13,12 @@ namespace Spellbound.Core.Console {
     /// </summary>
     internal static class CommandRegistryUtilities {
         /// <summary>
+        /// When true, logs informational messages (registrations, discovery summaries).
+        /// Warnings and errors are always logged regardless of this setting.
+        /// </summary>
+        public static bool Verbose = false;
+        
+        /// <summary>
         /// Gets all assemblies that should be scanned for commands.
         /// Filters out Unity editor assemblies and third-party editor plugins.
         /// </summary>
@@ -61,6 +67,9 @@ namespace Spellbound.Core.Console {
         /// Logs successful command registration.
         /// </summary>
         public static void LogCommandRegistered(string commandName, string targetInfo, string[] aliases = null) {
+            if (!Verbose) 
+                return;
+            
             var message = $"Registered command: {commandName} → {targetInfo}";
 
             if (aliases is { Length: > 0 })
@@ -85,13 +94,20 @@ namespace Spellbound.Core.Console {
         /// <summary>
         /// Logs a summary of command discovery results.
         /// </summary>
-        public static void LogDiscoverySummary(string registryName, int commandCount) =>
-                Debug.Log($"[{registryName}] Registered {commandCount} command(s)");
+        public static void LogDiscoverySummary(string registryName, int commandCount) {
+            if (!Verbose) 
+                return;
 
+            Debug.Log($"[{registryName}] Registered {commandCount} command(s)");
+        }
+        
         /// <summary>
         /// Logs a summary with multiple command types.
         /// </summary>
         public static void LogDiscoverySummary(string registryName, params (string type, int count)[] commandTypes) {
+            if (!Verbose) 
+                return;
+
             var parts = commandTypes.Select(ct => $"{ct.count} {ct.type}").ToArray();
             var summary = string.Join(" and ", parts);
 
