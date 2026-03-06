@@ -11,7 +11,7 @@ namespace Spellbound.Core {
     /// </summary>
     public sealed class ObjectPresetDatabase : MonoBehaviour {
         private readonly Dictionary<string, ObjectPreset> _presets = new();
-        private readonly Dictionary<(string uid, Type moduleType), PresetModule> _moduleLookup = new();
+        //private readonly Dictionary<(string uid, Type moduleType), PresetModule> _moduleLookup = new();
 
         private void Awake() {
             DontDestroyOnLoad(gameObject);
@@ -22,7 +22,7 @@ namespace Spellbound.Core {
             foreach (var preset in presets) {
                 if (!_presets.TryAdd(preset.presetUid, preset))
                     Debug.LogError($"Duplicate procedural object uid {preset.presetUid}");
-
+/*
                 foreach (var module in preset.modules) {
                     if (module == null)
                         continue;
@@ -36,6 +36,7 @@ namespace Spellbound.Core {
                             preset);
                     }
                 }
+                */
             }
         }
 
@@ -51,21 +52,25 @@ namespace Spellbound.Core {
         }
     }
 
+    
     public static class ObjectPresetUtils {
+        /*
         /// <summary>
         /// Returns true and the first module of type T if it exists on preset otherwise false.
         /// </summary>
         public static bool TryGetModule<T>(this ObjectPreset preset, out T module) where T : PresetModule {
             if (preset != null) {
-                module = preset.modules.OfType<T>().FirstOrDefault();
+                //module = preset.modules.OfType<T>().FirstOrDefault();
 
-                return module != null;
+                //return module != null;
             }
 
             module = null;
 
             return false;
         }
+        */
+        
 
         public static ObjectPreset ResolvePreset(this string uid) =>
                 !string.IsNullOrEmpty(uid) &&
@@ -74,4 +79,5 @@ namespace Spellbound.Core {
                         ? preset
                         : null;
     }
+    
 }

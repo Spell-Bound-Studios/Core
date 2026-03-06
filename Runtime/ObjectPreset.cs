@@ -16,7 +16,17 @@ namespace Spellbound.Core {
         public string objectName;
         public string objectDescription;
 
-        [SerializeReference] public List<PresetModule> modules = new();
+        public GameObject prefab; // not the proxy, it is the thing that bakes into an entity
+        public float interactionDistance = 50;
+
+        [SerializeReference]
+        public DamageableModule damageableModule;
+        
+        [SerializeReference]
+        public InteractableModule interactableModule;
+        
+        [SerializeReference]
+        public MouseoverModule mouseoverModule;
 
 #if UNITY_EDITOR
         /// <summary>

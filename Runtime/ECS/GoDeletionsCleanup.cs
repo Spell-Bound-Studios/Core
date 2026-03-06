@@ -9,7 +9,7 @@ namespace Spellbound.Core.ECS {
     /// GoDeletionsCleanup is an essential script for the ECS portion of Core. It is the responsible system for handling
     /// anything in the AddedGoDeletionBuffer and scheduling it for deletion.
     /// </summary>
-    [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateBefore(typeof(ProxyCollisionSystem))]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
     public partial struct GoDeletionsCleanup : ISystem, ISystemStartStop {
         private Entity _goDeletionManager;
 

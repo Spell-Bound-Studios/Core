@@ -8,7 +8,7 @@ namespace Spellbound.Core {
         /// <summary>
         /// Public method for easily spawning a persistent object preset in the world.
         /// </summary>
-        [ConsolePresetCommand("spawn", typeof(GameObjectModule))]
+        [ConsolePresetCommand("spawn", typeof(ObjectPreset))]
         public static void SpawnObjectPreset(
             string presetUid, Vector3 spawnPosition,  SbbData spawnData) {
             

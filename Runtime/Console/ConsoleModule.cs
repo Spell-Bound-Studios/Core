@@ -9,7 +9,7 @@ namespace Spellbound.Core.Console {
     /// Presets with this module can be spawned or manipulated via console commands.
     /// </summary>
     [Serializable]
-    public class ConsoleModule : PresetModule {
+    public class ConsoleModule {
         [Header("Console Command Registration"), Tooltip("Automatically register this preset with the console system.")]
         public bool autoRegister = true;
 
@@ -18,8 +18,7 @@ namespace Spellbound.Core.Console {
 
         [Tooltip("Default quantity if not specified in command.")]
         public int defaultQuantity = 1;
-
-        public override SbbData? GetData(ObjectPreset preset) => throw new NotImplementedException();
+        
     }
 
     public enum SpawnLocation {

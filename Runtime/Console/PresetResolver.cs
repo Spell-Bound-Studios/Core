@@ -36,11 +36,6 @@ namespace Spellbound.Core.Console {
             var registeredCount = 0;
 
             foreach (var preset in allPresets) {
-                if (!preset.TryGetModule<ConsoleModule>(out var consoleModule))
-                    continue;
-
-                if (!consoleModule.autoRegister)
-                    continue;
 
                 RegisterPreset(preset);
                 registeredCount++;

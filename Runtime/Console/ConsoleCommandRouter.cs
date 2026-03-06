@@ -26,6 +26,7 @@ namespace Spellbound.Core.Console {
 
             if (args.Length > 0 && int.TryParse(args[0], out var parsedQty))
                 quantity = parsedQty;
+            /*
             else if (preset.TryGetModule<ConsoleModule>(out var module))
                 quantity = module.defaultQuantity;
 
@@ -49,6 +50,7 @@ namespace Spellbound.Core.Console {
 
                 return CommandResult.Ok($"Spawned {quantity}x {preset.objectName}");
             }
+            */
 
             return CommandResult.Fail($"No handler found for '{commandName}' with preset '{targetName}'");
         }
@@ -61,7 +63,7 @@ namespace Spellbound.Core.Console {
             try {
                 var instance = AttributeCommandRegistry.GetMethodInstance(method);
 
-                preset.TryGetModule<ConsoleModule>(out var consoleModule);
+                //preset.TryGetModule<ConsoleModule>(out var consoleModule);
 
                 // This is powerful. It uses reflection to get the parameters of the specified method or constructor.
                 // https://learn.microsoft.com/en-us/dotnet/api/system.reflection.methodbase.getparameters?view=net-9.0
@@ -78,11 +80,7 @@ namespace Spellbound.Core.Console {
                     // See if we have a preset uid or not.
                     if (param.ParameterType == typeof(string) && param.Name == "presetUid")
                         invokeArgs[i] = presetUid;
-
-                    // See if we have a positional argument.
-                    else if (param.ParameterType == typeof(Vector3))
-                        invokeArgs[i] = GetExecutionPosition(consoleModule);
-
+                    
                     // See if we have a rotational argument. (Identity because I don't know how we would do this lol)
                     else if (param.ParameterType == typeof(Quaternion))
                         invokeArgs[i] = Quaternion.identity;

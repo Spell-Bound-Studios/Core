@@ -8,7 +8,7 @@ namespace Spellbound.Core.ECS {
     /// DestroyTaggedEntitiesSystem is an essential script for the ECS portion of Core. It is the responsible system for
     /// handling all deletions of appropriately tagged entities.
     /// </summary>
-    [UpdateInGroup(typeof(SimulationSystemGroup)), UpdateAfter(typeof(ProxyCollisionSystem))]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
     public partial struct DestroyTaggedEntitiesSystem : ISystem {
         [BurstCompile]
         public void OnCreate(ref SystemState state) {
