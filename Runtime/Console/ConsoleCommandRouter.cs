@@ -26,7 +26,7 @@ namespace Spellbound.Core.Console {
 
             if (args.Length > 0 && int.TryParse(args[0], out var parsedQty))
                 quantity = parsedQty;
-            /*
+            
             else if (preset.TryGetModule<ConsoleModule>(out var module))
                 quantity = module.defaultQuantity;
 
@@ -50,7 +50,7 @@ namespace Spellbound.Core.Console {
 
                 return CommandResult.Ok($"Spawned {quantity}x {preset.objectName}");
             }
-            */
+            
 
             return CommandResult.Fail($"No handler found for '{commandName}' with preset '{targetName}'");
         }
@@ -63,7 +63,7 @@ namespace Spellbound.Core.Console {
             try {
                 var instance = AttributeCommandRegistry.GetMethodInstance(method);
 
-                //preset.TryGetModule<ConsoleModule>(out var consoleModule);
+                preset.TryGetModule<ConsoleModule>(out var consoleModule);
 
                 // This is powerful. It uses reflection to get the parameters of the specified method or constructor.
                 // https://learn.microsoft.com/en-us/dotnet/api/system.reflection.methodbase.getparameters?view=net-9.0

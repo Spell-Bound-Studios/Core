@@ -20,20 +20,26 @@ namespace Spellbound.Core {
         public float interactionDistance = 50;
 
         [SerializeReference]
-        public DamageableModule damageableModule;
-        
-        [SerializeReference]
-        public InteractableModule interactableModule;
-        
-        [SerializeReference]
-        public MouseoverModule mouseoverModule;
+        public List<PresetModule> modules = new();
+
+        public bool TryGetModule<T>(out T result) where T : PresetModule {
+            foreach (var pm in modules) {
+                if (pm is T t) {
+                    result = t;
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
 
 #if UNITY_EDITOR
         /// <summary>
         /// Creates guids based on an asset path for us when something gets updated.
         /// </summary>
         private void OnValidate() {
-            var assetPath = UnityEditor.AssetDatabase.GetAssetPath(this);
+            var assetPath = AssetDatabase.GetAssetPath(this);
 
             if (assetPath == null) {
                 presetUid = string.Empty;
@@ -41,7 +47,7 @@ namespace Spellbound.Core {
                 return;
             }
 
-            var assetGuid = UnityEditor.AssetDatabase.GUIDFromAssetPath(assetPath).ToString();
+            var assetGuid = AssetDatabase.GUIDFromAssetPath(assetPath).ToString();
             if (string.IsNullOrEmpty(presetUid) || presetUid != assetGuid) 
                 presetUid = assetGuid;
             

@@ -9,7 +9,7 @@ namespace Spellbound.Core.Console {
     /// Presets with this module can be spawned or manipulated via console commands.
     /// </summary>
     [Serializable]
-    public class ConsoleModule {
+    public class ConsoleModule : PresetModule {
         [Header("Console Command Registration"), Tooltip("Automatically register this preset with the console system.")]
         public bool autoRegister = true;
 
