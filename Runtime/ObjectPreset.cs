@@ -17,6 +17,7 @@ namespace Spellbound.Core {
         public string objectDescription;
 
         public GameObject prefab; // not the proxy, it is the thing that bakes into an entity
+        [Immutable] public int entityPrefabBufferIndex = -1;
         public float interactionDistance = 50;
 
         [SerializeReference]

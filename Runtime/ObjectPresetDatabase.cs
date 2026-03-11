@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Entities;
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -11,7 +12,6 @@ namespace Spellbound.Core {
     /// </summary>
     public sealed class ObjectPresetDatabase : MonoBehaviour {
         private readonly Dictionary<string, ObjectPreset> _presets = new();
-        //private readonly Dictionary<(string uid, Type moduleType), PresetModule> _moduleLookup = new();
 
         private void Awake() {
             DontDestroyOnLoad(gameObject);
@@ -22,21 +22,6 @@ namespace Spellbound.Core {
             foreach (var preset in presets) {
                 if (!_presets.TryAdd(preset.presetUid, preset))
                     Debug.LogError($"Duplicate procedural object uid {preset.presetUid}");
-/*
-                foreach (var module in preset.modules) {
-                    if (module == null)
-                        continue;
-
-                    var key = (preset.presetUid, module.GetType());
-
-                    // This should never happen but regardless.
-                    if (!_moduleLookup.TryAdd(key, module)) {
-                        Debug.LogWarning(
-                            $"{preset.name} already has a {module.GetType().Name}; second copy ignored",
-                            preset);
-                    }
-                }
-                */
             }
         }
 
@@ -50,34 +35,48 @@ namespace Spellbound.Core {
 
             return false;
         }
+        
+        /// <summary>
+        /// Called by the bootstrap system after baking to write entity prefab
+        /// buffer indices back into each preset.
+        /// </summary>
+        public void RegisterEntityPrefabIndices(Dictionary<string, int> guidToBufferIndex) {
+            foreach (var (uid, index) in guidToBufferIndex) {
+                if (!_presets.TryGetValue(uid, out var preset)) {
+                    Debug.LogWarning($"RegisterEntityPrefabIndices: no preset found for uid {uid}");
+                    continue;
+                }
+                preset.entityPrefabBufferIndex = index;
+            }
+        }
     }
+    
+    
 
     
     public static class ObjectPresetUtils {
-        /*
-        /// <summary>
-        /// Returns true and the first module of type T if it exists on preset otherwise false.
-        /// </summary>
-        public static bool TryGetModule<T>(this ObjectPreset preset, out T module) where T : PresetModule {
-            if (preset != null) {
-                //module = preset.modules.OfType<T>().FirstOrDefault();
-
-                //return module != null;
-            }
-
-            module = null;
-
-            return false;
-        }
-        */
         
-
         public static ObjectPreset ResolvePreset(this string uid) =>
                 !string.IsNullOrEmpty(uid) &&
                 SingletonManager.TryGetSingletonInstance(out ObjectPresetDatabase db) &&
                 db.TryGetPreset(uid, out var preset)
                         ? preset
                         : null;
+        
+        /// <summary>
+        /// Resolves the entity prefab for this preset from the DOTS prefab registry.
+        /// Returns Entity.Null if the index hasn't been registered yet.
+        /// </summary>
+        public static Entity GetEntityPrefab(this ObjectPreset preset) {
+            if (preset.entityPrefabBufferIndex < 0) {
+                Debug.LogWarning($"Entity prefab index not registered for preset {preset.presetUid}");
+                return Entity.Null;
+            }
+
+            if (!SingletonManager.TryGetSingletonInstance(out EntityPrefabRegistry registry))
+                return Entity.Null;
+
+            return registry.GetPrefab(preset.entityPrefabBufferIndex);
+        }
     }
-    
 }
