@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
     /// <summary>
@@ -14,6 +15,7 @@ namespace Spellbound.Core {
 
         bool TryGetInstanceBag(int instanceIndex, out InstanceDataBag bag);
 
+        InstanceDataBag CreateInstanceDataBag<T>(int instanceIndex, string presetuid, T data) where T : IPacker;
         IEnumerable<(int instanceIndex, InstanceDataBag bag)> GetAllBags();
 
         IEnumerable<(int instanceIndex, InstanceDataBag bag)> GetDirtyBags();
@@ -24,7 +26,7 @@ namespace Spellbound.Core {
 
         #region Write
 
-        void WriteInstanceData(int instanceIndex, string packerId, byte[] data);
+        void WriteInstanceData<T>(int instanceIndex, T data) where T : IPacker;
 
         #endregion
     }
