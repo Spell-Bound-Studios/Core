@@ -1,8 +1,12 @@
+﻿// Copyright 2026 Spellbound Studio Inc.
+
 using Unity.Collections;
 using Unity.Entities;
-using UnityEngine;
 
 namespace Spellbound.Core {
+    /// <summary>
+    /// Access point for O(1) Entity Prefab Lookup by guid.
+    /// </summary>
     public partial class EntityPrefabRegistry : SystemBase {
         private Entity _registryEntity;
         private bool _found;
@@ -40,13 +44,5 @@ namespace Spellbound.Core {
         }
 
         protected override void OnUpdate() { }
-    }
-    
-    
-    public struct EntityPrefabRegistryTag : IComponentData { }
-    
-    public struct EntityPrefabBufferElement : IBufferElementData {
-        public Entity Prefab;
-        public FixedString64Bytes Guid;
     }
 }

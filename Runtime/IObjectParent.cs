@@ -8,7 +8,9 @@ namespace Spellbound.Core {
     /// <summary>
     /// Contract for registering and unregistering network governed objects.
     /// </summary>
-    public interface IObjectParentChunk {
+    public interface IObjectParent {
+        
+        public ObjectParent ObjectParent { get; }
         public event Action<Bounds> ReParentingCheck;
         public event Action ChunkReady;
         public Transform GetRegistryTransform();

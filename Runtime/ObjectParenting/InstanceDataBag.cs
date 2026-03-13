@@ -6,8 +6,13 @@ using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
     public class InstanceDataBag : IPacker {
+        public InstanceDataBag(string presetUid) {
+            _presetUid = presetUid;
+        }
+        
         #region Storage
-
+        
+        private readonly string _presetUid;
         private readonly Dictionary<string, byte[]> _data = new();
 
         public bool IsDirty { get; private set; }
@@ -21,7 +26,9 @@ namespace Spellbound.Core {
             IsDirty = true;
         }
 
-        public bool TryRead(string packerId, out byte[] bytes) => _data.TryGetValue(packerId, out bytes);
+        public bool TryRead(string packerId, out byte[] bytes) {
+            return _data.TryGetValue(packerId, out bytes);
+        }
 
         public void ClearDirty() => IsDirty = false;
 

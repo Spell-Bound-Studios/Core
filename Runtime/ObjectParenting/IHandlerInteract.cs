@@ -8,10 +8,10 @@ namespace Spellbound.Core {
     public readonly struct InteractContext {
         public readonly ObjectPreset Tool;
         public readonly GameObject Requestor;
-        public readonly IObjectParentChunk Chunk;
+        public readonly IObjectParent Chunk;
         public readonly int EntityIndex;
 
-        public InteractContext(ObjectPreset tool, GameObject requestor, IObjectParentChunk chunk, int entityIndex) {
+        public InteractContext(ObjectPreset tool, GameObject requestor, IObjectParent chunk, int entityIndex) {
             Tool = tool;
             Requestor = requestor;
             Chunk = chunk;

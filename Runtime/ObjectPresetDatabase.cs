@@ -18,6 +18,7 @@ namespace Spellbound.Core {
             SingletonManager.RegisterSingleton(this);
 
             var presets = Resources.LoadAll<ObjectPreset>("");
+            
 
             foreach (var preset in presets) {
                 if (!_presets.TryAdd(preset.presetUid, preset))
@@ -35,27 +36,12 @@ namespace Spellbound.Core {
 
             return false;
         }
-        
-        /// <summary>
-        /// Called by the bootstrap system after baking to write entity prefab
-        /// buffer indices back into each preset.
-        /// </summary>
-        public void RegisterEntityPrefabIndices(Dictionary<string, int> guidToBufferIndex) {
-            foreach (var (uid, index) in guidToBufferIndex) {
-                if (!_presets.TryGetValue(uid, out var preset)) {
-                    Debug.LogWarning($"RegisterEntityPrefabIndices: no preset found for uid {uid}");
-                    continue;
-                }
-                preset.entityPrefabBufferIndex = index;
-            }
-        }
     }
     
     
 
     
     public static class ObjectPresetUtils {
-        
         public static ObjectPreset ResolvePreset(this string uid) =>
                 !string.IsNullOrEmpty(uid) &&
                 SingletonManager.TryGetSingletonInstance(out ObjectPresetDatabase db) &&
@@ -63,20 +49,19 @@ namespace Spellbound.Core {
                         ? preset
                         : null;
         
-        /// <summary>
-        /// Resolves the entity prefab for this preset from the DOTS prefab registry.
-        /// Returns Entity.Null if the index hasn't been registered yet.
-        /// </summary>
-        public static Entity GetEntityPrefab(this ObjectPreset preset) {
-            if (preset.entityPrefabBufferIndex < 0) {
-                Debug.LogWarning($"Entity prefab index not registered for preset {preset.presetUid}");
-                return Entity.Null;
+        public static bool TryGetEntityPrefab(this string uid, out Entity entity) {
+            if (!SingletonManager.TryGetSingletonInstance(out EntityPrefabRegistry registry)) {
+                Debug.LogWarning("EntityPrefabRegistry not found");
+                entity = Entity.Null;
+                return false;
             }
 
-            if (!SingletonManager.TryGetSingletonInstance(out EntityPrefabRegistry registry))
-                return Entity.Null;
+            if (!registry.PrefabLookup.TryGetValue(uid, out entity)) {
+                Debug.LogWarning($"No entity prefab found for preset {uid.ResolvePreset()}");
+                return false;
+            }
 
-            return registry.GetPrefab(preset.entityPrefabBufferIndex);
+            return true;
         }
     }
 }

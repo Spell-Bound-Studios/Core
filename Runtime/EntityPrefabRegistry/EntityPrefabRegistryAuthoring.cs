@@ -4,10 +4,13 @@ using Unity.Entities;
 using UnityEngine;
 
 namespace Spellbound.Core {
-    public sealed class PrefabRegistryAuthoring : MonoBehaviour { }
+    /// <summary>
+    /// Combs the resource folder and populates buffer with entity prefabs and their guid.
+    /// </summary>
+    public sealed class EntityPrefabRegistryAuthoring : MonoBehaviour { }
 
-    public sealed class PrefabRegistryBaker : Baker<PrefabRegistryAuthoring> {
-        public override void Bake(PrefabRegistryAuthoring authoring) {
+    public sealed class PrefabRegistryBaker : Baker<EntityPrefabRegistryAuthoring> {
+        public override void Bake(EntityPrefabRegistryAuthoring authoring) {
             var entity = GetEntity(TransformUsageFlags.None);
 
             AddComponent<EntityPrefabRegistryTag>(entity);
