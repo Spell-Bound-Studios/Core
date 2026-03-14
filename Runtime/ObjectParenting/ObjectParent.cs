@@ -5,6 +5,7 @@ using Spellbound.Core.Packing;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -14,16 +15,64 @@ namespace Spellbound.Core {
     /// </summary>
     public class ObjectParent {
         private readonly IObjectDataStore _dataStore;
+        private Dictionary<int, EventSurface> _eventSurfaceDict = new();
         private EntityQuery _chunkEntityQuery;
         private ChunkParentComponent _chunkParentComponent;
+        private Transform _transform;
+        private int proceduralInstanceCount;
 
-        public ObjectParent(IObjectDataStore datastore, Vector3Int key) {
+        public ObjectParent(IObjectDataStore datastore, Vector3Int key, Transform transform) {
             _dataStore = datastore;
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             _chunkEntityQuery = entityManager.CreateEntityQuery(typeof(ChunkParentComponent));
             _chunkParentComponent = new ChunkParentComponent {
                 ChunkCoord = new int3(key.x, key.y, key.z)
             };
+            _transform = transform;
+        }
+        
+        public void SetProceduralInstanceCount(int count) {
+            proceduralInstanceCount = count;
+        }
+
+        // This provides a check to see if an instance deletion should trigger a "GoDeletion".
+        private bool IsProcedural(int instanceIndex) {
+            return instanceIndex < proceduralInstanceCount;
+        }
+
+        public void EntityDistanceQuery(Vector3 playerPosition) {
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            _chunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
+            using var entities = _chunkEntityQuery.ToEntityArray(Allocator.Temp);
+            
+            foreach (var entity in entities) {
+                var eTransform = entityManager.GetComponentData<LocalTransform>(entity);
+                float distance = Vector3.Distance(playerPosition, eTransform.Position);
+                var spellboundComponent = entityManager.GetComponentData<SpellboundComponent>(entity);
+                var hasProxy = _eventSurfaceDict.ContainsKey(spellboundComponent.GenerationIndex);
+                var objectPreset = spellboundComponent.PresetUiD.Value.ResolvePreset();
+                var iobjectParent = _transform.GetComponent<IObjectParent>();
+                
+    
+                if (distance < objectPreset.interactionDistance && !hasProxy) {
+                    var uid = entityManager.GetComponentData<SpellboundComponent>(entity).PresetUiD;
+                    var preset = uid.Value.ResolvePreset();
+                    var proxy = UnityEngine.Object.Instantiate(
+                        preset.eventSurfacePrefab, eTransform.Position, eTransform.Rotation, _transform);
+                    proxy.gameObject.name = $"{preset.name} Event Surface {spellboundComponent.GenerationIndex}";
+                    proxy.transform.localScale = eTransform.Scale * Vector3.one;
+                    proxy.Initialize(iobjectParent, spellboundComponent.GenerationIndex, uid.Value);
+                    _eventSurfaceDict[spellboundComponent.GenerationIndex] = proxy;
+                }
+                else if (distance > objectPreset.interactionDistance + 10f && hasProxy) {
+
+                    if (_eventSurfaceDict.TryGetValue(spellboundComponent.GenerationIndex, out var proxy)) {
+                        UnityEngine.Object.Destroy(proxy.gameObject);
+                        _eventSurfaceDict.Remove(spellboundComponent.GenerationIndex);
+                    }
+                }
+            }
         }
         
 
@@ -97,10 +146,20 @@ namespace Spellbound.Core {
         private void HandleInstanceDeleted(int instanceIndex) {
             DeleteEntity(instanceIndex);
             DeleteEventSurface(instanceIndex);
+            
+            if (IsProcedural(instanceIndex))
+                AddGoDeletion(instanceIndex);
         }
 
         private void DeleteEventSurface(int instanceIndex) {
-            
+            if (_eventSurfaceDict.TryGetValue(instanceIndex, out var proxy)) {
+                UnityEngine.Object.Destroy(proxy.gameObject);
+                _eventSurfaceDict.Remove(instanceIndex);
+            }
+        }
+
+        private void AddGoDeletion(int instanceIndex) {
+            Debug.Log("Adding Go Deletion is not implemented yet");
         }
 
         private void DeleteEntity(int instanceIndex) {
