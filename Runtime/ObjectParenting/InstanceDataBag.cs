@@ -5,17 +5,26 @@ using System.Collections.Generic;
 using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
+    /// <summary>
+    /// Snapshot of ONE INSTANCE's state at ONE point in time.
+    /// What is the health of the tree RIGHT NOW. 
+    /// </summary>
     public class InstanceDataBag : IPacker {
-        public InstanceDataBag(string presetUid) {
-            _presetUid = presetUid;
-        }
-        
+
         #region Storage
-        
-        private readonly string _presetUid;
+
+        public string PresetUid { get; private set; }
         private readonly Dictionary<string, byte[]> _data = new();
 
-        public bool IsDirty { get; private set; }
+        #endregion
+
+        #region Constructors
+
+        public InstanceDataBag() { }
+
+        public InstanceDataBag(string presetUid) {
+            PresetUid = presetUid;
+        }
 
         #endregion
 
@@ -23,20 +32,18 @@ namespace Spellbound.Core {
 
         public void Write(string packerId, byte[] bytes) {
             _data[packerId] = bytes;
-            IsDirty = true;
         }
 
         public bool TryRead(string packerId, out byte[] bytes) {
             return _data.TryGetValue(packerId, out bytes);
         }
 
-        public void ClearDirty() => IsDirty = false;
-
         #endregion
 
         #region IPacker
 
         public void Pack(ref Span<byte> buffer) {
+            Packer.WriteString(ref buffer, PresetUid ?? string.Empty);
             Packer.WriteInt(ref buffer, _data.Count);
 
             foreach (var kvp in _data) {
@@ -46,7 +53,9 @@ namespace Spellbound.Core {
         }
 
         public void Unpack(ref ReadOnlySpan<byte> buffer) {
+            PresetUid = Packer.ReadString(ref buffer);
             _data.Clear();
+
             var count = Packer.ReadInt(ref buffer);
 
             for (var i = 0; i < count; i++) {
@@ -54,8 +63,6 @@ namespace Spellbound.Core {
                 var data = Packer.ReadBytes(ref buffer);
                 _data[key] = data;
             }
-
-            IsDirty = false;
         }
 
         #endregion

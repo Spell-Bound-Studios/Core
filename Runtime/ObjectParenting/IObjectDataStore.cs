@@ -1,35 +1,16 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
-using System.Collections.Generic;
-using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
-    /// <summary>
-    /// aka "Outer Dictionary"
-    /// </summary>
     public interface IObjectDataStore {
         event Action<int> OnInstanceRemoved;
-
-        #region Read
+        event Action<int> OnInstanceWritten;
 
         bool TryGetInstanceBag(int instanceIndex, out InstanceDataBag bag);
-
-        InstanceDataBag CreateInstanceDataBag(int instanceIndex, string presetuid);
-        IEnumerable<(int instanceIndex, InstanceDataBag bag)> GetAllBags();
-
-        IEnumerable<(int instanceIndex, InstanceDataBag bag)> GetDirtyBags();
-
+        void WriteInstanceData(int instanceIndex, string packerId, byte[] data);
+        bool TryDeleteInstance(int instanceIndex);
+        InstanceDataBag CreateInstanceDataBag(int instanceIndex, string presetUid);
         bool HasInstance(int instanceIndex);
-
-        #endregion
-
-        #region Write
-        
-        bool TryDeleteInstanceBag(int instanceIndex);
-
-        void WriteInstanceData(int instanceIndex) ;
-
-        #endregion
     }
 }

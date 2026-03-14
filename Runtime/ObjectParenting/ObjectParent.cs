@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Spellbound.Core.ECS;
 using Spellbound.Core.Packing;
 using Unity.Collections;
@@ -55,10 +54,10 @@ namespace Spellbound.Core {
             if (packerId == null) 
                 return false;
 
-            if (!_dataStore.TryGetInstanceBag(instanceIndex, out var bag)) {
-                bag = _dataStore.CreateInstanceDataBag(instanceIndex, presetuid);
-            }
-            bag.Write(packerId, Packer.ToBytes(value));
+            if (!_dataStore.HasInstance(instanceIndex))
+                _dataStore.CreateInstanceDataBag(instanceIndex, presetuid);
+            
+            _dataStore.WriteInstanceData(instanceIndex, packerId, Packer.ToBytes(value));
             return true;
         }
 
@@ -82,12 +81,12 @@ namespace Spellbound.Core {
                 result = transformationFunc(Packer.FromBytes<T>(bytes));
             }
             
-            bag.Write(packerId, Packer.ToBytes(result));
+            _dataStore.WriteInstanceData(instanceIndex, packerId, Packer.ToBytes(result));
             return true;
         }
         
         public bool TryDeleteData(int instanceIndex) {
-            if (_dataStore.TryDeleteInstanceBag(instanceIndex)) {
+            if (_dataStore.TryDeleteInstance(instanceIndex)) {
                 HandleInstanceDeleted(instanceIndex);
                 return true;
             }
@@ -125,7 +124,7 @@ namespace Spellbound.Core {
             var id = PackerIdCache<T>.Id;
 
             if (id == null)
-                UnityEngine.Debug.LogWarning($"[ObjectParent] {typeof(T).Name} is missing a PackerIdAttribute.");
+                Debug.LogWarning($"[ObjectParent] {typeof(T).Name} is missing a PackerIdAttribute.");
 
             return id;
         }
