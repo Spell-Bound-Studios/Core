@@ -15,7 +15,7 @@ namespace Spellbound.Core {
 
         bool TryGetInstanceBag(int instanceIndex, out InstanceDataBag bag);
 
-        InstanceDataBag CreateInstanceDataBag<T>(int instanceIndex, string presetuid, T data) where T : IPacker;
+        InstanceDataBag CreateInstanceDataBag(int instanceIndex, string presetuid);
         IEnumerable<(int instanceIndex, InstanceDataBag bag)> GetAllBags();
 
         IEnumerable<(int instanceIndex, InstanceDataBag bag)> GetDirtyBags();
@@ -25,8 +25,10 @@ namespace Spellbound.Core {
         #endregion
 
         #region Write
+        
+        bool TryDeleteInstanceBag(int instanceIndex);
 
-        void WriteInstanceData<T>(int instanceIndex, T data) where T : IPacker;
+        void WriteInstanceData(int instanceIndex) ;
 
         #endregion
     }

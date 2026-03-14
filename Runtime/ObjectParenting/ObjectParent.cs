@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Spellbound.Core.Packing;
+using UnityEngine;
 
 namespace Spellbound.Core {
     /// <summary>
@@ -25,25 +26,64 @@ namespace Spellbound.Core {
                 return false;
             }
             if (!_dataStore.TryGetInstanceBag(instanceIndex, out var bag)) {
-                bag = _dataStore.CreateInstanceDataBag(instanceIndex, presetuid, fallbackData.Invoke("MYSEED"));
+                bag = _dataStore.CreateInstanceDataBag(instanceIndex, presetuid);
             }
-            if (!bag.TryRead(packerId, out var bytes)){
-                //bag.Write();
-                
+            if (!bag.TryRead(packerId, out var bytes)) {
+                result = fallbackData.Invoke("My seed");
+                bag.Write(packerId, Packer.ToBytes(result));
+                return true;
             }
 
             result = Packer.FromBytes<T>(bytes);
             return true;
         }
         
-        public bool TryWriteData<T>(int instanceIndex, T value) where T : IPacker {
+        public bool TryWriteData<T>(int instanceIndex, string presetuid, T value) where T : IPacker {
             var packerId = GetPackerId<T>();
 
             if (packerId == null) 
                 return false;
 
-            _dataStore.WriteInstanceData(instanceIndex, value);
+            if (!_dataStore.TryGetInstanceBag(instanceIndex, out var bag)) {
+                bag = _dataStore.CreateInstanceDataBag(instanceIndex, presetuid);
+            }
+            bag.Write(packerId, Packer.ToBytes(value));
             return true;
+        }
+
+        public bool TryTransformData<T>(
+            int instanceIndex, string presetuid, Func<string, T> fallbackData, Func<T, T> transformationFunc,
+            out T result) where T : IPacker, new(){
+            var packerId = GetPackerId<T>();
+
+            if (packerId == null) {
+                result = default;
+
+                return false;
+            }
+            if (!_dataStore.TryGetInstanceBag(instanceIndex, out var bag)) {
+                bag = _dataStore.CreateInstanceDataBag(instanceIndex, presetuid);
+            }
+            if (!bag.TryRead(packerId, out var bytes)) {
+                result = transformationFunc(fallbackData.Invoke("My seed"));
+            }
+            else {
+                result = transformationFunc(Packer.FromBytes<T>(bytes));
+            }
+            
+            bag.Write(packerId, Packer.ToBytes(result));
+            return true;
+        }
+        
+        public bool TryDeleteData(int instanceIndex) {
+            if (_dataStore.TryDeleteInstanceBag(instanceIndex)) {
+                return true;
+            }
+            return false;
+        }
+
+        private void HandleInstanceDeleted(int instanceIndex) {
+            // deletes the entity and the event-surface representations of the object
         }
         
         public static string GetPackerId<T>() {
@@ -54,24 +94,5 @@ namespace Spellbound.Core {
 
             return id;
         }
-        
-        #region Raw Access
-
-        public bool TryGetInstanceBag(int instanceIndex, out InstanceDataBag bag)
-            => _dataStore.TryGetInstanceBag(instanceIndex, out bag);
-
-        public IEnumerable<(int instanceIndex, InstanceDataBag bag)> GetAllBags()
-            => _dataStore.GetAllBags();
-
-        public IEnumerable<(int instanceIndex, InstanceDataBag bag)> GetDirtyBags()
-            => _dataStore.GetDirtyBags();
-
-        public bool HasInstance(int instanceIndex)
-            => _dataStore.HasInstance(instanceIndex);
-
-        public void WriteInstanceData<T>(int instanceIndex, T data) where T : IPacker
-            => _dataStore.WriteInstanceData(instanceIndex, data);
-
-        #endregion
     }
 }
