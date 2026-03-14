@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using Spellbound.Core.ECS;
 using Spellbound.Core.Packing;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -10,9 +14,16 @@ namespace Spellbound.Core {
     /// </summary>
     public class ObjectParent {
         private readonly IObjectDataStore _dataStore;
+        private EntityQuery _chunkEntityQuery;
+        private ChunkParentComponent _chunkParentComponent;
 
-        public ObjectParent(IObjectDataStore datastore) {
+        public ObjectParent(IObjectDataStore datastore, Vector3Int key) {
             _dataStore = datastore;
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            _chunkEntityQuery = entityManager.CreateEntityQuery(typeof(ChunkParentComponent));
+            _chunkParentComponent = new ChunkParentComponent {
+                ChunkCoord = new int3(key.x, key.y, key.z)
+            };
         }
         
 
@@ -77,13 +88,37 @@ namespace Spellbound.Core {
         
         public bool TryDeleteData(int instanceIndex) {
             if (_dataStore.TryDeleteInstanceBag(instanceIndex)) {
+                HandleInstanceDeleted(instanceIndex);
                 return true;
             }
             return false;
         }
 
         private void HandleInstanceDeleted(int instanceIndex) {
-            // deletes the entity and the event-surface representations of the object
+            DeleteEntity(instanceIndex);
+            DeleteEventSurface(instanceIndex);
+        }
+
+        private void DeleteEventSurface(int instanceIndex) {
+            
+        }
+
+        private void DeleteEntity(int instanceIndex) {
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            _chunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
+            using var entities = _chunkEntityQuery.ToEntityArray(Allocator.Temp);
+
+            foreach (var entity in entities) {
+                var entityGenIndex = entityManager.GetComponentData<SpellboundComponent>(entity).GenerationIndex;
+
+                if (entityGenIndex != instanceIndex)
+                    continue;
+
+                entityManager.DestroyEntity(entity);
+
+                break;
+            }
         }
         
         public static string GetPackerId<T>() {
