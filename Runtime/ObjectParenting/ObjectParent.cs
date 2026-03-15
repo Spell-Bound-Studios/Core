@@ -25,12 +25,12 @@ namespace Spellbound.Core {
             };
 
             datastore.OnInstanceWritten += HandleInstanceWritten;
+            datastore.OnInstanceRemoved += HandleInstanceDeleted;
         }
 
         private void HandleInstanceWritten(int instanceIndex) {
             Debug.Log("Instance was written: " + instanceIndex);
         }
-        
 
         public bool TryReadData<T>(int instanceIndex, string presetuid, Func<string, T> fallbackData, out T result) 
                 where T : IPacker, new() {
