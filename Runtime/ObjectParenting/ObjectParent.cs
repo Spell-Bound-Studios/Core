@@ -23,6 +23,12 @@ namespace Spellbound.Core {
             _chunkParentComponent = new ChunkParentComponent {
                 ChunkCoord = new int3(key.x, key.y, key.z)
             };
+
+            datastore.OnInstanceWritten += HandleInstanceWritten;
+        }
+
+        private void HandleInstanceWritten(int instanceIndex) {
+            Debug.Log("Instance was written: " + instanceIndex);
         }
         
 
