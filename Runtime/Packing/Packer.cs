@@ -14,6 +14,8 @@ namespace Spellbound.Core.Packing {
     /// Requires IPacker implementers.
     /// </summary>
     public static class Packer {
+        public delegate void PackWriter(ref Span<byte> buffer);
+        
         // Starting stack buffer size
         private const int StackBufferSize = 4096;
 
@@ -721,6 +723,45 @@ namespace Spellbound.Core.Packing {
 
             // Helper method that returns a bool if the byte array is null or empty.
             static bool NoData(byte[] x) => x == null || x.Length == 0;
+        }
+        
+        /// <summary>
+        /// Handles the stack-first + ArrayPool fallback pattern.
+        /// Caller provides only the write logic.
+        /// </summary>
+        public static byte[] BuildPayload(PackWriter writer) {
+            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+            var span = stackBuf;
+
+            try {
+                writer(ref span);
+                var written = stackBuf.Length - span.Length;
+                return stackBuf[..written].ToArray();
+            }
+            catch (ArgumentOutOfRangeException) { }
+
+            var size = Math.Max(StackBufferSize * 2, 8192);
+            while (size <= MaxRentedBuffer) {
+                var rented = ArrayPool<byte>.Shared.Rent(size);
+                try {
+                    var rentedSpan = new Span<byte>(rented, 0, size);
+                    var working = rentedSpan;
+                    try {
+                        writer(ref working);
+                        var written = size - working.Length;
+                        var result = new byte[written];
+                        Buffer.BlockCopy(rented, 0, result, 0, written);
+                        return result;
+                    }
+                    catch (ArgumentOutOfRangeException) { }
+                }
+                finally {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+                size = Math.Min(size * 2, MaxRentedBuffer);
+            }
+
+            throw new InvalidOperationException($"Payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
         }
 
         #endregion
