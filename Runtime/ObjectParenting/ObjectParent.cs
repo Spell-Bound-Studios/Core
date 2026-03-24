@@ -70,33 +70,18 @@ namespace Spellbound.Core {
         }
 
         public bool TryTransformData<T>(
-            int instanceIndex, string presetUid, Func<string, T> fallbackData, Func<T, T> transformationFunc, out T result) where T : IPacker, new(){
+            int instanceIndex, string presetUid, Func<string, T> fallbackData, T delta) where T : IQuantitativeData<T>, new(){
             var packerId = GetPackerId<T>();
             
             Debug.Log("PackerId: " + packerId);
 
             if (packerId == null) {
-                result = default;
+  
                 return false;
             }
             
-            if (!_dataStore.HasInstance(instanceIndex))
-                _dataStore.CreateInstance(instanceIndex, presetUid);
+            _dataStore.Delta(instanceIndex, presetUid, packerId, Packer.ToBytes(delta), fallbackData.Invoke("big seed"));
             
-            T current;
-            if (_dataStore.TryRead(instanceIndex, packerId, out var bytes)) {
-                current = Packer.FromBytes<T>(bytes);
-            }
-            else {
-                if (fallbackData == null) {
-                    result = default;
-                    return false;
-                }
-                current = fallbackData.Invoke("My Seed");
-            }
-
-            result = transformationFunc(current);
-            _dataStore.Write(instanceIndex, packerId, Packer.ToBytes(result));
             return true;
         }
         
