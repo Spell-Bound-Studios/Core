@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Spellbound.Core.ECS;
 using Spellbound.Core.Packing;
 using Unity.Collections;
@@ -13,12 +14,13 @@ namespace Spellbound.Core {
     /// </summary>
     public class ObjectParent {
         private readonly IObjectDataStore _dataStore;
+        private Dictionary<int, EventSurface> _eventSurfaces;
         private EntityQuery _chunkEntityQuery;
         private ChunkParentComponent _chunkParentComponent;
 
-        public ObjectParent(IObjectDataStore dataStore, Vector3Int key) {
+        public ObjectParent(IObjectDataStore dataStore, Dictionary<int, EventSurface> eventSurfaces, Vector3Int key) {
             _dataStore = dataStore;
-            
+            _eventSurfaces = eventSurfaces;
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             _chunkEntityQuery = entityManager.CreateEntityQuery(typeof(ChunkParentComponent));
             _chunkParentComponent = new ChunkParentComponent {
@@ -94,7 +96,11 @@ namespace Spellbound.Core {
         }
 
         private void DeleteEventSurface(int instanceIndex) {
-            // TODO: 
+            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
+                return;
+            }
+            UnityEngine.Object.Destroy(surface.gameObject);
+            _eventSurfaces.Remove(instanceIndex);
         }
 
         private void DeleteEntity(int instanceIndex) {

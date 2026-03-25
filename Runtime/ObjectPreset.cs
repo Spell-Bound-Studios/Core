@@ -1,5 +1,6 @@
 ﻿// Copyright 2025 Spellbound Studio Inc.
 
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -31,6 +32,17 @@ namespace Spellbound.Core {
                 }
             }
 
+            result = null;
+            return false;
+        }
+        
+        public bool TryGetModule(Type moduleType, out PresetModule result) {
+            foreach (var pm in modules) {
+                if (moduleType.IsAssignableFrom(pm.GetType())) {
+                    result = pm;
+                    return true;
+                }
+            }
             result = null;
             return false;
         }

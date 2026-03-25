@@ -10,6 +10,12 @@ namespace Spellbound.Core.Packing {
         public string Id { get; }
         public PackerIdAttribute(string id) => Id = id;
     }
+    
+    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
+    public sealed class FromHandlerAttribute : Attribute {
+        public Type HandlerType { get; }
+        public FromHandlerAttribute(Type handlerType) => HandlerType = handlerType;
+    }
  
     public static class PackerIdCache<T> {
         public static readonly string Id = typeof(T).GetCustomAttribute<PackerIdAttribute>()?.Id;
@@ -36,5 +42,14 @@ namespace Spellbound.Core.Packing {
  
         public static bool TryGetId(Type type, out string id) =>
                 _typeToId.TryGetValue(type, out id);
+        
+        public static bool TryGetHandlerType(string packerId, out Type handlerType) {
+            if (!TryGetType(packerId, out Type type)) {
+                handlerType = null;
+                return false;
+            }
+            handlerType = type.GetCustomAttribute<FromHandlerAttribute>()?.HandlerType;
+            return handlerType != null;
+        }
     }
 }
