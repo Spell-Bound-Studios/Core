@@ -14,7 +14,12 @@ namespace Spellbound.Core.Packing {
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
     public sealed class FromHandlerAttribute : Attribute {
         public Type HandlerType { get; }
-        public FromHandlerAttribute(Type handlerType) => HandlerType = handlerType;
+    
+        public FromHandlerAttribute(Type handlerType) {
+            if (!typeof(IHandlerThreshold).IsAssignableFrom(handlerType))
+                throw new ArgumentException($"{handlerType.Name} must implement IHandlerThreshold");
+            HandlerType = handlerType;
+        }
     }
  
     public static class PackerIdCache<T> {
