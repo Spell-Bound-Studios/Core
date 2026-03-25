@@ -76,7 +76,7 @@ namespace Spellbound.Core {
             int instanceIndex, string presetUid, Func<string, T> fallbackFunc, T delta) where T : IQuantitativeData{
             PackerRegistry.TryGetId(typeof(T), out var packerId);
             
-            Debug.Log("PackerId: " + packerId);
+            Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, PackerId {packerId}, delta {delta}");
 
             if (packerId == null) {
   
