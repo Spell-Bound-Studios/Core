@@ -15,7 +15,7 @@ namespace Spellbound.Core {
         bool TryRead(int instanceIndex, string packerId, out byte[] data);
         void Write(int instanceIndex, string packerId, byte[] data);
         
-        void Delta<T>(int instanceIndex, string presetUid, string packerId, byte[] data, T fallbackData) where T : IQuantitativeData<T>, new();
+        void Delta(int instanceIndex, string presetUid, string packerId, byte[] data, byte[] fallbackData);
         bool TryDeleteInstance(int instanceIndex);
     }
 }

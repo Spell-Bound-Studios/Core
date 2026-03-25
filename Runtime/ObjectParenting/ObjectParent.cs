@@ -29,7 +29,7 @@ namespace Spellbound.Core {
         }
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, Func<string, T> fallbackData, out T result) where T : IPacker, new() {
-            var packerId = GetPackerId<T>();
+            PackerRegistry.TryGetId(typeof(T), out var packerId);
 
             if (packerId == null) {
                 result = default;
@@ -38,6 +38,7 @@ namespace Spellbound.Core {
             
             if (_dataStore.TryRead(instanceIndex, packerId, out var bytes)) {
                 result = Packer.FromBytes<T>(bytes);
+                Debug.Log($"result is {result}");
                 return true;
             }
             
@@ -57,7 +58,7 @@ namespace Spellbound.Core {
         }
         
         public bool TryWriteData<T>(int instanceIndex, string presetUid, T value) where T : IPacker {
-            var packerId = GetPackerId<T>();
+            PackerRegistry.TryGetId(typeof(T), out var packerId);
 
             if (packerId == null) 
                 return false;
@@ -70,8 +71,8 @@ namespace Spellbound.Core {
         }
 
         public bool TryTransformData<T>(
-            int instanceIndex, string presetUid, Func<string, T> fallbackData, T delta) where T : IQuantitativeData<T>, new(){
-            var packerId = GetPackerId<T>();
+            int instanceIndex, string presetUid, Func<string, T> fallbackFunc, T delta) where T : IQuantitativeData{
+            PackerRegistry.TryGetId(typeof(T), out var packerId);
             
             Debug.Log("PackerId: " + packerId);
 
@@ -79,8 +80,8 @@ namespace Spellbound.Core {
   
                 return false;
             }
-            
-            _dataStore.Delta(instanceIndex, presetUid, packerId, Packer.ToBytes(delta), fallbackData.Invoke("big seed"));
+            var fallbackData = fallbackFunc.Invoke("my seed");
+            _dataStore.Delta(instanceIndex, presetUid, packerId, Packer.ToBytes(delta), Packer.ToBytes(fallbackData));
             
             return true;
         }

@@ -4,9 +4,9 @@ using System;
 using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
-    public interface IQuantitativeData<T> : IPacker {
-        T ApplyDelta(T delta);
+    public interface IQuantitativeData : IPacker {
+            IPacker ApplyDelta(IPacker delta);
 
-        bool TryGetActionThreshold(out Action thresholdAction);
+            bool TryGetActionThreshold(out Action thresholdAction);
     }
 }
