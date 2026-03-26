@@ -7,6 +7,7 @@ namespace Spellbound.Core {
         private IObjectParent _parent;
         private int _entityIndex;
         private ObjectPreset _objectPreset;
+        public Vector3 Position => transform.position;
 
         public void Initialize(IObjectParent parent, int entityIndex, string presetUid) {
             _parent = parent;
