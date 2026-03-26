@@ -14,7 +14,7 @@ namespace Spellbound.Core {
             
             if (!SingletonManager.TryGetSingletonInstance<IChunkManager>(out var icm)) {
                 Debug.LogError("The singleton manager does not contain an IChunkManager. Please ensure you implement" +
-                               "IChunkManager or drag the prefab into your scene.");
+                               "IChunkManager or drag the bakePrefab into your scene.");
                 return;
             }
             

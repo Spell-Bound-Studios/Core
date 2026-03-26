@@ -57,7 +57,7 @@ namespace Spellbound.Core {
             }
 
             if (!registry.PrefabLookup.TryGetValue(uid, out entity)) {
-                Debug.LogWarning($"No entity prefab found for preset {uid.ResolvePreset()}");
+                Debug.LogWarning($"No entity bakePrefab found for preset {uid.ResolvePreset()}");
                 return false;
             }
 

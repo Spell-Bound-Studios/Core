@@ -17,8 +17,8 @@ namespace Spellbound.Core {
         public string objectName;
         public string objectDescription;
 
-        public GameObject prefab; // not the proxy, it is the thing that bakes into an entity
-        public EventSurface eventSurfacePrefab;
+        public GameObject bakePrefab; // not the proxy, it is the thing that bakes into an entity
+        public EventSurface eventSurfacePrefab; // TODO: Gameobject
         public float interactionDistance = 50;
 
         [SerializeReference]

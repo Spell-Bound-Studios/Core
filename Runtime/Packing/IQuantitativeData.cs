@@ -5,6 +5,6 @@ using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
     public interface IQuantitativeData : IPacker {
-            IPacker ApplyDelta(IPacker delta);
+        IQuantitativeData ApplyDelta(IQuantitativeData delta);
     }
 }

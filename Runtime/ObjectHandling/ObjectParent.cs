@@ -30,7 +30,7 @@ namespace Spellbound.Core {
             _dataStore.OnInstanceRemoved += HandleInstanceRemoved;
         }
 
-        public bool TryReadData<T>(int instanceIndex, string presetUid, Func<string, T> fallbackData, out T result) where T : IPacker, new() {
+        public bool TryReadData<T>(int instanceIndex, string presetUid, out T result) where T : IPacker, new() {
             PackerRegistry.TryGetId(typeof(T), out var packerId);
 
             if (packerId == null) {
@@ -43,20 +43,9 @@ namespace Spellbound.Core {
                 Debug.Log($"result is {result}");
                 return true;
             }
-            
-            // Data doesn't exist. Use fallback to generate defaults and write through store.
-            if (fallbackData == null) {
-                result = default;
-                return false;
-            }
-            
-            // Ensure the instance exists in the store before writing data to it.
-            if (!_dataStore.HasInstance(instanceIndex))
-                _dataStore.CreateInstance(instanceIndex, presetUid);
-            
-            result = fallbackData.Invoke(presetUid);
-            _dataStore.Write(instanceIndex, packerId, Packer.ToBytes(result));
-            return true;
+
+            result = default;
+            return false;
         }
         
         public bool TryWriteData<T>(int instanceIndex, string presetUid, T value) where T : IPacker {
@@ -73,7 +62,7 @@ namespace Spellbound.Core {
         }
 
         public bool TryTransformData<T>(
-            int instanceIndex, string presetUid, Func<string, T> fallbackFunc, T delta) where T : IQuantitativeData{
+            int instanceIndex, string presetUid, T delta, T fallbackInitialData) where T : IQuantitativeData, new() {
             PackerRegistry.TryGetId(typeof(T), out var packerId);
             
             Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, PackerId {packerId}, delta {delta}");
@@ -82,8 +71,8 @@ namespace Spellbound.Core {
   
                 return false;
             }
-            var fallbackData = fallbackFunc.Invoke("my seed");
-            _dataStore.Delta(instanceIndex, presetUid, packerId, Packer.ToBytes(delta), Packer.ToBytes(fallbackData));
+            
+            _dataStore.Delta(instanceIndex, presetUid, packerId, delta, fallbackInitialData);
             
             return true;
         }
