@@ -13,12 +13,18 @@ namespace Spellbound.Core {
     /// Poco1
     /// Poco to assist management of object data by the parent.
     /// </summary>
-    public class ObjectParent {
+    public class ObjectParent : IDisposable{
         private IObjectParent _implementer;
         private Transform _transform;
         private readonly IObjectDataStore _dataStore;
         private Dictionary<int, EventSurface> _eventSurfaces = new();
-        private EntityQuery _chunkEntityQuery;
+        private EntityQuery? _chunkEntityQuery;
+
+        public void Dispose(){}
+
+        private EntityQuery ChunkEntityQuery => _chunkEntityQuery ??= 
+                World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(typeof(ChunkParentComponent));
+        
         private ChunkParentComponent _chunkParentComponent;
 
         public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId) {
@@ -99,8 +105,8 @@ namespace Spellbound.Core {
         private void DeleteEntity(int instanceIndex) {
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            _chunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
-            using var entities = _chunkEntityQuery.ToEntityArray(Allocator.Temp);
+            ChunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
+            using var entities = ChunkEntityQuery.ToEntityArray(Allocator.Temp);
 
             foreach (var entity in entities) {
                 var entityGenIndex = entityManager.GetComponentData<SpellboundComponent>(entity).GenerationIndex;
@@ -116,8 +122,8 @@ namespace Spellbound.Core {
         public void EntityDistanceQuery(Vector3 playerPosition) {
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            _chunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
-            using var entities = _chunkEntityQuery.ToEntityArray(Allocator.Temp);
+            ChunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
+            using var entities = ChunkEntityQuery.ToEntityArray(Allocator.Temp);
             
             foreach (var entity in entities) {
                 var eTransform = entityManager.GetComponentData<LocalTransform>(entity);
