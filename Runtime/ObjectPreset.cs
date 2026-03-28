@@ -18,33 +18,64 @@ namespace Spellbound.Core {
         public string objectDescription;
 
         public GameObject bakePrefab; // not the proxy, it is the thing that bakes into an entity
-        public EventSurface eventSurfacePrefab; // TODO: Gameobject
+        public EventSurface eventSurfacePrefab;
         public float interactionDistance = 50;
+        
+        [SerializeField]
+        public List<PresetSurface> surfaceModules = new();
 
-        [SerializeReference]
-        public List<PresetModule> modules = new();
-
-        public bool TryGetModule<T>(out T result) where T : PresetModule {
-            foreach (var pm in modules) {
-                if (pm is T t) {
-                    result = t;
-                    return true;
-                }
-            }
-
+        /// <summary>
+        /// Searches ALL surfaces for a module of type T. Returns the first match.
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="surfaceIndex"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public bool TryGetModule<T>(out T result, int surfaceIndex = 0) where T : PresetModule {
             result = null;
+            if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
+                return false;
+
+            foreach (var pm in surfaceModules[surfaceIndex].PresetModules) {
+                if (pm is not T t) 
+                    continue;
+
+                result = t;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Searches ALL surfaces for a module matching a runtime Type. Returns the first match.
+        /// </summary>
+        /// <param name="moduleType"></param>
+        /// <param name="result"></param>
+        /// <param name="surfaceIndex"></param>
+        /// <returns></returns>
+        public bool TryGetModule(Type moduleType, out PresetModule result, int surfaceIndex = 0) {
+            result = null;
+            if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
+                return false;
+
+            foreach (var pm in surfaceModules[surfaceIndex].PresetModules) {
+                if (!moduleType.IsAssignableFrom(pm.GetType())) 
+                    continue;
+
+                result = pm;
+                return true;
+            }
             return false;
         }
         
-        public bool TryGetModule(Type moduleType, out PresetModule result) {
-            foreach (var pm in modules) {
-                if (moduleType.IsAssignableFrom(pm.GetType())) {
-                    result = pm;
-                    return true;
-                }
-            }
-            result = null;
-            return false;
+        /// <summary>
+        /// Returns all modules across all surfaces.
+        /// </summary>
+        public IEnumerable<PresetModule> GetAllModules() {
+            foreach (var surface in surfaceModules)
+            foreach (var pm in surface.PresetModules)
+                if (pm != null)
+                    yield return pm;
         }
 
 #if UNITY_EDITOR
