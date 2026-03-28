@@ -215,6 +215,40 @@ namespace Spellbound.Core.Packing {
         }
 
         #endregion
+        
+        #region Short
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteShort(ref Span<byte> buffer, short value) {
+            BitConverter.TryWriteBytes(buffer, value);
+            buffer = buffer[sizeof(short)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short ReadShort(ref ReadOnlySpan<byte> buffer) {
+            var value = BitConverter.ToInt16(buffer);
+            buffer = buffer[sizeof(short)..];
+
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteShortBitwise(ref Span<byte> buffer, short value) {
+            buffer[0] = (byte)value;
+            buffer[1] = (byte)(value >> 8);
+            buffer = buffer[2..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short ReadShortBitwise(ref ReadOnlySpan<byte> buffer) {
+            var value = (short)(buffer[0]
+                                | (buffer[1] << 8));
+            buffer = buffer[2..];
+
+            return value;
+        }
+
+        #endregion
 
         #region Strings
 

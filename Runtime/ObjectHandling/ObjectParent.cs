@@ -5,6 +5,7 @@ using Spellbound.Core.Packing;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -12,19 +13,28 @@ namespace Spellbound.Core {
     /// Poco1
     /// Poco to assist management of object data by the parent.
     /// </summary>
-    public class ObjectParent {
+    public class ObjectParent : IDisposable{
+        private IObjectParent _implementer;
+        private Transform _transform;
         private readonly IObjectDataStore _dataStore;
-        private Dictionary<int, EventSurface> _eventSurfaces;
-        private EntityQuery _chunkEntityQuery;
+        private Dictionary<int, EventSurface> _eventSurfaces = new();
+        private EntityQuery? _chunkEntityQuery;
+
+        public void Dispose(){}
+
+        private EntityQuery ChunkEntityQuery => _chunkEntityQuery ??= 
+                World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(typeof(ChunkParentComponent));
+        
         private ChunkParentComponent _chunkParentComponent;
 
-        public ObjectParent(IObjectDataStore dataStore, Dictionary<int, EventSurface> eventSurfaces, Vector3Int key) {
+        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId) {
+            _implementer = implementer;
+            _transform = transform;
             _dataStore = dataStore;
-            _eventSurfaces = eventSurfaces;
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             _chunkEntityQuery = entityManager.CreateEntityQuery(typeof(ChunkParentComponent));
             _chunkParentComponent = new ChunkParentComponent {
-                ChunkCoord = new int3(key.x, key.y, key.z)
+                ChunkCoord = new int3(parentId.x, parentId.y, parentId.z)
             };
 
             _dataStore.OnInstanceRemoved += HandleInstanceRemoved;
@@ -95,8 +105,8 @@ namespace Spellbound.Core {
         private void DeleteEntity(int instanceIndex) {
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            _chunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
-            using var entities = _chunkEntityQuery.ToEntityArray(Allocator.Temp);
+            ChunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
+            using var entities = ChunkEntityQuery.ToEntityArray(Allocator.Temp);
 
             foreach (var entity in entities) {
                 var entityGenIndex = entityManager.GetComponentData<SpellboundComponent>(entity).GenerationIndex;
@@ -106,6 +116,39 @@ namespace Spellbound.Core {
 
                 entityManager.DestroyEntity(entity);
                 break;
+            }
+        }
+        
+        public void EntityDistanceQuery(Vector3 playerPosition) {
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            ChunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
+            using var entities = ChunkEntityQuery.ToEntityArray(Allocator.Temp);
+            
+            foreach (var entity in entities) {
+                var eTransform = entityManager.GetComponentData<LocalTransform>(entity);
+                float distance = Vector3.Distance(playerPosition, eTransform.Position);
+                var spellboundComponent = entityManager.GetComponentData<SpellboundComponent>(entity);
+                var hasProxy = _eventSurfaces.ContainsKey(spellboundComponent.GenerationIndex);
+                var objectPreset = spellboundComponent.PresetUiD.Value.ResolvePreset();
+                
+    
+                if (distance < objectPreset.interactionDistance && !hasProxy) {
+                    var uid = entityManager.GetComponentData<SpellboundComponent>(entity).PresetUiD;
+                    var preset = uid.Value.ResolvePreset();
+                    var proxy = UnityEngine.Object.Instantiate(preset.eventSurfacePrefab, eTransform.Position, eTransform.Rotation, _transform);
+                    proxy.gameObject.name = $"{preset.name} Event Surface {spellboundComponent.GenerationIndex}";
+                    proxy.transform.localScale = eTransform.Scale * Vector3.one;
+                    proxy.Initialize(_implementer, spellboundComponent.GenerationIndex, uid.Value);
+                    _eventSurfaces[spellboundComponent.GenerationIndex] = proxy;
+                }
+                else if (distance > objectPreset.interactionDistance + 10f && hasProxy) {
+
+                    if (_eventSurfaces.TryGetValue(spellboundComponent.GenerationIndex, out var proxy)) {
+                        UnityEngine.Object.Destroy(proxy.gameObject);
+                        _eventSurfaces.Remove(spellboundComponent.GenerationIndex);
+                    }
+                }
             }
         }
         

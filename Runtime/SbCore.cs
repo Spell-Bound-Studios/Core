@@ -20,6 +20,8 @@ namespace Spellbound.Core {
             
             var iChunk = icm.GetObjectParentChunk(spawnPosition);
 
+            // TODO: NEEDS UPDATING TO CORE CHANGES
+            /*
             iChunk.SpawnPersistent(
                 presetUid, 
                 spawnPosition, 
@@ -27,6 +29,8 @@ namespace Spellbound.Core {
                 new[] {
                     spawnData
                 });
+                
+                */
         }
     }
 }
