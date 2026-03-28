@@ -30,8 +30,7 @@ namespace Spellbound.Core.Console {
             else if (preset.TryGetModule<ConsoleModule>(out var module))
                 quantity = module.defaultQuantity;
 
-            var moduleTypes = preset.modules
-                    .Where(m => m != null)
+            var moduleTypes = preset.GetAllModules()
                     .Select(m => m.GetType())
                     .ToList();
 
