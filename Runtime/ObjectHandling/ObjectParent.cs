@@ -72,17 +72,15 @@ namespace Spellbound.Core {
         }
 
         public bool TryTransformData<T>(
-            int instanceIndex, string presetUid, T delta, T fallbackInitialData) where T : IQuantitativeData, new() {
+            int instanceIndex, string presetUid, T delta) where T : IQuantitativeData, new() {
             PackerRegistry.TryGetId(typeof(T), out var packerId);
             
             Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, PackerId {packerId}, delta {delta}");
 
-            if (packerId == null) {
-  
+            if (packerId == null)
                 return false;
-            }
             
-            _dataStore.Delta(instanceIndex, presetUid, packerId, delta, fallbackInitialData);
+            _dataStore.Delta(instanceIndex, presetUid, packerId, delta);
             
             return true;
         }
