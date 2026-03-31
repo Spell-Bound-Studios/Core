@@ -15,6 +15,8 @@ namespace Spellbound.Core {
             _parent = parent;
             _entityIndex = entityIndex;
             _objectPreset = presetUid.ResolvePreset();
+            
+            // Check for children.
         }
 
         public void DebugQueryPing() {
