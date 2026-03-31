@@ -17,6 +17,13 @@ namespace Spellbound.Core {
             _objectPreset = presetUid.ResolvePreset();
             
             // Check for children.
+            var childSurfaces = GetComponentsInChildren<EventSurface>(true);
+            foreach (var childSurface in childSurfaces) {
+                if (childSurface == this)
+                    continue;
+            
+                childSurface.Initialize(_parent, _entityIndex, _objectPreset.presetUid);
+            }
         }
 
         public void DebugQueryPing() {
@@ -35,7 +42,7 @@ namespace Spellbound.Core {
                     invoke(handler, _parent, _entityIndex, _objectPreset.presetUid);*/
 
             // If this event surface doesn't have children - early return.
-            if (surfaceIndex < 0 /*|| surfaceIndex >= _objectPreset.modules.Count*/)
+            if (surfaceIndex < 0 || surfaceIndex >= _objectPreset.surfaceModules.Count)
                 return;
             
             // If it does have children loop through them and invoke.
