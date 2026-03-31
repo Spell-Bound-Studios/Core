@@ -15,6 +15,15 @@ namespace Spellbound.Core {
             _parent = parent;
             _entityIndex = entityIndex;
             _objectPreset = presetUid.ResolvePreset();
+            
+            // Check for children.
+            var childSurfaces = GetComponentsInChildren<EventSurface>(true);
+            foreach (var childSurface in childSurfaces) {
+                if (childSurface == this)
+                    continue;
+            
+                childSurface.Initialize(_parent, _entityIndex, _objectPreset.presetUid);
+            }
         }
 
         public void DebugQueryPing() {
@@ -24,7 +33,7 @@ namespace Spellbound.Core {
         }
         
         // Declare a THandler type at runtime that will pass in a pointer of that type to THAT types implementation.
-        public void Dispatch<THandler>(Action<THandler, IObjectParent, int, string> invoke) where THandler : class {
+        public void Dispatch<THandler>(Action<THandler, IObjectParent, int, string, int> invoke) where THandler : class {
             if (_objectPreset == null) 
                 return;
             
@@ -33,13 +42,13 @@ namespace Spellbound.Core {
                     invoke(handler, _parent, _entityIndex, _objectPreset.presetUid);*/
 
             // If this event surface doesn't have children - early return.
-            if (surfaceIndex < 0 /*|| surfaceIndex >= _objectPreset.modules.Count*/)
+            if (surfaceIndex < 0 || surfaceIndex >= _objectPreset.surfaceModules.Count)
                 return;
             
             // If it does have children loop through them and invoke.
             foreach (var module in _objectPreset.surfaceModules[surfaceIndex].PresetModules)
                 if (module is THandler handler)
-                    invoke(handler, _parent, _entityIndex, _objectPreset.presetUid);
+                    invoke(handler, _parent, _entityIndex, _objectPreset.presetUid, surfaceIndex);
         }
     }
 }
