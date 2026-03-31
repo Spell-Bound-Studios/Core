@@ -33,7 +33,7 @@ namespace Spellbound.Core {
         }
         
         // Declare a THandler type at runtime that will pass in a pointer of that type to THAT types implementation.
-        public void Dispatch<THandler>(Action<THandler, IObjectParent, int, string> invoke) where THandler : class {
+        public void Dispatch<THandler>(Action<THandler, IObjectParent, int, string, int> invoke) where THandler : class {
             if (_objectPreset == null) 
                 return;
             
@@ -48,7 +48,7 @@ namespace Spellbound.Core {
             // If it does have children loop through them and invoke.
             foreach (var module in _objectPreset.surfaceModules[surfaceIndex].PresetModules)
                 if (module is THandler handler)
-                    invoke(handler, _parent, _entityIndex, _objectPreset.presetUid);
+                    invoke(handler, _parent, _entityIndex, _objectPreset.presetUid, surfaceIndex);
         }
     }
 }

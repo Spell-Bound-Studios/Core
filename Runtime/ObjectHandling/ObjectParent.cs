@@ -40,7 +40,7 @@ namespace Spellbound.Core {
             _dataStore.OnInstanceRemoved += HandleInstanceRemoved;
         }
 
-        public bool TryReadData<T>(int instanceIndex, string presetUid, out T result) where T : IPacker, new() {
+        public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result) where T : IPacker, new() {
             PackerRegistry.TryGetId(typeof(T), out var packerId);
 
             if (packerId == null) {
@@ -48,7 +48,7 @@ namespace Spellbound.Core {
                 return false;
             }
             
-            if (_dataStore.TryRead(instanceIndex, packerId, out var bytes)) {
+            if (_dataStore.TryRead(instanceIndex, packerId, eventSurfaceIndex, out var bytes)) {
                 result = Packer.FromBytes<T>(bytes);
                 Debug.Log($"result is {result}");
                 return true;
@@ -58,7 +58,7 @@ namespace Spellbound.Core {
             return false;
         }
         
-        public bool TryWriteData<T>(int instanceIndex, string presetUid, T value) where T : IPacker {
+        public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T value) where T : IPacker {
             PackerRegistry.TryGetId(typeof(T), out var packerId);
 
             if (packerId == null) 
@@ -67,20 +67,22 @@ namespace Spellbound.Core {
             if (!_dataStore.HasInstance(instanceIndex))
                 _dataStore.CreateInstance(instanceIndex, presetUid);
             
-            _dataStore.Write(instanceIndex, packerId, Packer.ToBytes(value));
+            _dataStore.Write(instanceIndex, packerId, eventSurfaceIndex, Packer.ToBytes(value));
             return true;
         }
 
         public bool TryTransformData<T>(
-            int instanceIndex, string presetUid, T delta) where T : IQuantitativeData, new() {
+            int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IQuantitativeData, new() {
             PackerRegistry.TryGetId(typeof(T), out var packerId);
             
             Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, PackerId {packerId}, delta {delta}");
 
-            if (packerId == null)
+            if (packerId == null) {
                 return false;
+            }
+                
             
-            _dataStore.Delta(instanceIndex, presetUid, packerId, delta);
+            _dataStore.Delta(instanceIndex, presetUid, packerId, eventSurfaceIndex, delta);
             
             return true;
         }
