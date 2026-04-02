@@ -20,7 +20,7 @@ namespace Spellbound.Core {
         private Transform _transform;
         private readonly IObjectDataStore _dataStore;
 
-        private Action<LocalTransform, string, int, ObjectPreset> _surfaceSpawnAction;
+        private Action<LocalTransform, int, ObjectPreset> _surfaceSpawnAction;
         public IObjectDataStore DataStore => _dataStore;
         private Dictionary<int, EventSurface> _eventSurfaces = new();
         private Dictionary<int, Entity> _entities = new();
@@ -30,10 +30,13 @@ namespace Spellbound.Core {
     
             using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
             em.DestroyEntity(entities);
+            
+            _dataStore.OnInstanceRemoved -= HandleInstanceRemoved;
+            _dataStore.OnInstanceCreated -= HandleInstanceAdded;
         }
         
 
-        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId, Action<LocalTransform, string, int, ObjectPreset> surfaceSpawnAction = null) {
+        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId, Action<LocalTransform, int, ObjectPreset> surfaceSpawnAction = null) {
             _implementer = implementer;
             _transform = transform;
             _dataStore = dataStore;
@@ -76,7 +79,7 @@ namespace Spellbound.Core {
 
         private void HandleInstanceAdded(
             int instanceIndex, string presetUid, Vector3 position, Vector3 rotation, int scale) {
-            Debug.Log("HandleInstanceAdded creating the instance");
+            Debug.Log("HandleInstanceAdded is running.");
             if (!presetUid.TryGetEntityPrefab(out var prefab)) {
                 return;
             }
@@ -157,7 +160,7 @@ namespace Spellbound.Core {
             _entities.Remove(instanceIndex);
         }
         
-        private void SpawnSurface(LocalTransform transform, string presetUid, int instanceIndex, ObjectPreset preset) {
+        public void SpawnSurface(LocalTransform transform, int instanceIndex, ObjectPreset preset) {
             var eventSurface = UnityEngine.Object.Instantiate(
                 preset.eventSurfacePrefab, 
                 transform.Position, 
@@ -166,7 +169,7 @@ namespace Spellbound.Core {
             );
             eventSurface.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
             eventSurface.transform.localScale = transform.Scale * Vector3.one;
-            eventSurface.Initialize(_implementer, instanceIndex, presetUid);
+            eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
             _eventSurfaces[instanceIndex] = eventSurface;
         }
 
@@ -191,7 +194,7 @@ namespace Spellbound.Core {
                 bool hasProxy = _eventSurfaces.ContainsKey(instanceIndex);
 
                 if (distance < preset.interactionDistance && !hasProxy)
-                    SpawnSurface(transform, presetUid.Value, instanceIndex, preset);
+                    SpawnSurface(transform, instanceIndex, preset);
                 else if (distance > preset.interactionDistance + 10f && hasProxy)
                     DespawnSurface(instanceIndex);
             }
