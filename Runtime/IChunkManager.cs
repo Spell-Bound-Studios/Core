@@ -13,6 +13,6 @@ namespace Spellbound.Core {
 
         public event Action<Vector3> OnPlayerPositionChanged;
 
-        public IObjectParent GetObjectParentChunk(Vector3 position);
+        public bool TryGetObjectParentChunk(Vector3 position, out  IObjectParent chunk);
     }
 }

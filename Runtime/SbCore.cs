@@ -10,27 +10,18 @@ namespace Spellbound.Core {
         /// </summary>
         [ConsolePresetCommand("spawn", typeof(ObjectPreset))]
         public static void SpawnObjectPreset(
-            string presetUid, Vector3 spawnPosition,  SbbData spawnData) {
+            string presetUid, Vector3 spawnPosition) {
             
             if (!SingletonManager.TryGetSingletonInstance<IChunkManager>(out var icm)) {
                 Debug.LogError("The singleton manager does not contain an IChunkManager. Please ensure you implement" +
                                "IChunkManager or drag the bakePrefab into your scene.");
                 return;
             }
-            
-            var iChunk = icm.GetObjectParentChunk(spawnPosition);
+            if (!icm.TryGetObjectParentChunk(spawnPosition, out IObjectParent chunk)) {
+                return;
+            }
 
-            // TODO: NEEDS UPDATING TO CORE CHANGES
-            /*
-            iChunk.SpawnPersistent(
-                presetUid, 
-                spawnPosition, 
-                Quaternion.identity,
-                new[] {
-                    spawnData
-                });
-                
-                */
+            chunk.ObjectParent.CreateNewInstance(presetUid, spawnPosition, Vector3.zero, 1);
         }
     }
 }

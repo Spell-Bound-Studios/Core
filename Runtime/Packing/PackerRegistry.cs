@@ -10,7 +10,7 @@ namespace Spellbound.Core.Packing {
         private static readonly Dictionary<string, Type> IDToType = new();
         private static readonly Dictionary<Type, string> TypeToId = new();
         private static readonly Dictionary<string, Type> IDToHandlerType = new();
-        private static readonly Dictionary<string, Func<IQuantitativeData>> Factories = new();
+        private static readonly Dictionary<string, Func<IPacker>> Factories = new();
 
         static PackerRegistry() {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()) {
@@ -28,9 +28,9 @@ namespace Spellbound.Core.Packing {
                     if (handlerAttr != null)
                         IDToHandlerType[attr.Id] = handlerAttr.HandlerType;
 
-                    if (typeof(IQuantitativeData).IsAssignableFrom(type)) {
-                        Factories[attr.Id] = Expression.Lambda<Func<IQuantitativeData>>(
-                            Expression.Convert(Expression.New(type), typeof(IQuantitativeData))
+                    if (typeof(IPacker).IsAssignableFrom(type)) {
+                        Factories[attr.Id] = Expression.Lambda<Func<IPacker>>(
+                            Expression.Convert(Expression.New(type), typeof(IPacker))
                         ).Compile();
                     }
                 }
@@ -44,7 +44,7 @@ namespace Spellbound.Core.Packing {
         public static bool TryGetHandlerType(string packerId, out Type handlerType) =>
                 IDToHandlerType.TryGetValue(packerId, out handlerType);
 
-        public static bool TryCreateInstance(string packerId, out IQuantitativeData instance) {
+        public static bool TryCreateInstance(string packerId, out IPacker instance) {
             if (Factories.TryGetValue(packerId, out var factory)) {
                 instance = factory();
                 return true;
@@ -54,7 +54,7 @@ namespace Spellbound.Core.Packing {
 
             return false;
         }
-        
+
         /// <summary>
         /// Provides a readable string based on what's inside a byte[] if we have the packerId.
         /// </summary>
@@ -62,9 +62,6 @@ namespace Spellbound.Core.Packing {
         /// This is useful if you're debugging, logging, or creating an editor tool and don't want to see byte[] in
         /// the inspector.
         /// </remarks>
-        /// <param name="packerId"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         public static string Decode(string packerId, byte[] data) {
             if (data == null || data.Length == 0)
                 return $"{packerId}: [empty]";
