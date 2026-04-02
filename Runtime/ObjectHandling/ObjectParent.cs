@@ -19,6 +19,9 @@ namespace Spellbound.Core {
         private IObjectParent _implementer;
         private Transform _transform;
         private readonly IObjectDataStore _dataStore;
+
+        private Action<LocalTransform, string, int, ObjectPreset> _surfaceSpawnAction;
+        public IObjectDataStore DataStore => _dataStore;
         private Dictionary<int, EventSurface> _eventSurfaces = new();
         private Dictionary<int, Entity> _entities = new();
 
@@ -30,17 +33,18 @@ namespace Spellbound.Core {
         }
         
 
-        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId) {
+        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId, Action<LocalTransform, string, int, ObjectPreset> surfaceSpawnAction = null) {
             _implementer = implementer;
             _transform = transform;
             _dataStore = dataStore;
+            _surfaceSpawnAction = surfaceSpawnAction ?? SpawnSurface;
             _dataStore.OnInstanceRemoved += HandleInstanceRemoved;
             _dataStore.OnInstanceCreated += HandleInstanceAdded;
         }
 
-        public void CreateNewInstance(string presetUid, Vector3 position, Vector3 rotation, int scale) {
+        public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) {
             Debug.Log("ObjectParent creating the instance");
-            _dataStore.CreateInstance(presetUid, position, rotation, scale);
+            _dataStore.CreateInstance(preset.presetUid, position, rotation, scale);
         }
 
         public void ActivateObjects(NativeList<PristineGoData> objects) {
@@ -133,34 +137,6 @@ namespace Spellbound.Core {
         private void HandleInstanceRemoved(int instanceIndex) {
             DeleteEntity(instanceIndex);
             DeleteEventSurface(instanceIndex);
-        }
-
-        private void HandleInstanceAdded(string presetUid, int instanceIndex) {
-            if (_entities.ContainsKey(instanceIndex)) {
-                return;
-            }
-            
-            CreateEntity(presetUid, instanceIndex);
-        }
-
-        public void CreateEntity(string presetUid, int instanceIndex) {
-            /*if (!presetUid.TryGetEntityPrefab(out var entityPrefab)) {
-                return;
-            }
-            
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-            
-            var entity = em.Instantiate(entityPrefab);
-                
-            em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
-                data.position,
-                quaternion.Euler(data.rotation),
-                data.scale.x 
-            ));
-            em.SetComponentData(entity, new InstanceIndexComponent {
-                Value = instanceIndex
-            });*/
-            
         }
 
         private void DeleteEventSurface(int instanceIndex) {

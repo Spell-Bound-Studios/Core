@@ -10,7 +10,7 @@ namespace Spellbound.Core {
         /// </summary>
         [ConsolePresetCommand("spawn", typeof(ObjectPreset))]
         public static void SpawnObjectPreset(
-            string presetUid, Vector3 spawnPosition) {
+            ObjectPreset preset, Vector3 spawnPosition) {
             
             if (!SingletonManager.TryGetSingletonInstance<IChunkManager>(out var icm)) {
                 Debug.LogError("The singleton manager does not contain an IChunkManager. Please ensure you implement" +
@@ -21,7 +21,7 @@ namespace Spellbound.Core {
                 return;
             }
 
-            chunk.ObjectParent.CreateNewInstance(presetUid, spawnPosition, Vector3.zero, 1);
+            chunk.ObjectParent.CreateNewInstance(preset, spawnPosition, Vector3.zero, 1);
         }
     }
 }
