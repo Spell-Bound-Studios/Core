@@ -11,8 +11,4 @@ namespace Spellbound.Core.ECS {
     public struct PresetUidComponent : IComponentData {
         public FixedString64Bytes Value;
     }
-    
-    public struct InstanceIndexComponent : IComponentData {
-        public int Value;
-    }
 }

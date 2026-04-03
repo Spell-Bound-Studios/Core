@@ -79,7 +79,6 @@ namespace Spellbound.Core {
 
         private void HandleInstanceAdded(
             int instanceIndex, string presetUid, Vector3 position, Vector3 rotation, int scale) {
-            Debug.Log("HandleInstanceAdded is running.");
             if (!presetUid.TryGetEntityPrefab(out var prefab)) {
                 return;
             }
