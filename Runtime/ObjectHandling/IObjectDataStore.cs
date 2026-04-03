@@ -46,6 +46,6 @@ namespace Spellbound.Core {
                 where T : IQuantitativeData, new();
         
         // Intended to be the implementation for deleting an instance with confirmation of deletion.
-        Task<bool> DeleteInstance(int instanceIndex);
+        Task<bool> TryDeleteInstance(int instanceIndex);
     }
 }

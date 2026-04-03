@@ -124,7 +124,7 @@ namespace Spellbound.Core {
             return true;
         }
         
-        public async Task<bool> TryDeleteData(int instanceIndex) => await DataStore.DeleteInstance(instanceIndex);
+        public async Task<bool> TryDeleteData(int instanceIndex) => await DataStore.TryDeleteInstance(instanceIndex);
 
         private void HandleInstanceRemoved(int instanceIndex) {
             DeleteEntity(instanceIndex);
