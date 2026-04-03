@@ -9,6 +9,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Object = System.Object;
 
 namespace Spellbound.Core {
     /// <summary>
@@ -19,11 +20,13 @@ namespace Spellbound.Core {
         private IObjectParent _implementer;
         private Transform _transform;
         private readonly IObjectDataStore _dataStore;
-        public ISurfaceStore SurfaceStore;
+        public IEventSurfaceStore EventSurfaces;
         
         public IObjectDataStore DataStore => _dataStore;
         private Dictionary<int, Entity> _entities = new();
         public Dictionary<int, Entity> Entities => _entities;
+
+        private Vector3 _lastPlayerPosition;
 
         public void Dispose() {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -36,12 +39,11 @@ namespace Spellbound.Core {
         }
         
 
-        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, ISurfaceStore surfaceStore, Vector3Int parentId) {
+        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, IEventSurfaceStore eventSurfacesStore, Vector3Int parentId) {
             _implementer = implementer;
             _transform = transform;
             _dataStore = dataStore;
-            SurfaceStore = surfaceStore;
-            SurfaceStore.ParentTransform = transform;
+            EventSurfaces = eventSurfacesStore;
             _dataStore.OnInstanceRemoved += HandleInstanceRemoved;
             _dataStore.OnInstanceCreated += HandleInstanceAdded;
         }
@@ -97,7 +99,7 @@ namespace Spellbound.Core {
                 Value = instanceIndex
             });
             _entities[instanceIndex] = entity;
-
+            OneEntityDistanceQuery(entity);
         }
         
 
@@ -143,11 +145,11 @@ namespace Spellbound.Core {
         }
 
         private void DeleteEventSurface(int instanceIndex) {
-            if (!SurfaceStore.TryGetSurface(instanceIndex, out var surface)) {
+            if (!EventSurfaces.TryGetEventSurface(instanceIndex, out var surface)) {
                 return;
             }
             UnityEngine.Object.Destroy(surface.gameObject);
-            SurfaceStore.UnregisterSurface(instanceIndex);
+            EventSurfaces.Unregister(instanceIndex);
         }
 
         private void DeleteEntity(int instanceIndex) {
@@ -160,7 +162,8 @@ namespace Spellbound.Core {
             _entities.Remove(instanceIndex);
         }
         
-        public void EntityDistanceQuery(Vector3 playerPosition) {
+        public void FullEntityDistanceQuery(Vector3 playerPosition) {
+            _lastPlayerPosition = playerPosition;
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             
             foreach(var entity in _entities.Values) {
@@ -171,12 +174,48 @@ namespace Spellbound.Core {
                 var preset = presetUid.Value.ResolvePreset();
         
                 float distance = Vector3.Distance(playerPosition, transform.Position);
-                bool hasProxy = SurfaceStore.TryGetSurface(instanceIndex, out _);
+                bool hasProxy = EventSurfaces.HasIndex(instanceIndex);
 
                 if (distance < preset.interactionDistance && !hasProxy)
-                    SurfaceStore.SpawnSurface(transform, instanceIndex, presetUid.Value);
+                    _implementer.SpawnSurface(transform, instanceIndex, preset);
                 else if (distance > preset.interactionDistance + 10f && hasProxy)
-                    SurfaceStore.DespawnSurface(instanceIndex);
+                    _implementer.DespawnSurface(instanceIndex);
+            }
+        }
+
+        public void OneEntityDistanceQuery(Entity entity) {
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var transform = em.GetComponentData<LocalTransform>(entity);
+            var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
+            var instanceIndex = em.GetComponentData<InstanceIndexComponent>(entity).Value;
+            var preset = presetUid.Value.ResolvePreset();
+        
+            float distance = Vector3.Distance(_lastPlayerPosition, transform.Position);
+            bool hasProxy = EventSurfaces.HasIndex(instanceIndex);
+
+            if (distance < preset.interactionDistance && !hasProxy)
+                _implementer.SpawnSurface(transform, instanceIndex, preset);
+            else if (distance > preset.interactionDistance + 10f && hasProxy)
+                _implementer.DespawnSurface(instanceIndex);
+        }
+
+        public void SpawnSurface(LocalTransform localTransform, int instanceIndex, ObjectPreset preset) {
+            var es = UnityEngine.Object.Instantiate(
+                preset.eventSurfacePrefab,
+                localTransform.Position,
+                localTransform.Rotation,
+                _transform
+            );
+            es.transform.localScale = localTransform.Scale * Vector3.one;
+            es.transform.name = $"{preset.name}_eventSurface_{instanceIndex}";
+            EventSurfaces.Register(instanceIndex, es);
+            es.Initialize(instanceIndex, preset);
+        }
+
+        public void DespawnSurface(int instanceIndex) {
+            if (EventSurfaces.TryGetEventSurface(instanceIndex, out var surface)) {
+                EventSurfaces.Unregister(instanceIndex);
+                UnityEngine.Object.Destroy(surface.gameObject);
             }
         }
         

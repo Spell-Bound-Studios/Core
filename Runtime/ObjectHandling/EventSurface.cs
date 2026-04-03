@@ -8,14 +8,14 @@ namespace Spellbound.Core {
         public Vector3 Position => transform.position;
         
         private IObjectParent _parent;
-        private int _entityIndex;
+        [SerializeField] private int _entityIndex;
         public int EntityIndex => _entityIndex;
         private ObjectPreset _objectPreset;
         
-        public void Initialize(int entityIndex, string presetUid) {
+        public void Initialize(int entityIndex, ObjectPreset preset) {
             _parent = GetComponentInParent<IObjectParent>();
             _entityIndex = entityIndex;
-            _objectPreset = presetUid.ResolvePreset();
+            _objectPreset = preset;
             
             // Check for children.
             var childSurfaces = GetComponentsInChildren<EventSurface>(true);
@@ -23,7 +23,7 @@ namespace Spellbound.Core {
                 if (childSurface == this)
                     continue;
             
-                childSurface.Initialize(_entityIndex, _objectPreset.presetUid);
+                childSurface.Initialize(_entityIndex, preset);
             }
         }
 
