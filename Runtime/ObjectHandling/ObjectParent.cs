@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Spellbound.Core.ECS;
 using Spellbound.Core.Packing;
 using Unity.Collections;
@@ -17,39 +19,90 @@ namespace Spellbound.Core {
         private IObjectParent _implementer;
         private Transform _transform;
         private readonly IObjectDataStore _dataStore;
+
+        private Action<LocalTransform, int, ObjectPreset> _surfaceSpawnAction;
+        public IObjectDataStore DataStore => _dataStore;
         private Dictionary<int, EventSurface> _eventSurfaces = new();
-        private EntityQuery? _chunkEntityQuery;
+        private Dictionary<int, Entity> _entities = new();
 
-        public void Dispose(){}
-
-        private EntityQuery ChunkEntityQuery => _chunkEntityQuery ??= 
-                World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(typeof(ChunkParentComponent));
+        public void Dispose() {
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+    
+            using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
+            em.DestroyEntity(entities);
+            
+            _dataStore.OnInstanceRemoved -= HandleInstanceRemoved;
+            _dataStore.OnInstanceCreated -= HandleInstanceAdded;
+        }
         
-        private ChunkParentComponent _chunkParentComponent;
 
-        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId) {
+        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId, Action<LocalTransform, int, ObjectPreset> surfaceSpawnAction = null) {
             _implementer = implementer;
             _transform = transform;
             _dataStore = dataStore;
-            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-            _chunkEntityQuery = entityManager.CreateEntityQuery(typeof(ChunkParentComponent));
-            _chunkParentComponent = new ChunkParentComponent {
-                ChunkCoord = new int3(parentId.x, parentId.y, parentId.z)
-            };
-
+            _surfaceSpawnAction = surfaceSpawnAction ?? SpawnSurface;
             _dataStore.OnInstanceRemoved += HandleInstanceRemoved;
+            _dataStore.OnInstanceCreated += HandleInstanceAdded;
         }
 
-        public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result) where T : IPacker, new() {
-            PackerRegistry.TryGetId(typeof(T), out var packerId);
+        public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) {
+            Debug.Log("ObjectParent creating the instance");
+            _dataStore.CreateInstance(preset.presetUid, position, rotation, scale);
+        }
 
-            if (packerId == null) {
-                result = default;
-                return false;
+        public void ActivateObjects(NativeList<PristineGoData> objects) {
+            if (!objects.IsCreated || objects.Length == 0) 
+                return;
+
+            var idx = 0;
+            
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            
+            for (int i = 0; i < objects.Length; i++) {
+                var data = objects[i];
+                
+                var entity = em.Instantiate(data.entityPrefab);
+                
+                em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
+                    data.position,
+                    quaternion.Euler(data.rotation),
+                    data.scale.x 
+                ));
+                em.SetComponentData(entity, new InstanceIndexComponent {
+                    Value = idx
+                });
+                _entities[idx] = entity;
+                idx++;
+            }
+            _dataStore.NextInstanceIndex = idx;
+        }
+
+        private void HandleInstanceAdded(
+            int instanceIndex, string presetUid, Vector3 position, Vector3 rotation, int scale) {
+            if (!presetUid.TryGetEntityPrefab(out var prefab)) {
+                return;
             }
             
-            if (_dataStore.TryRead(instanceIndex, packerId, eventSurfaceIndex, out var bytes)) {
-                result = Packer.FromBytes<T>(bytes);
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            
+            var entity = em.Instantiate(prefab);
+                
+            em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
+                position,
+                quaternion.Euler(rotation),
+                scale 
+            ));
+            em.SetComponentData(entity, new InstanceIndexComponent {
+                Value = instanceIndex
+            });
+            _entities[instanceIndex] = entity;
+
+        }
+        
+
+        public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result) where T : IPacker, new() {
+            if (_dataStore.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
+                result = data;
                 Debug.Log($"result is {result}");
                 return true;
             }
@@ -58,36 +111,30 @@ namespace Spellbound.Core {
             return false;
         }
         
-        public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T value) where T : IPacker {
-            PackerRegistry.TryGetId(typeof(T), out var packerId);
+        public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData) 
+                where T : IPacker, new() {
 
-            if (packerId == null) 
-                return false;
 
             if (!_dataStore.HasInstance(instanceIndex))
-                _dataStore.CreateInstance(instanceIndex, presetUid);
+                _dataStore.StoreInstance(instanceIndex, presetUid);
             
-            _dataStore.Write(instanceIndex, packerId, eventSurfaceIndex, Packer.ToBytes(value));
+            _dataStore.Write(instanceIndex, presetUid, eventSurfaceIndex, newData);
             return true;
         }
 
         public bool TryTransformData<T>(
             int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IQuantitativeData, new() {
-            PackerRegistry.TryGetId(typeof(T), out var packerId);
+           
             
-            Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, PackerId {packerId}, delta {delta}");
-
-            if (packerId == null) {
-                return false;
-            }
-                
+            Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, delta {delta}");
             
-            _dataStore.Delta(instanceIndex, presetUid, packerId, eventSurfaceIndex, delta);
+            
+            _dataStore.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
             
             return true;
         }
         
-        public bool TryDeleteData(int instanceIndex) => _dataStore.TryDeleteInstance(instanceIndex);
+        public async Task<bool> TryDeleteData(int instanceIndex) => await _dataStore.DeleteInstance(instanceIndex);
 
         private void HandleInstanceRemoved(int instanceIndex) {
             DeleteEntity(instanceIndex);
@@ -103,52 +150,52 @@ namespace Spellbound.Core {
         }
 
         private void DeleteEntity(int instanceIndex) {
-            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            if (!_entities.TryGetValue(instanceIndex, out var entity)) {
+                return;
+            }
 
-            ChunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
-            using var entities = ChunkEntityQuery.ToEntityArray(Allocator.Temp);
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            em.DestroyEntity(entity);
+            _entities.Remove(instanceIndex);
+        }
+        
+        public void SpawnSurface(LocalTransform transform, int instanceIndex, ObjectPreset preset) {
+            var eventSurface = UnityEngine.Object.Instantiate(
+                preset.eventSurfacePrefab, 
+                transform.Position, 
+                transform.Rotation, 
+                _transform
+            );
+            eventSurface.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
+            eventSurface.transform.localScale = transform.Scale * Vector3.one;
+            eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
+            _eventSurfaces[instanceIndex] = eventSurface;
+        }
 
-            foreach (var entity in entities) {
-                var entityGenIndex = entityManager.GetComponentData<SpellboundComponent>(entity).GenerationIndex;
-
-                if (entityGenIndex != instanceIndex)
-                    continue;
-
-                entityManager.DestroyEntity(entity);
-                break;
+        private void DespawnSurface(int instanceIndex) {
+            if (_eventSurfaces.TryGetValue(instanceIndex, out var proxy)) {
+                UnityEngine.Object.Destroy(proxy.gameObject);
+                _eventSurfaces.Remove(instanceIndex);
             }
         }
         
         public void EntityDistanceQuery(Vector3 playerPosition) {
-            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-
-            ChunkEntityQuery.SetSharedComponentFilter(_chunkParentComponent);
-            using var entities = ChunkEntityQuery.ToEntityArray(Allocator.Temp);
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             
-            foreach (var entity in entities) {
-                var eTransform = entityManager.GetComponentData<LocalTransform>(entity);
-                float distance = Vector3.Distance(playerPosition, eTransform.Position);
-                var spellboundComponent = entityManager.GetComponentData<SpellboundComponent>(entity);
-                var hasProxy = _eventSurfaces.ContainsKey(spellboundComponent.GenerationIndex);
-                var objectPreset = spellboundComponent.PresetUiD.Value.ResolvePreset();
+            foreach(var entity in _entities.Values) {
                 
-    
-                if (distance < objectPreset.interactionDistance && !hasProxy) {
-                    var uid = entityManager.GetComponentData<SpellboundComponent>(entity).PresetUiD;
-                    var preset = uid.Value.ResolvePreset();
-                    var proxy = UnityEngine.Object.Instantiate(preset.eventSurfacePrefab, eTransform.Position, eTransform.Rotation, _transform);
-                    proxy.gameObject.name = $"{preset.name} Event Surface {spellboundComponent.GenerationIndex}";
-                    proxy.transform.localScale = eTransform.Scale * Vector3.one;
-                    proxy.Initialize(_implementer, spellboundComponent.GenerationIndex, uid.Value);
-                    _eventSurfaces[spellboundComponent.GenerationIndex] = proxy;
-                }
-                else if (distance > objectPreset.interactionDistance + 10f && hasProxy) {
+                var transform = em.GetComponentData<LocalTransform>(entity);
+                var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
+                var instanceIndex = em.GetComponentData<InstanceIndexComponent>(entity).Value;
+                var preset = presetUid.Value.ResolvePreset();
+        
+                float distance = Vector3.Distance(playerPosition, transform.Position);
+                bool hasProxy = _eventSurfaces.ContainsKey(instanceIndex);
 
-                    if (_eventSurfaces.TryGetValue(spellboundComponent.GenerationIndex, out var proxy)) {
-                        UnityEngine.Object.Destroy(proxy.gameObject);
-                        _eventSurfaces.Remove(spellboundComponent.GenerationIndex);
-                    }
-                }
+                if (distance < preset.interactionDistance && !hasProxy)
+                    SpawnSurface(transform, instanceIndex, preset);
+                else if (distance > preset.interactionDistance + 10f && hasProxy)
+                    DespawnSurface(instanceIndex);
             }
         }
         
