@@ -17,9 +17,8 @@ namespace Spellbound.Core {
                                "IChunkManager or drag the bakePrefab into your scene.");
                 return;
             }
-            if (!icm.TryGetObjectParentChunk(spawnPosition, out IObjectParent chunk)) {
+            if (!icm.TryGetObjectParentChunk(spawnPosition, out var chunk))
                 return;
-            }
 
             chunk.ObjectParent.CreateNewInstance(preset, spawnPosition, Vector3.zero, 1);
         }
