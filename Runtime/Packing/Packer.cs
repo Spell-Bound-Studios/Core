@@ -772,7 +772,7 @@ namespace Spellbound.Core.Packing {
                 var written = stackBuf.Length - span.Length;
                 return stackBuf[..written].ToArray();
             }
-            catch (ArgumentOutOfRangeException) { }
+            catch (ArgumentException) { }
 
             var size = Math.Max(StackBufferSize * 2, 8192);
             while (size <= MaxRentedBuffer) {
@@ -787,7 +787,7 @@ namespace Spellbound.Core.Packing {
                         Buffer.BlockCopy(rented, 0, result, 0, written);
                         return result;
                     }
-                    catch (ArgumentOutOfRangeException) { }
+                    catch (ArgumentException) { }
                 }
                 finally {
                     ArrayPool<byte>.Shared.Return(rented);
