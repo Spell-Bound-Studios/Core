@@ -19,11 +19,11 @@ namespace Spellbound.Core {
         private IObjectParent _implementer;
         private Transform _transform;
         private readonly IObjectDataStore _dataStore;
-
-        private Action<LocalTransform, int, ObjectPreset> _surfaceSpawnAction;
+        public ISurfaceStore SurfaceStore;
+        
         public IObjectDataStore DataStore => _dataStore;
-        private Dictionary<int, EventSurface> _eventSurfaces = new();
         private Dictionary<int, Entity> _entities = new();
+        public Dictionary<int, Entity> Entities => _entities;
 
         public void Dispose() {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -36,11 +36,12 @@ namespace Spellbound.Core {
         }
         
 
-        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId, Action<LocalTransform, int, ObjectPreset> surfaceSpawnAction = null) {
+        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, ISurfaceStore surfaceStore, Vector3Int parentId) {
             _implementer = implementer;
             _transform = transform;
             _dataStore = dataStore;
-            _surfaceSpawnAction = surfaceSpawnAction ?? SpawnSurface;
+            SurfaceStore = surfaceStore;
+            SurfaceStore.ParentTransform = transform;
             _dataStore.OnInstanceRemoved += HandleInstanceRemoved;
             _dataStore.OnInstanceCreated += HandleInstanceAdded;
         }
@@ -142,11 +143,11 @@ namespace Spellbound.Core {
         }
 
         private void DeleteEventSurface(int instanceIndex) {
-            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
+            if (!SurfaceStore.TryGetSurface(instanceIndex, out var surface)) {
                 return;
             }
             UnityEngine.Object.Destroy(surface.gameObject);
-            _eventSurfaces.Remove(instanceIndex);
+            SurfaceStore.UnregisterSurface(instanceIndex);
         }
 
         private void DeleteEntity(int instanceIndex) {
@@ -157,26 +158,6 @@ namespace Spellbound.Core {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             em.DestroyEntity(entity);
             _entities.Remove(instanceIndex);
-        }
-        
-        public void SpawnSurface(LocalTransform transform, int instanceIndex, ObjectPreset preset) {
-            var eventSurface = UnityEngine.Object.Instantiate(
-                preset.eventSurfacePrefab, 
-                transform.Position, 
-                transform.Rotation, 
-                _transform
-            );
-            eventSurface.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
-            eventSurface.transform.localScale = transform.Scale * Vector3.one;
-            eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
-            _eventSurfaces[instanceIndex] = eventSurface;
-        }
-
-        private void DespawnSurface(int instanceIndex) {
-            if (_eventSurfaces.TryGetValue(instanceIndex, out var proxy)) {
-                UnityEngine.Object.Destroy(proxy.gameObject);
-                _eventSurfaces.Remove(instanceIndex);
-            }
         }
         
         public void EntityDistanceQuery(Vector3 playerPosition) {
@@ -190,12 +171,12 @@ namespace Spellbound.Core {
                 var preset = presetUid.Value.ResolvePreset();
         
                 float distance = Vector3.Distance(playerPosition, transform.Position);
-                bool hasProxy = _eventSurfaces.ContainsKey(instanceIndex);
+                bool hasProxy = SurfaceStore.TryGetSurface(instanceIndex, out _);
 
                 if (distance < preset.interactionDistance && !hasProxy)
-                    SpawnSurface(transform, instanceIndex, preset);
+                    SurfaceStore.SpawnSurface(transform, instanceIndex, presetUid.Value);
                 else if (distance > preset.interactionDistance + 10f && hasProxy)
-                    DespawnSurface(instanceIndex);
+                    SurfaceStore.DespawnSurface(instanceIndex);
             }
         }
         

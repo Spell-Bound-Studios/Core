@@ -9,10 +9,11 @@ namespace Spellbound.Core {
         
         private IObjectParent _parent;
         private int _entityIndex;
+        public int EntityIndex => _entityIndex;
         private ObjectPreset _objectPreset;
         
-        public void Initialize(IObjectParent parent, int entityIndex, string presetUid) {
-            _parent = parent;
+        public void Initialize(int entityIndex, string presetUid) {
+            _parent = GetComponentInParent<IObjectParent>();
             _entityIndex = entityIndex;
             _objectPreset = presetUid.ResolvePreset();
             
@@ -22,7 +23,7 @@ namespace Spellbound.Core {
                 if (childSurface == this)
                     continue;
             
-                childSurface.Initialize(_parent, _entityIndex, _objectPreset.presetUid);
+                childSurface.Initialize(_entityIndex, _objectPreset.presetUid);
             }
         }
 
