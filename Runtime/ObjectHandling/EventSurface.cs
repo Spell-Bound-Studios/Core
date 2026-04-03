@@ -36,10 +36,6 @@ namespace Spellbound.Core {
         public void Dispatch<THandler>(Action<THandler, IObjectParent, int, string, int> invoke) where THandler : class {
             if (_objectPreset == null) 
                 return;
-            
-            /*foreach (var module in _objectPreset.modules)
-                if (module is THandler handler) 
-                    invoke(handler, _parent, _entityIndex, _objectPreset.presetUid);*/
 
             // If this event surface doesn't have children - early return.
             if (surfaceIndex < 0 || surfaceIndex >= _objectPreset.surfaceModules.Count)

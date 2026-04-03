@@ -15,15 +15,15 @@ namespace Spellbound.Core {
     /// Poco1
     /// Poco to assist management of object data by the parent.
     /// </summary>
-    public class ObjectParent : IDisposable{
-        private IObjectParent _implementer;
-        private Transform _transform;
-        private readonly IObjectDataStore _dataStore;
+    public class ObjectParent : IDisposable {
+        private readonly IObjectParent _implementer;
+        private readonly Transform _transform;
 
         private Action<LocalTransform, int, ObjectPreset> _surfaceSpawnAction;
-        public IObjectDataStore DataStore => _dataStore;
-        private Dictionary<int, EventSurface> _eventSurfaces = new();
-        private Dictionary<int, Entity> _entities = new();
+        public IObjectDataStore DataStore { get; }
+
+        private readonly Dictionary<int, EventSurface> _eventSurfaces = new();
+        private readonly Dictionary<int, Entity> _entities = new();
 
         public void Dispose() {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -31,23 +31,21 @@ namespace Spellbound.Core {
             using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
             em.DestroyEntity(entities);
             
-            _dataStore.OnInstanceRemoved -= HandleInstanceRemoved;
-            _dataStore.OnInstanceCreated -= HandleInstanceAdded;
+            DataStore.OnInstanceRemoved -= HandleInstanceRemoved;
+            DataStore.OnInstanceCreated -= HandleInstanceAdded;
         }
         
-
         public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId, Action<LocalTransform, int, ObjectPreset> surfaceSpawnAction = null) {
             _implementer = implementer;
             _transform = transform;
-            _dataStore = dataStore;
+            DataStore = dataStore;
             _surfaceSpawnAction = surfaceSpawnAction ?? SpawnSurface;
-            _dataStore.OnInstanceRemoved += HandleInstanceRemoved;
-            _dataStore.OnInstanceCreated += HandleInstanceAdded;
+            DataStore.OnInstanceRemoved += HandleInstanceRemoved;
+            DataStore.OnInstanceCreated += HandleInstanceAdded;
         }
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) {
-            Debug.Log("ObjectParent creating the instance");
-            _dataStore.CreateInstance(preset.presetUid, position, rotation, scale);
+            DataStore.CreateInstance(preset.presetUid, position, rotation, scale);
         }
 
         public void ActivateObjects(NativeList<PristineGoData> objects) {
@@ -58,9 +56,7 @@ namespace Spellbound.Core {
             
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             
-            for (int i = 0; i < objects.Length; i++) {
-                var data = objects[i];
-                
+            foreach (var data in objects) {
                 var entity = em.Instantiate(data.entityPrefab);
                 
                 em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
@@ -74,11 +70,11 @@ namespace Spellbound.Core {
                 _entities[idx] = entity;
                 idx++;
             }
-            _dataStore.NextInstanceIndex = idx;
+            DataStore.SetNextInstanceIndex(idx);
         }
 
         private void HandleInstanceAdded(
-            int instanceIndex, string presetUid, Vector3 position, Vector3 rotation, int scale) {
+            int instanceIndex, string presetUid, TransformData transformData) {
             if (!presetUid.TryGetEntityPrefab(out var prefab)) {
                 return;
             }
@@ -88,20 +84,19 @@ namespace Spellbound.Core {
             var entity = em.Instantiate(prefab);
                 
             em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
-                position,
-                quaternion.Euler(rotation),
-                scale 
+                transformData.Position,
+                quaternion.Euler(transformData.Rotation),
+                transformData.Scale 
             ));
             em.SetComponentData(entity, new InstanceIndexComponent {
                 Value = instanceIndex
             });
             _entities[instanceIndex] = entity;
-
         }
         
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result) where T : IPacker, new() {
-            if (_dataStore.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
+            if (DataStore.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
                 result = data;
                 Debug.Log($"result is {result}");
                 return true;
@@ -113,12 +108,7 @@ namespace Spellbound.Core {
         
         public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData) 
                 where T : IPacker, new() {
-
-
-            if (!_dataStore.HasInstance(instanceIndex))
-                _dataStore.StoreInstance(instanceIndex, presetUid);
-            
-            _dataStore.Write(instanceIndex, presetUid, eventSurfaceIndex, newData);
+            DataStore.Write(instanceIndex, presetUid, eventSurfaceIndex, newData);
             return true;
         }
 
@@ -129,12 +119,12 @@ namespace Spellbound.Core {
             Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, delta {delta}");
             
             
-            _dataStore.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
+            DataStore.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
             
             return true;
         }
         
-        public async Task<bool> TryDeleteData(int instanceIndex) => await _dataStore.DeleteInstance(instanceIndex);
+        public async Task<bool> TryDeleteData(int instanceIndex) => await DataStore.TryDeleteInstance(instanceIndex);
 
         private void HandleInstanceRemoved(int instanceIndex) {
             DeleteEntity(instanceIndex);
@@ -173,10 +163,11 @@ namespace Spellbound.Core {
         }
 
         private void DespawnSurface(int instanceIndex) {
-            if (_eventSurfaces.TryGetValue(instanceIndex, out var proxy)) {
-                UnityEngine.Object.Destroy(proxy.gameObject);
-                _eventSurfaces.Remove(instanceIndex);
-            }
+            if (!_eventSurfaces.TryGetValue(instanceIndex, out var proxy)) 
+                return;
+
+            UnityEngine.Object.Destroy(proxy.gameObject);
+            _eventSurfaces.Remove(instanceIndex);
         }
         
         public void EntityDistanceQuery(Vector3 playerPosition) {
@@ -189,23 +180,14 @@ namespace Spellbound.Core {
                 var instanceIndex = em.GetComponentData<InstanceIndexComponent>(entity).Value;
                 var preset = presetUid.Value.ResolvePreset();
         
-                float distance = Vector3.Distance(playerPosition, transform.Position);
-                bool hasProxy = _eventSurfaces.ContainsKey(instanceIndex);
+                var distance = Vector3.Distance(playerPosition, transform.Position);
+                var hasProxy = _eventSurfaces.ContainsKey(instanceIndex);
 
                 if (distance < preset.interactionDistance && !hasProxy)
                     SpawnSurface(transform, instanceIndex, preset);
                 else if (distance > preset.interactionDistance + 10f && hasProxy)
                     DespawnSurface(instanceIndex);
             }
-        }
-        
-        private static string GetPackerId<T>() {
-            var id = PackerIdCache<T>.Id;
-
-            if (id == null)
-                Debug.LogWarning($"[ObjectParent] {typeof(T).Name} is missing a PackerIdAttribute.");
-
-            return id;
         }
     }
 }
