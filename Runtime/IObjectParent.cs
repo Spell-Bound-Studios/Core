@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
 
@@ -12,11 +13,6 @@ namespace Spellbound.Core {
     public interface IObjectParent {
         public ObjectParent ObjectParent { get; }
         void InitializeObjectParentChunk(Vector3Int id);
-
-        void SpawnSurface(LocalTransform localTransform, int instanceIndex, ObjectPreset preset)
-        => ObjectParent.SpawnSurface(localTransform, instanceIndex, preset);
-
-        void DespawnSurface(int instanceIndex)
-        => ObjectParent.DespawnSurface(instanceIndex);
+        
     }
 }

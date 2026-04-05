@@ -16,7 +16,7 @@ namespace Spellbound.Core {
 
         void StoreInstance(int instanceIndex, string presetUid);
         
-        void CreateInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
+        Task<int> CreateInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
         
         void CreateInstanceWithData<T>(string presetUid, Vector3 position, Vector3 rotation, int scale, int eventSurfaceIndex, T data)
                 where T : IPacker, new();

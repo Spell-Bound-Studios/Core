@@ -256,6 +256,8 @@ namespace Spellbound.Core.Packing {
             value ??= string.Empty;
             var bytes = Encoding.UTF8.GetBytes(value);
             WriteInt(ref buffer, bytes.Length);
+            if (bytes.Length > buffer.Length)
+                throw new ArgumentOutOfRangeException(nameof(buffer), "Buffer too small for string data");
             bytes.AsSpan().CopyTo(buffer);
             buffer = buffer[bytes.Length..];
         }

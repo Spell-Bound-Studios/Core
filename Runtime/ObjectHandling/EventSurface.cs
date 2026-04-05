@@ -11,6 +11,7 @@ namespace Spellbound.Core {
         [SerializeField] private int _entityIndex;
         public int EntityIndex => _entityIndex;
         private ObjectPreset _objectPreset;
+        public ObjectPreset ObjectPreset => _objectPreset;
         
         public void Initialize(int entityIndex, ObjectPreset preset) {
             _parent = GetComponentInParent<IObjectParent>();

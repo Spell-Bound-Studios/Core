@@ -26,7 +26,8 @@ namespace Spellbound.Core {
         private Dictionary<int, Entity> _entities = new();
         public Dictionary<int, Entity> Entities => _entities;
 
-        private Vector3 _lastPlayerPosition;
+        public Vector3 LastPlayerPosition;
+        
 
         public void Dispose() {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -99,7 +100,6 @@ namespace Spellbound.Core {
                 Value = instanceIndex
             });
             _entities[instanceIndex] = entity;
-            OneEntityDistanceQuery(entity);
         }
         
 
@@ -162,8 +162,8 @@ namespace Spellbound.Core {
             _entities.Remove(instanceIndex);
         }
         
-        public void FullEntityDistanceQuery(Vector3 playerPosition) {
-            _lastPlayerPosition = playerPosition;
+        public void EntityDistanceQuery(Vector3 playerPosition) {
+            LastPlayerPosition = playerPosition;
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             
             foreach(var entity in _entities.Values) {
@@ -177,26 +177,26 @@ namespace Spellbound.Core {
                 bool hasProxy = EventSurfaces.HasIndex(instanceIndex);
 
                 if (distance < preset.interactionDistance && !hasProxy)
-                    _implementer.SpawnSurface(transform, instanceIndex, preset);
+                    SpawnSurface(transform, instanceIndex, preset);
                 else if (distance > preset.interactionDistance + 10f && hasProxy)
-                    _implementer.DespawnSurface(instanceIndex);
+                    DespawnSurface(instanceIndex);
             }
         }
 
-        public void OneEntityDistanceQuery(Entity entity) {
+        void OneEntityDistanceQuery(Entity entity) {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             var transform = em.GetComponentData<LocalTransform>(entity);
             var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
             var instanceIndex = em.GetComponentData<InstanceIndexComponent>(entity).Value;
             var preset = presetUid.Value.ResolvePreset();
         
-            float distance = Vector3.Distance(_lastPlayerPosition, transform.Position);
+            float distance = Vector3.Distance(LastPlayerPosition, transform.Position);
             bool hasProxy = EventSurfaces.HasIndex(instanceIndex);
 
             if (distance < preset.interactionDistance && !hasProxy)
-                _implementer.SpawnSurface(transform, instanceIndex, preset);
+                SpawnSurface(transform, instanceIndex, preset);
             else if (distance > preset.interactionDistance + 10f && hasProxy)
-                _implementer.DespawnSurface(instanceIndex);
+                DespawnSurface(instanceIndex);
         }
 
         public void SpawnSurface(LocalTransform localTransform, int instanceIndex, ObjectPreset preset) {
