@@ -57,6 +57,11 @@ namespace Spellbound.Core {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             
             foreach (var data in objects) {
+                if (DataAccess.IsDeleted(idx)) {
+                    idx++;
+                    continue;
+                }
+                
                 var entity = em.Instantiate(data.entityPrefab);
                 
                 em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
@@ -70,6 +75,7 @@ namespace Spellbound.Core {
                 _entities[idx] = entity;
                 idx++;
             }
+            
             DataAccess.SetNextInstanceIndex(idx);
         }
 

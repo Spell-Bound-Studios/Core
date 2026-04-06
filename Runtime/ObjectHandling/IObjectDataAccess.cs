@@ -29,6 +29,9 @@ namespace Spellbound.Core {
         // Helper method to see if the index exists.
         bool HasInstance(int instanceIndex);
         
+        // Helper method to see if the index has been deleted.
+        bool IsDeleted(int instanceIndex);
+        
         // Intended to be the implementation for simply reading data on an instance.
         bool TryRead<T>(int instanceIndex, int eventSurfaceIndex, out T data)
                 where T : IPacker, new();
