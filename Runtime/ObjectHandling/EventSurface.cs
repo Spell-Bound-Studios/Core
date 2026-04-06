@@ -42,7 +42,7 @@ namespace Spellbound.Core {
                 return;
             
             // If it does have children loop through them and invoke.
-            foreach (var module in _objectPreset.surfaceModules[surfaceIndex].PresetModules)
+            foreach (var module in _objectPreset.surfaceModules[surfaceIndex].presetModules)
                 if (module is THandler handler)
                     invoke(handler, _parent, _entityIndex, _objectPreset.presetUid, surfaceIndex);
         }

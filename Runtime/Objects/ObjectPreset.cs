@@ -36,7 +36,7 @@ namespace Spellbound.Core {
             if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
                 return false;
 
-            foreach (var pm in surfaceModules[surfaceIndex].PresetModules) {
+            foreach (var pm in surfaceModules[surfaceIndex].presetModules) {
                 if (pm is not T t) 
                     continue;
 
@@ -58,7 +58,7 @@ namespace Spellbound.Core {
             if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
                 return false;
 
-            foreach (var pm in surfaceModules[surfaceIndex].PresetModules) {
+            foreach (var pm in surfaceModules[surfaceIndex].presetModules) {
                 if (!moduleType.IsAssignableFrom(pm.GetType())) 
                     continue;
 
@@ -73,7 +73,7 @@ namespace Spellbound.Core {
         /// </summary>
         public IEnumerable<PresetModule> GetAllModules() {
             foreach (var surface in surfaceModules)
-            foreach (var pm in surface.PresetModules)
+            foreach (var pm in surface.presetModules)
                 if (pm != null)
                     yield return pm;
         }

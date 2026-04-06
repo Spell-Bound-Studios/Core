@@ -6,7 +6,7 @@ using Spellbound.Core.Packing;
 using UnityEngine;
 
 namespace Spellbound.Core {
-    public interface IObjectDataStore {
+    public interface IObjectDataAccess {
         // Intended to flag a non-procedural objects creation via index, presetUid, position, rotation, scale.
         event Action<int, string, TransformData> OnInstanceCreated;
         

@@ -20,7 +20,7 @@ namespace Spellbound.Core {
         private readonly Transform _transform;
 
         private Action<LocalTransform, int, ObjectPreset> _surfaceSpawnAction;
-        public IObjectDataStore DataStore { get; }
+        public IObjectDataAccess DataAccess { get; }
 
         private readonly Dictionary<int, EventSurface> _eventSurfaces = new();
         private readonly Dictionary<int, Entity> _entities = new();
@@ -31,21 +31,21 @@ namespace Spellbound.Core {
             using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
             em.DestroyEntity(entities);
             
-            DataStore.OnInstanceRemoved -= HandleInstanceRemoved;
-            DataStore.OnInstanceCreated -= HandleInstanceAdded;
+            DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
+            DataAccess.OnInstanceCreated -= HandleInstanceAdded;
         }
         
-        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataStore dataStore, Vector3Int parentId, Action<LocalTransform, int, ObjectPreset> surfaceSpawnAction = null) {
+        public ObjectParent(IObjectParent implementer, Transform transform, IObjectDataAccess dataAccess, Vector3Int parentId, Action<LocalTransform, int, ObjectPreset> surfaceSpawnAction = null) {
             _implementer = implementer;
             _transform = transform;
-            DataStore = dataStore;
+            DataAccess = dataAccess;
             _surfaceSpawnAction = surfaceSpawnAction ?? SpawnSurface;
-            DataStore.OnInstanceRemoved += HandleInstanceRemoved;
-            DataStore.OnInstanceCreated += HandleInstanceAdded;
+            DataAccess.OnInstanceRemoved += HandleInstanceRemoved;
+            DataAccess.OnInstanceCreated += HandleInstanceAdded;
         }
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) {
-            DataStore.CreateInstance(preset.presetUid, position, rotation, scale);
+            DataAccess.CreateInstance(preset.presetUid, position, rotation, scale);
         }
 
         public void ActivateObjects(NativeList<PristineGoData> objects) {
@@ -70,7 +70,7 @@ namespace Spellbound.Core {
                 _entities[idx] = entity;
                 idx++;
             }
-            DataStore.SetNextInstanceIndex(idx);
+            DataAccess.SetNextInstanceIndex(idx);
         }
 
         private void HandleInstanceAdded(
@@ -96,7 +96,7 @@ namespace Spellbound.Core {
         
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result) where T : IPacker, new() {
-            if (DataStore.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
+            if (DataAccess.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
                 result = data;
                 Debug.Log($"result is {result}");
                 return true;
@@ -108,7 +108,7 @@ namespace Spellbound.Core {
         
         public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData) 
                 where T : IPacker, new() {
-            DataStore.Write(instanceIndex, presetUid, eventSurfaceIndex, newData);
+            DataAccess.Write(instanceIndex, presetUid, eventSurfaceIndex, newData);
             return true;
         }
 
@@ -119,12 +119,12 @@ namespace Spellbound.Core {
             Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, delta {delta}");
             
             
-            DataStore.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
+            DataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
             
             return true;
         }
         
-        public async Task<bool> TryDeleteData(int instanceIndex) => await DataStore.TryDeleteInstance(instanceIndex);
+        public async Task<bool> TryDeleteData(int instanceIndex) => await DataAccess.TryDeleteInstance(instanceIndex);
 
         private void HandleInstanceRemoved(int instanceIndex) {
             DeleteEntity(instanceIndex);
