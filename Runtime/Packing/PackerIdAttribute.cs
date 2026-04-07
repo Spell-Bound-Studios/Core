@@ -7,7 +7,10 @@ namespace Spellbound.Core.Packing {
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
     public sealed class PackerIdAttribute : Attribute {
         public string Id { get; }
-        public PackerIdAttribute(string id) => Id = id;
+
+        public PackerIdAttribute(string id) {
+            Id = id;
+        }
     }
 
     public static class PackerIdCache<T> {

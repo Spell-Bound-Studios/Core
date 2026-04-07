@@ -15,8 +15,9 @@ namespace Spellbound.Core {
             var entity = GetEntity(TransformUsageFlags.Renderable);
 
             AddComponent(entity, new PresetUidComponent {
-                Value= authoring.preset.presetUid
+                Value = authoring.preset.presetUid
             });
+
             AddComponent(entity, new InstanceIndexComponent {
                 Value = -1
             });

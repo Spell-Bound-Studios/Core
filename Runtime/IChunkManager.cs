@@ -1,4 +1,4 @@
-// Copyright 2025 Spellbound Studio Inc.
+// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using UnityEngine;
@@ -13,6 +13,6 @@ namespace Spellbound.Core {
 
         public event Action<Vector3> OnPlayerPositionChanged;
 
-        public bool TryGetObjectParentChunk(Vector3 position, out  IObjectParent chunk);
+        public bool TryGetObjectParentChunk(Vector3 position, out IObjectParent chunk);
     }
 }

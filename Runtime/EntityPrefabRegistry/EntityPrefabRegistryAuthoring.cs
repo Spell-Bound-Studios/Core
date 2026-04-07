@@ -1,4 +1,4 @@
-// Copyright 2025 Spellbound Studio Inc.
+// Copyright 2026 Spellbound Studio Inc.
 
 using Unity.Entities;
 using UnityEngine;
@@ -21,6 +21,7 @@ namespace Spellbound.Core {
             foreach (var preset in presets) {
                 if (preset.bakePrefab == null) {
                     Debug.LogWarning($"Preset {preset.presetUid} has no bakePrefab assigned, skipping.");
+
                     continue;
                 }
 

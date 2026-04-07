@@ -4,7 +4,5 @@ using System;
 
 namespace Spellbound.Core {
     [Serializable]
-    public abstract class PresetModule {
-        
-    }
+    public abstract class PresetModule { }
 }

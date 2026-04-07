@@ -1,3 +1,5 @@
+// Copyright 2026 Spellbound Studio Inc.
+
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -18,5 +20,4 @@ namespace Spellbound.Core {
             EntityIndex = entityIndex;
         }
     }
-
 }

@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Collections.Generic;
@@ -140,7 +140,7 @@ namespace Spellbound.Core.Console {
             }
 
             AllCommandNames.Add(commandName);
-            
+
             CommandRegistryUtilities.LogCommandRegistered(
                 commandName,
                 $"{commandInfo.DeclaringClass?.Name}.{commandInfo.Method.Name} [Module: {attr.RequiredModuleType.Name}]");

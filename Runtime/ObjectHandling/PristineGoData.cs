@@ -1,7 +1,6 @@
-// Copyright 2025 Spellbound Studio Inc.
+// Copyright 2026 Spellbound Studio Inc.
 
 using System;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -16,6 +15,7 @@ namespace Spellbound.Core {
         public float3 rotation;
         public float3 scale;
         public Entity entityPrefab;
+
         public PristineGoData(
             float3 pos,
             float3 rot,
@@ -28,7 +28,6 @@ namespace Spellbound.Core {
             entityPrefab = prefab;
         }
 
-        public override string ToString() =>
-                $"GoData at: {position}, {rotation}, {scale}, {entityPrefab}";
+        public override string ToString() => $"GoData at: {position}, {rotation}, {scale}, {entityPrefab}";
     }
 }
