@@ -28,13 +28,16 @@ namespace Spellbound.Core {
         private readonly Dictionary<int, Entity> _entities = new();
 
         public void Dispose() {
-            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-
-            using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
-            em.DestroyEntity(entities);
-
             DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
             DataAccess.OnInstanceCreated -= HandleInstanceAdded;
+
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world is not { IsCreated: true })
+                return;
+
+            var em = world.EntityManager;
+            using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
+            em.DestroyEntity(entities);
         }
 
         public ObjectParent(

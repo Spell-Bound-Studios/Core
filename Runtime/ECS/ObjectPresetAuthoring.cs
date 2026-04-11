@@ -12,6 +12,11 @@ namespace Spellbound.Core {
 
     public class ObjectPresetBaker : Baker<ObjectPresetAuthoring> {
         public override void Bake(ObjectPresetAuthoring authoring) {
+            if (authoring.preset == null) {
+                Debug.LogError($"[ObjectPresetBaker] Missing ObjectPreset on '{authoring.gameObject.name}'!", authoring);
+                return;
+            }
+            
             var entity = GetEntity(TransformUsageFlags.Renderable);
 
             AddComponent(entity, new PresetUidComponent {
