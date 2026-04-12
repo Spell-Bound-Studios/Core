@@ -184,6 +184,11 @@ namespace Spellbound.Core {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             foreach (var entity in _entities.Values) {
+
+                if (!em.Exists(entity)) {
+                    continue;
+                }
+                
                 var transform = em.GetComponentData<LocalTransform>(entity);
                 var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
                 var instanceIndex = em.GetComponentData<InstanceIndexComponent>(entity).Value;
