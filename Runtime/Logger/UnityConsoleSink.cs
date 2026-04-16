@@ -7,6 +7,7 @@ namespace Spellbound.Core.Logging {
     /// This wraps the unity console so that you can still get Debug.X to the unity console with our logging tool.
     /// </summary>
     public class UnityConsoleSink : ILogSink {
+        public string DisplayName => "Unity Console";
         public void Emit(LogLevel level, string source, string message) {
             var formatted = $"[{source}] {message}";
             switch (level) {
