@@ -4,15 +4,15 @@ using System.Diagnostics;
 
 namespace Spellbound.Core.Logging {
     public static class Log {
-        private static ILogSink[] _sinks = System.Array.Empty<ILogSink>();
-
-        public static void AddSink(ILogSink sink, LogConfig config) {
+        private static RegisteredSink[] _sinks = System.Array.Empty<RegisteredSink>();
+        
+        public static void AddSink(ILogSink sink, LogConfig config, LogLevel filterLevel) {
             sink.Initialize(config);
-            
+
             var old = _sinks;
-            var next = new ILogSink[old.Length + 1];
+            var next = new RegisteredSink[old.Length + 1];
             System.Array.Copy(old, next, old.Length);
-            next[old.Length] = sink;
+            next[old.Length] = new RegisteredSink { Sink = sink, FilterLevel = filterLevel };
             _sinks = next;
         }
 
@@ -32,8 +32,16 @@ namespace Spellbound.Core.Logging {
 
         private static void Emit(LogLevel level, string source, string message) {
             var sinks = _sinks;
-            foreach (var sink in sinks)
-                sink.Emit(level, source, message);
+            for (var i = 0; i < sinks.Length; i++) {
+                if (level < sinks[i].FilterLevel)
+                    continue;
+                sinks[i].Sink.Emit(level, source, message);
+            }
+        }
+        
+        private struct RegisteredSink {
+            public ILogSink Sink;
+            public LogLevel FilterLevel;
         }
     }
 }

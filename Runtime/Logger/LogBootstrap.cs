@@ -57,7 +57,7 @@ namespace Spellbound.Core.Logging {
 
                 try {
                     var sink = (ILogSink)Activator.CreateInstance(type);
-                    Log.AddSink(sink, config);
+                    Log.AddSink(sink, config, entry.filterLevel);
                 }
                 catch (Exception ex) {
                     Debug.LogError(

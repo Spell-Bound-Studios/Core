@@ -6,5 +6,6 @@ namespace Spellbound.Core.Logging {
         public string qualifiedTypeName;
         public string displayName;
         public bool enabled;
+        public LogLevel filterLevel;
     }
 }

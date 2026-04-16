@@ -30,6 +30,15 @@ namespace Spellbound.Core.Logging.Editor {
         private const string LevelSubtitle = "Minimum severity compiled into all Spellbound packages.";
         private const string FileSubtitle = "Name of the log file written to the persistent data path.";
         private const string SinksSubtitle = "Toggle where log output is routed.";
+        private const string UndoSinkFilterLabel = "Change Sink Filter Level";
+        private const string SinkFilterLabel = "  Filter Level";
+        
+        private const string LevelDescVerbose = "Compiles all log calls: Verbose, Debug, Info, Warning, and Error.";
+        private const string LevelDescDebug = "Compiles Debug, Info, Warning, and Error. Strips Verbose.";
+        private const string LevelDescInfo = "Compiles Info, Warning, and Error. Strips Debug and below.";
+        private const string LevelDescWarning = "Compiles Warning and Error only. Strips Info and below.";
+        private const string LevelDescError = "Error only. All other log calls are stripped from the build.";
+        private const string LevelDescNone = "Strips all log calls except Error. Equivalent to Error.";
 
         private static GUIStyle _headerStyle;
         private static GUIStyle _subtitleStyle;
@@ -88,7 +97,21 @@ namespace Spellbound.Core.Logging.Editor {
                 config.globalLevel = newLevel;
             }
 
+            EditorGUILayout.LabelField(GetLevelDescription(config.globalLevel), _subtitleStyle);
+
             EditorGUILayout.EndVertical();
+        }
+
+        private static string GetLevelDescription(LogLevel level) {
+            return level switch {
+                LogLevel.Verbose => LevelDescVerbose,
+                LogLevel.Debug   => LevelDescDebug,
+                LogLevel.Info    => LevelDescInfo,
+                LogLevel.Warning => LevelDescWarning,
+                LogLevel.Error   => LevelDescError,
+                LogLevel.None    => LevelDescNone,
+                _                => ""
+            };
         }
 
         private static void DrawFileSection(LogConfig config) {
@@ -110,22 +133,27 @@ namespace Spellbound.Core.Logging.Editor {
             EditorGUILayout.BeginVertical(_sectionStyle);
 
             EditorGUILayout.LabelField(SinksLabel, EditorStyles.boldLabel);
-            EditorGUILayout.LabelField(
-                SinksSubtitle,
-                _subtitleStyle
-            );
+            EditorGUILayout.LabelField(SinksSubtitle, _subtitleStyle);
 
             SyncSinkEntries(config, DiscoverSinks());
 
             for (var i = 0; i < config.sinks.Length; i++) {
                 var entry = config.sinks[i];
+
                 var newEnabled = EditorGUILayout.Toggle(entry.displayName, entry.enabled);
+                if (newEnabled != entry.enabled) {
+                    Undo.RecordObject(config, UndoSinkLabel);
+                    config.sinks[i].enabled = newEnabled;
+                }
 
-                if (newEnabled == entry.enabled)
-                    continue;
+                var newFilter = DrawFilteredLevelPopup(SinkFilterLabel, entry.filterLevel, config.globalLevel);
+                if (newFilter != entry.filterLevel) {
+                    Undo.RecordObject(config, UndoSinkFilterLabel);
+                    config.sinks[i].filterLevel = newFilter;
+                }
 
-                Undo.RecordObject(config, UndoSinkLabel);
-                config.sinks[i].enabled = newEnabled;
+                if (i < config.sinks.Length - 1)
+                    EditorGUILayout.Space(4);
             }
 
             EditorGUILayout.EndVertical();
@@ -219,6 +247,28 @@ namespace Spellbound.Core.Logging.Editor {
                     Debug.LogError($"[LogConfigEditor] Unhandled log level: {level}");
                     break;
             }
+        }
+        
+        private static LogLevel DrawFilteredLevelPopup(string label, LogLevel current, LogLevel floor) {
+            // Build arrays of only valid options (at or above the global level)
+            var validLevels = new List<LogLevel>();
+            var validNames = new List<string>();
+
+            foreach (LogLevel level in Enum.GetValues(typeof(LogLevel))) {
+                if (level < floor)
+                    continue;
+
+                validLevels.Add(level);
+                validNames.Add(level.ToString());
+            }
+
+            // Find current selection index, clamp to floor if invalid
+            var currentIndex = validLevels.IndexOf(current);
+            if (currentIndex < 0)
+                currentIndex = 0;
+
+            var newIndex = EditorGUILayout.Popup(label, currentIndex, validNames.ToArray());
+            return validLevels[newIndex];
         }
 
         private struct DiscoveredSink {
