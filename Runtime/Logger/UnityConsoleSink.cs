@@ -1,0 +1,33 @@
+﻿// Copyright 2026 Spellbound Studio Inc.
+
+using System;
+
+namespace Spellbound.Core.Logging {
+    /// <summary>
+    /// This wraps the unity console so that you can still get Debug.X to the unity console with our logging tool.
+    /// </summary>
+    public class UnityConsoleSink : ILogSink {
+        public string DisplayName => "Unity Console";
+        public void Emit(LogLevel level, string source, string message) {
+            var formatted = $"[{source}] {message}";
+            switch (level) {
+                case LogLevel.Warning:
+                    UnityEngine.Debug.LogWarning(formatted);
+                    break;
+                case LogLevel.Error:
+                    UnityEngine.Debug.LogError(formatted);
+                    break;
+                case LogLevel.Verbose:
+                    break;
+                case LogLevel.Debug:
+                    UnityEngine.Debug.Log(formatted);
+                    break;
+                case LogLevel.Info:
+                case LogLevel.None:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(level), level, null);
+            }
+        }
+    }
+}
