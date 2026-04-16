@@ -6,7 +6,9 @@ namespace Spellbound.Core.Logging {
     public static class Log {
         private static ILogSink[] _sinks = System.Array.Empty<ILogSink>();
 
-        public static void AddSink(ILogSink sink) {
+        public static void AddSink(ILogSink sink, LogConfig config) {
+            sink.Initialize(config);
+            
             var old = _sinks;
             var next = new ILogSink[old.Length + 1];
             System.Array.Copy(old, next, old.Length);

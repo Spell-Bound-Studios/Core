@@ -8,6 +8,7 @@ namespace Spellbound.Core.Logging {
     /// </summary>
     public class UnityConsoleSink : ILogSink {
         public string DisplayName => "Unity Console";
+        public void Initialize(LogConfig config) { }
         public void Emit(LogLevel level, string source, string message) {
             var formatted = $"[{source}] {message}";
             switch (level) {

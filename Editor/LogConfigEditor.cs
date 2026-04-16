@@ -17,15 +17,18 @@ namespace Spellbound.Core.Logging.Editor {
         private const string DefineDebug = "SPELLBOUND_LOG_DEBUG";
         private const string DefineInfo = "SPELLBOUND_LOG_INFO";
         private const string DefineWarning = "SPELLBOUND_LOG_WARNING";
-
-        private const string HeaderLabel = "Spellbound Log Configuration";
+        
         private const string GlobalLabel = "Log Level";
+        private const string FileLabel = "File Output";
+        private const string FileNameLabel = "Log File Name";
+        private const string UndoFileNameLabel = "Change Log File Name";
+        private const string HeaderLabel = "Spellbound Log Configuration";
         private const string SinksLabel = "Sinks";
         private const string UndoLevelLabel = "Change Global Log Level";
         private const string UndoSinkLabel = "Toggle Log Sink";
         private const string ApplyLabel = "Apply";
-        
         private const string LevelSubtitle = "Minimum severity compiled into all Spellbound packages.";
+        private const string FileSubtitle = "Name of the log file written to the persistent data path.";
         private const string SinksSubtitle = "Toggle where log output is routed.";
 
         private static GUIStyle _headerStyle;
@@ -61,6 +64,8 @@ namespace Spellbound.Core.Logging.Editor {
 
             DrawLevelSection(config);
             EditorGUILayout.Space(4);
+            DrawFileSection(config);
+            EditorGUILayout.Space(4);
             DrawSinksSection(config);
             EditorGUILayout.Space(8);
 
@@ -75,15 +80,27 @@ namespace Spellbound.Core.Logging.Editor {
             EditorGUILayout.BeginVertical(_sectionStyle);
 
             EditorGUILayout.LabelField(GlobalLabel, EditorStyles.boldLabel);
-            EditorGUILayout.LabelField(
-                LevelSubtitle,
-                _subtitleStyle
-            );
+            EditorGUILayout.LabelField(LevelSubtitle, _subtitleStyle);
 
             var newLevel = (LogLevel)EditorGUILayout.EnumPopup(config.globalLevel);
             if (newLevel != config.globalLevel) {
                 Undo.RecordObject(config, UndoLevelLabel);
                 config.globalLevel = newLevel;
+            }
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private static void DrawFileSection(LogConfig config) {
+            EditorGUILayout.BeginVertical(_sectionStyle);
+
+            EditorGUILayout.LabelField(FileLabel, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(FileSubtitle, _subtitleStyle);
+
+            var newFileName = EditorGUILayout.TextField(FileNameLabel, config.logFileName);
+            if (newFileName != config.logFileName) {
+                Undo.RecordObject(config, UndoFileNameLabel);
+                config.logFileName = newFileName;
             }
 
             EditorGUILayout.EndVertical();
