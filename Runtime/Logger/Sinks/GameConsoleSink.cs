@@ -8,8 +8,8 @@ namespace Spellbound.Core.Logging {
 
         public void Initialize(LogConfig config) { }
 
-        public void Emit(LogLevel level, string source, string message) {
-            var formatted = $"[{source}] {message}";
+        public void Emit(LogLevel level, string source, string message, string member, int line) {
+            var formatted = $"[{source}.{member}:{line}] {message}";
 
             if (level >= LogLevel.Error)
                 Console.ConsoleLogger.PrintError(formatted);

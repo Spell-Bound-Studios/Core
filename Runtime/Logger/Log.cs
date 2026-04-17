@@ -1,11 +1,18 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace Spellbound.Core.Logging {
     public static class Log {
+        private struct RegisteredSink {
+            public ILogSink Sink;
+            public LogLevel FilterLevel;
+        }
+
         private static RegisteredSink[] _sinks = System.Array.Empty<RegisteredSink>();
-        
+
         public static void AddSink(ILogSink sink, LogConfig config, LogLevel filterLevel) {
             sink.Initialize(config);
 
@@ -17,31 +24,52 @@ namespace Spellbound.Core.Logging {
         }
 
         [Conditional("SPELLBOUND_LOG_VERBOSE")]
-        public static void Verbose(string source, string message) => Emit(LogLevel.Verbose, source, message);
+        public static void Verbose(
+            string message,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0
+        ) => Emit(LogLevel.Verbose, message, file, member, line);
 
         [Conditional("SPELLBOUND_LOG_DEBUG")]
-        public static void Debug(string source, string message) => Emit(LogLevel.Debug, source, message);
+        public static void Debug(
+            string message,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0
+        ) => Emit(LogLevel.Debug, message, file, member, line);
 
         [Conditional("SPELLBOUND_LOG_INFO")]
-        public static void Info(string source, string message) => Emit(LogLevel.Info, source, message);
+        public static void Info(
+            string message,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0
+        ) => Emit(LogLevel.Info, message, file, member, line);
 
         [Conditional("SPELLBOUND_LOG_WARNING")]
-        public static void Warning(string source, string message) => Emit(LogLevel.Warning, source, message);
+        public static void Warn(
+            string message,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0
+        ) => Emit(LogLevel.Warning, message, file, member, line);
 
-        public static void Error(string source, string message) => Emit(LogLevel.Error, source, message);
+        public static void Error(
+            string message,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0
+        ) => Emit(LogLevel.Error, message, file, member, line);
 
-        private static void Emit(LogLevel level, string source, string message) {
+        public static void Emit(LogLevel level, string message, string file, string member, int line) {
+            var source = Path.GetFileNameWithoutExtension(file);
             var sinks = _sinks;
             for (var i = 0; i < sinks.Length; i++) {
                 if (level < sinks[i].FilterLevel)
                     continue;
-                sinks[i].Sink.Emit(level, source, message);
+                sinks[i].Sink.Emit(level, source, message, member, line);
             }
-        }
-        
-        private struct RegisteredSink {
-            public ILogSink Sink;
-            public LogLevel FilterLevel;
         }
     }
 }

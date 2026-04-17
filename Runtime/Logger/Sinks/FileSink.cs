@@ -74,7 +74,7 @@ namespace Spellbound.Core.Logging {
             }
         }
 
-        public void Emit(LogLevel level, string source, string message) {
+        public void Emit(LogLevel level, string source, string message, string member, int line) {
             if (!_initialized)
                 return;
 
@@ -82,10 +82,11 @@ namespace Spellbound.Core.Logging {
                 Level = level,
                 Source = source,
                 Message = message,
+                Member = member,
+                Line = line,
                 Timestamp = DateTime.UtcNow
             });
 
-            // Wake writer immediately for Warning+, batch Info/Debug.
             if (level >= LogLevel.Warning)
                 _signal.Set();
         }
@@ -123,7 +124,7 @@ namespace Spellbound.Core.Logging {
         private static string FormatEntry(LogEntry entry) {
             return $"[{entry.Timestamp.ToString(TimestampFormat)}] " +
                    $"[{entry.Level}] " +
-                   $"[{entry.Source}] " +
+                   $"[{entry.Source}.{entry.Member}:{entry.Line}] " +
                    $"{entry.Message}";
         }
 
@@ -178,6 +179,8 @@ namespace Spellbound.Core.Logging {
             public LogLevel Level;
             public string Source;
             public string Message;
+            public string Member;
+            public int Line;
             public DateTime Timestamp;
         }
     }
