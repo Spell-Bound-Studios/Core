@@ -257,6 +257,8 @@ namespace Spellbound.Core.Logging.Editor {
             foreach (LogLevel level in Enum.GetValues(typeof(LogLevel))) {
                 if (level < floor)
                     continue;
+                if (level == LogLevel.None)
+                    continue;
 
                 validLevels.Add(level);
                 validNames.Add(level.ToString());
