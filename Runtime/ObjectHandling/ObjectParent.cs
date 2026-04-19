@@ -54,8 +54,11 @@ namespace Spellbound.Core {
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) =>
                 DataAccess.CreateInstance(preset.presetUid, position, rotation, scale);
 
+        public void CreateNewInstanceWithData<T>(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale,
+            int eventSurfaceIndex, T data) where T : IPacker, new() =>
+                DataAccess.CreateInstanceWithData(preset.presetUid, position, rotation, scale, eventSurfaceIndex, data);
         public void ActivateObjects(NativeList<PristineGoData> objects) {
-            if (!objects.IsCreated || objects.Length == 0)
+            if (!objects.IsCreated)
                 return;
 
             var idx = 0;
@@ -82,6 +85,27 @@ namespace Spellbound.Core {
                 });
                 _entities[idx] = entity;
                 idx++;
+            }
+            
+            foreach (var kvp in DataAccess.GetAllInstances()) {
+                if (kvp.Value.Transform == null) {
+                    continue;
+                }
+
+                if (kvp.Key >= objects.Length) {
+                    HandleInstanceAdded(kvp.Key, kvp.Value.PresetUid, kvp.Value.Transform.Value);
+                    idx = kvp.Key;
+                    continue;
+                }
+
+                if (_entities.TryGetValue(kvp.Key, out var entity)) {
+                    em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
+                        kvp.Value.Transform.Value.Position,
+                        quaternion.Euler(kvp.Value.Transform.Value.Rotation),
+                        kvp.Value.Transform.Value.Scale
+                    ));
+                }
+                
             }
 
             DataAccess.SetNextInstanceIndex(idx);

@@ -1,12 +1,17 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Spellbound.Core.Packing;
 using UnityEngine;
 
 namespace Spellbound.Core {
     public interface IObjectDataAccess {
+        
+        // On Loading this is all the Instances to Instantiate.
+        Dictionary<int, InstanceEntry> GetAllInstances();
+        
         // Intended to flag a non-procedural objects creation via index, presetUid, position, rotation, scale.
         event Action<int, string, TransformData> OnInstanceCreated;
 
