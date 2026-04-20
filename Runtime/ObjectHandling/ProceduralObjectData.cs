@@ -10,13 +10,13 @@ namespace Spellbound.Core {
     /// Its custom data must be inserted separately outside of jobs
     /// </summary>
     [Serializable]
-    public struct PristineGoData {
+    public struct ProceduralObjectData {
         public float3 position;
         public float3 rotation;
         public float3 scale;
         public Entity entityPrefab;
 
-        public PristineGoData(
+        public ProceduralObjectData(
             float3 pos,
             float3 rot,
             float3 sc,

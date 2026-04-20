@@ -22,7 +22,7 @@ namespace Spellbound.Core {
         event Action<int, InstanceDataKey> OnInstanceDataChanged;
 
         // Intended to separate procedural instances from runtime instances.
-        void SetNextInstanceIndex(int instanceIndex);
+        void SetProceduralInstanceCount(int instanceIndex);
 
         // Intended to be the implementation for a non-procedural object creation via index, presetUid, position, rotation, scale.
         void CreateInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);

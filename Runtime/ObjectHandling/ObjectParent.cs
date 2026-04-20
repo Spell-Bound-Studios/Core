@@ -57,34 +57,32 @@ namespace Spellbound.Core {
         public void CreateNewInstanceWithData<T>(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale,
             int eventSurfaceIndex, T data) where T : IPacker, new() =>
                 DataAccess.CreateInstanceWithData(preset.presetUid, position, rotation, scale, eventSurfaceIndex, data);
-        public void ActivateObjects(NativeList<PristineGoData> objects) {
+        public void ActivateObjects(NativeList<ProceduralObjectData> objects) {
             if (!objects.IsCreated)
                 return;
-
-            var idx = 0;
-
+            
+            DataAccess.SetProceduralInstanceCount(objects.Length);
+            
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            foreach (var data in objects) {
-                if (DataAccess.IsDeleted(idx)) {
-                    idx++;
-
+            for (var i = 0; i < objects.Length; i++) {
+                if (DataAccess.IsDeleted(i)) {
                     continue;
                 }
 
-                var entity = em.Instantiate(data.entityPrefab);
+                var entity = em.Instantiate(objects[i].entityPrefab);
 
                 em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
-                    data.position,
-                    quaternion.Euler(data.rotation),
-                    data.scale.x
+                    objects[i].position,
+                    quaternion.Euler(objects[i].rotation),
+                    objects[i].scale.x
                 ));
 
                 em.SetComponentData(entity, new InstanceIndexComponent {
-                    Value = idx
+                    Value = i
                 });
-                _entities[idx] = entity;
-                idx++;
+                _entities[i] = entity;
+
             }
             
             foreach (var kvp in DataAccess.GetAllInstances()) {
@@ -94,21 +92,8 @@ namespace Spellbound.Core {
 
                 if (kvp.Key >= objects.Length) {
                     HandleInstanceAdded(kvp.Key, kvp.Value.PresetUid, kvp.Value.Transform.Value);
-                    idx = kvp.Key;
-                    continue;
                 }
-
-                if (_entities.TryGetValue(kvp.Key, out var entity)) {
-                    em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
-                        kvp.Value.Transform.Value.Position,
-                        quaternion.Euler(kvp.Value.Transform.Value.Rotation),
-                        kvp.Value.Transform.Value.Scale
-                    ));
-                }
-                
             }
-
-            DataAccess.SetNextInstanceIndex(idx);
         }
 
         private void HandleInstanceAdded(
