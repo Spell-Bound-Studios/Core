@@ -24,7 +24,7 @@ namespace Spellbound.Core {
         private Action<LocalTransform, int, ObjectPreset> _surfaceSpawnAction;
         public IObjectDataAccess DataAccess { get; }
 
-        private readonly Dictionary<int, EventSurface> _eventSurfaces = new();
+        private readonly Dictionary<int, StaticEventSurface> _eventSurfaces = new();
         private readonly Dictionary<int, Entity> _entities = new();
 
         public void Dispose() {
@@ -170,7 +170,7 @@ namespace Spellbound.Core {
 
         public void SpawnSurface(LocalTransform transform, int instanceIndex, ObjectPreset preset) {
             var eventSurface = UnityEngine.Object.Instantiate(
-                preset.eventSurfacePrefab,
+                preset.staticEventSurfacePrefab,
                 transform.Position,
                 transform.Rotation,
                 _transform
@@ -195,6 +195,10 @@ namespace Spellbound.Core {
             foreach (var entity in _entities.Values) {
 
                 if (!em.Exists(entity)) {
+                    continue;
+                }
+
+                if (em.HasComponent<DynamicTag>(entity)) {
                     continue;
                 }
                 

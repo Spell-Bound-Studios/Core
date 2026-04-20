@@ -26,6 +26,10 @@ namespace Spellbound.Core {
             AddComponent(entity, new InstanceIndexComponent {
                 Value = -1
             });
+
+            if (authoring.preset.staticEventSurfacePrefab.GetComponent<MeshRenderer>() != null) {
+                AddComponent(entity, new DynamicTag());
+            }
         }
     }
 }
