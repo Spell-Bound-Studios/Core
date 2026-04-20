@@ -27,7 +27,7 @@ namespace Spellbound.Core {
                 Value = -1
             });
 
-            if (authoring.preset.staticEventSurfacePrefab.GetComponent<MeshRenderer>() != null) {
+            if (authoring.preset.eventSurfacePrefab.GetComponent<MeshRenderer>() != null) {
                 AddComponent(entity, new DynamicTag());
             }
         }

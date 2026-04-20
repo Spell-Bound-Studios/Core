@@ -20,12 +20,11 @@ namespace Spellbound.Core {
     public class ObjectParent : IDisposable {
         private readonly IObjectParent _implementer;
         private readonly Transform _transform;
-
-        private Action<LocalTransform, int, ObjectPreset> _surfaceSpawnAction;
+        
         public IObjectDataAccess DataAccess { get; }
 
-        private readonly Dictionary<int, StaticEventSurface> _eventSurfaces = new();
-        private readonly Dictionary<int, Entity> _entities = new();
+        public readonly Dictionary<int, IEventSurface> EventSurfaces = new();
+        public readonly Dictionary<int, Entity> Entities = new();
 
         public void Dispose() {
             DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
@@ -36,17 +35,15 @@ namespace Spellbound.Core {
                 return;
 
             var em = world.EntityManager;
-            using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
+            using var entities = new NativeArray<Entity>(Entities.Values.ToArray(), Allocator.Temp);
             em.DestroyEntity(entities);
         }
 
         public ObjectParent(
-            IObjectParent implementer, Transform transform, IObjectDataAccess dataAccess, Vector3Int parentId,
-            Action<LocalTransform, int, ObjectPreset> surfaceSpawnAction = null) {
+            IObjectParent implementer, Transform transform, IObjectDataAccess dataAccess, Vector3Int parentId) {
             _implementer = implementer;
             _transform = transform;
             DataAccess = dataAccess;
-            _surfaceSpawnAction = surfaceSpawnAction ?? SpawnSurface;
             DataAccess.OnInstanceRemoved += HandleInstanceRemoved;
             DataAccess.OnInstanceCreated += HandleInstanceAdded;
         }
@@ -81,7 +78,8 @@ namespace Spellbound.Core {
                 em.SetComponentData(entity, new InstanceIndexComponent {
                     Value = i
                 });
-                _entities[i] = entity;
+                
+                Entities[i] = entity;
 
             }
             
@@ -113,7 +111,7 @@ namespace Spellbound.Core {
             em.SetComponentData(entity, new InstanceIndexComponent {
                 Value = instanceIndex
             });
-            _entities[instanceIndex] = entity;
+            Entities[instanceIndex] = entity;
         }
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
@@ -154,51 +152,49 @@ namespace Spellbound.Core {
         }
 
         private void DeleteEventSurface(int instanceIndex) {
-            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) return;
+            if (!EventSurfaces.TryGetValue(instanceIndex, out var surface)) return;
 
-            UnityEngine.Object.Destroy(surface.gameObject);
-            _eventSurfaces.Remove(instanceIndex);
+            UnityEngine.Object.Destroy(surface.GetGameObject());
+            EventSurfaces.Remove(instanceIndex);
         }
 
         private void DeleteEntity(int instanceIndex) {
-            if (!_entities.TryGetValue(instanceIndex, out var entity)) return;
+            if (!Entities.TryGetValue(instanceIndex, out var entity)) return;
 
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             em.DestroyEntity(entity);
-            _entities.Remove(instanceIndex);
+            Entities.Remove(instanceIndex);
         }
 
         public void SpawnSurface(LocalTransform transform, int instanceIndex, ObjectPreset preset) {
-            var eventSurface = UnityEngine.Object.Instantiate(
-                preset.staticEventSurfacePrefab,
+            var eventSurfaceObj = UnityEngine.Object.Instantiate(
+                preset.eventSurfacePrefab,
                 transform.Position,
                 transform.Rotation,
                 _transform
             );
-            eventSurface.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
-            eventSurface.transform.localScale = transform.Scale * Vector3.one;
+            eventSurfaceObj.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
+            eventSurfaceObj.transform.localScale = transform.Scale * Vector3.one;
+            
+            var eventSurface = eventSurfaceObj.GetComponent<IEventSurface>();
             eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
-            _eventSurfaces[instanceIndex] = eventSurface;
+            EventSurfaces[instanceIndex] = eventSurface;
         }
 
-        private void DespawnSurface(int instanceIndex) {
-            if (!_eventSurfaces.TryGetValue(instanceIndex, out var proxy))
+        public void DespawnSurface(int instanceIndex) {
+            if (!EventSurfaces.TryGetValue(instanceIndex, out var proxy))
                 return;
 
-            UnityEngine.Object.Destroy(proxy.gameObject);
-            _eventSurfaces.Remove(instanceIndex);
+            UnityEngine.Object.Destroy(proxy.GetGameObject());
+            EventSurfaces.Remove(instanceIndex);
         }
 
         public void EntityDistanceQuery(Vector3 playerPosition) {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            foreach (var entity in _entities.Values) {
+            foreach (var entity in Entities.Values) {
 
                 if (!em.Exists(entity)) {
-                    continue;
-                }
-
-                if (em.HasComponent<DynamicTag>(entity)) {
                     continue;
                 }
                 
@@ -208,7 +204,7 @@ namespace Spellbound.Core {
                 var preset = presetUid.Value.ResolvePreset();
 
                 var distance = Vector3.Distance(playerPosition, transform.Position);
-                var hasProxy = _eventSurfaces.ContainsKey(instanceIndex);
+                var hasProxy = EventSurfaces.ContainsKey(instanceIndex);
 
                 if (distance < preset.interactionDistance && !hasProxy)
                     SpawnSurface(transform, instanceIndex, preset);

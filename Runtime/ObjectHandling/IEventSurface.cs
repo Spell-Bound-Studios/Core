@@ -2,9 +2,12 @@
 
 using System;
 using Spellbound.Core.Logging;
+using UnityEngine;
 
 namespace Spellbound.Core {
     public interface IEventSurface {
+
+        GameObject GetGameObject();
         void Initialize(IObjectParent iobjectParent, int entityIndex, string presetUid);
 
         public void DebugQueryPing();

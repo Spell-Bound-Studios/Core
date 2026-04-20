@@ -14,6 +14,8 @@ namespace Spellbound.Core {
         private IObjectParent _parent;
         private int _entityIndex;
         private ObjectPreset _objectPreset;
+        
+        public GameObject GetGameObject() => gameObject;
 
         public void Initialize(IObjectParent iobjectParent, int entityIndex, string presetUid) {
             _parent = iobjectParent;
