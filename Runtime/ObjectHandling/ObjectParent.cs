@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Spellbound.Core.ECS;
+using Spellbound.Core.Logging;
 using Spellbound.Core.Packing;
 using Unity.Collections;
 using Unity.Entities;
@@ -38,7 +39,6 @@ namespace Spellbound.Core {
             var em = world.EntityManager;
             using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
             em.DestroyEntity(entities);
-            _entities = null;
         }
 
         public ObjectParent(
@@ -82,7 +82,9 @@ namespace Spellbound.Core {
                 em.SetComponentData(entity, new InstanceIndexComponent {
                     Value = i
                 });
-                _entities[i] = entity;
+                if (!_entities.TryAdd(i, entity)){
+                    Log.Error($"Failing to add to entity dictionary. Assume a duplicate entity exists in the dictionary");
+                }
 
             }
             
