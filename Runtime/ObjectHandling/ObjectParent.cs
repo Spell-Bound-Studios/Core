@@ -25,7 +25,7 @@ namespace Spellbound.Core {
         public IObjectDataAccess DataAccess { get; }
 
         private readonly Dictionary<int, EventSurface> _eventSurfaces = new();
-        private readonly Dictionary<int, Entity> _entities = new();
+        private Dictionary<int, Entity> _entities = new();
 
         public void Dispose() {
             DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
@@ -38,6 +38,7 @@ namespace Spellbound.Core {
             var em = world.EntityManager;
             using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
             em.DestroyEntity(entities);
+            _entities = null;
         }
 
         public ObjectParent(
