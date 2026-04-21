@@ -39,6 +39,7 @@ namespace Spellbound.Core {
             var em = world.EntityManager;
             using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
             em.DestroyEntity(entities);
+            _entities = null;
         }
 
         public ObjectParent(
