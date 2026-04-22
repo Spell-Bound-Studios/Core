@@ -13,11 +13,12 @@ namespace Spellbound.Core {
         // On Loading this is all the Instances to Instantiate.
         Dictionary<int, InstanceEntry> GetAllInstances();
         
-        // For incoming reparenting moving objects
-        int ImmigrateInstance(InstanceEntry entry);
+        // For for reparenting moving objects
+        int MigrateInstance(int instanceIndex, Vector3Int newCoord, IObjectParent newParent);
         
-        // For outgoing reparenting moving objects
-        InstanceEntry EmigrateInstance(int instanceIndex);
+        int AddNewInstanceSilently(InstanceEntry instanceEntry);
+        
+        void AddInstanceSilently(int instanceIndex, InstanceEntry instanceEntry);
         
         // Updates the transform data of an instance
         void RefreshInstanceTransform(int instanceIndex, TransformData transformData);

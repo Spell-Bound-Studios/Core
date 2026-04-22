@@ -13,7 +13,6 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using Unity.Jobs;
-using Unity.Rendering;
 
 namespace Spellbound.Core {
     /// <summary>
@@ -167,23 +166,9 @@ namespace Spellbound.Core {
             DeleteEntity(instanceIndex);
             DeleteEventSurface(instanceIndex);
         }
-        
-        public InstanceEntry UnregisterInstance(int instanceIndex) {
 
-            DeleteEntity(instanceIndex);
-
-            if (!EventSurfaces.Remove(instanceIndex)) {
-                Log.Debug($"EventSurface Not found in EventSurfaces Dictionary");
-            }
-            
-            return DataAccess.EmigrateInstance(instanceIndex);
-
-            
-        }
-        
-        public int RegisterInstance(InstanceEntry entry) {
-            var instanceIndex = DataAccess.ImmigrateInstance(entry);
-            return instanceIndex;
+        public int Migrate(int instanceIndex, Vector3Int destinationCoord, IObjectParent newParent) {
+            return DataAccess.MigrateInstance(instanceIndex, destinationCoord, newParent);
         }
 
         private void DeleteEventSurface(int instanceIndex) {
@@ -217,7 +202,6 @@ namespace Spellbound.Core {
                 
             var localTransform = em.GetComponentData<LocalTransform>(entity);
             var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
-            var isDynamic = em.HasComponent<DynamicTag>(entity);
             var preset = presetUid.Value.ResolvePreset();
             
             var eventSurfaceObj = UnityEngine.Object.Instantiate(
@@ -231,7 +215,15 @@ namespace Spellbound.Core {
             
             var eventSurface = eventSurfaceObj.GetComponent<IEventSurface>();
             eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
-            EventSurfaces[instanceIndex] = eventSurface;
+
+            if (eventSurface is StaticEventSurface staticEventSurface) {
+                EventSurfaces[instanceIndex] = eventSurface;
+
+                return;
+            }
+            DeleteEntity(instanceIndex);
+            
+            
         }
 
         public void FlagForDestroySurface(int instanceIndex) {

@@ -8,9 +8,9 @@ namespace Spellbound.Core {
     public struct TransformData : IPacker {
         public Vector3 Position;
         public Vector3 Rotation;
-        public int Scale;
+        public float Scale;
 
-        public TransformData(Vector3 position, Vector3 rotation, int scale) {
+        public TransformData(Vector3 position, Vector3 rotation, float scale) {
             Position = position;
             Rotation = rotation;
             Scale = scale;
@@ -19,13 +19,13 @@ namespace Spellbound.Core {
         public void Pack(ref Span<byte> buffer) {
             Packer.WriteVector3(ref buffer, Position);
             Packer.WriteVector3(ref buffer, Rotation);
-            Packer.WriteInt(ref buffer, Scale);
+            Packer.WriteFloat(ref buffer, Scale);
         }
 
         public void Unpack(ref ReadOnlySpan<byte> buffer) {
             Position = Packer.ReadVector3(ref buffer);
             Rotation = Packer.ReadVector3(ref buffer);
-            Scale = Packer.ReadInt(ref buffer);
+            Scale = Packer.ReadFloat(ref buffer);
         }
     }
 }

@@ -278,6 +278,13 @@ namespace Spellbound.Core.Packing {
             WriteFloat(ref buffer, v.y);
             WriteFloat(ref buffer, v.z);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteVector3Int(ref Span<byte> buffer, in Vector3Int v) {
+            WriteInt(ref buffer, v.x);
+            WriteInt(ref buffer, v.y);
+            WriteInt(ref buffer, v.z);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 ReadVector3(ref ReadOnlySpan<byte> buffer) {
@@ -286,6 +293,15 @@ namespace Spellbound.Core.Packing {
             var z = ReadFloat(ref buffer);
 
             return new Vector3(x, y, z);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3Int ReadVector3Int(ref ReadOnlySpan<byte> buffer) {
+            var x = ReadInt(ref buffer);
+            var y = ReadInt(ref buffer);
+            var z = ReadInt(ref buffer);
+
+            return new Vector3Int(x, y, z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
