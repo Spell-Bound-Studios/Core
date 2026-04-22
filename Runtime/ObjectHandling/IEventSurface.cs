@@ -7,6 +7,8 @@ using UnityEngine;
 namespace Spellbound.Core {
     public interface IEventSurface {
 
+        void FlagForDestroy();
+
         GameObject GetGameObject();
         void Initialize(IObjectParent iobjectParent, int entityIndex, string presetUid);
 

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Spellbound.Core.ECS;
 using Spellbound.Core.Packing;
 using UnityEngine;
 
@@ -11,6 +12,15 @@ namespace Spellbound.Core {
         
         // On Loading this is all the Instances to Instantiate.
         Dictionary<int, InstanceEntry> GetAllInstances();
+        
+        // For incoming reparenting moving objects
+        int ImmigrateInstance(InstanceEntry entry);
+        
+        // For outgoing reparenting moving objects
+        InstanceEntry EmigrateInstance(int instanceIndex);
+        
+        // Updates the transform data of an instance
+        void RefreshInstanceTransform(int instanceIndex, TransformData transformData);
         
         // Intended to flag a non-procedural objects creation via index, presetUid, position, rotation, scale.
         event Action<int, string, TransformData> OnInstanceCreated;

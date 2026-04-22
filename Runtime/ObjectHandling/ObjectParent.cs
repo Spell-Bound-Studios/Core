@@ -5,12 +5,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Spellbound.Core.ECS;
+using Spellbound.Core.Logging;
 using Spellbound.Core.Packing;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Unity.Jobs;
+using Unity.Rendering;
 
 namespace Spellbound.Core {
     /// <summary>
@@ -20,6 +23,9 @@ namespace Spellbound.Core {
     public class ObjectParent : IDisposable {
         private readonly IObjectParent _implementer;
         private readonly Transform _transform;
+        public Transform Transform => _transform;
+
+        public Vector3 LastPovPosition;
         
         public IObjectDataAccess DataAccess { get; }
 
@@ -96,22 +102,33 @@ namespace Spellbound.Core {
 
         private void HandleInstanceAdded(
             int instanceIndex, string presetUid, TransformData transformData) {
+            HandleInstanceAdded(instanceIndex, 
+                presetUid, 
+                transformData.Position, 
+                quaternion.Euler(transformData.Rotation), 
+                transformData.Scale);
+            
+        }
+        
+        public void HandleInstanceAdded(
+            int instanceIndex, string presetUid, Vector3 position, Quaternion rotation, float scale) {
             if (!presetUid.TryGetEntityPrefab(out var prefab)) return;
-
+            
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             var entity = em.Instantiate(prefab);
 
             em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
-                transformData.Position,
-                quaternion.Euler(transformData.Rotation),
-                transformData.Scale
+                position,
+                rotation,
+                scale
             ));
 
             em.SetComponentData(entity, new InstanceIndexComponent {
                 Value = instanceIndex
             });
             Entities[instanceIndex] = entity;
+            
         }
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
@@ -150,6 +167,24 @@ namespace Spellbound.Core {
             DeleteEntity(instanceIndex);
             DeleteEventSurface(instanceIndex);
         }
+        
+        public InstanceEntry UnregisterInstance(int instanceIndex) {
+
+            DeleteEntity(instanceIndex);
+
+            if (!EventSurfaces.Remove(instanceIndex)) {
+                Log.Debug($"EventSurface Not found in EventSurfaces Dictionary");
+            }
+            
+            return DataAccess.EmigrateInstance(instanceIndex);
+
+            
+        }
+        
+        public int RegisterInstance(InstanceEntry entry) {
+            var instanceIndex = DataAccess.ImmigrateInstance(entry);
+            return instanceIndex;
+        }
 
         private void DeleteEventSurface(int instanceIndex) {
             if (!EventSurfaces.TryGetValue(instanceIndex, out var surface)) return;
@@ -158,7 +193,7 @@ namespace Spellbound.Core {
             EventSurfaces.Remove(instanceIndex);
         }
 
-        private void DeleteEntity(int instanceIndex) {
+        public void DeleteEntity(int instanceIndex) {
             if (!Entities.TryGetValue(instanceIndex, out var entity)) return;
 
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -166,51 +201,113 @@ namespace Spellbound.Core {
             Entities.Remove(instanceIndex);
         }
 
-        public void SpawnSurface(LocalTransform transform, int instanceIndex, ObjectPreset preset) {
+        public void SpawnSurface(int instanceIndex) {
+            
+            if (!Entities.TryGetValue(instanceIndex, out var entity)) {
+                Log.Error($"entity is not in the dictionary");
+                return;
+            }
+            
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            
+            if (!em.Exists(entity)) {
+                Log.Error($"entity is null");
+                return;
+            }
+                
+            var localTransform = em.GetComponentData<LocalTransform>(entity);
+            var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
+            var isDynamic = em.HasComponent<DynamicTag>(entity);
+            var preset = presetUid.Value.ResolvePreset();
+            
             var eventSurfaceObj = UnityEngine.Object.Instantiate(
                 preset.eventSurfacePrefab,
-                transform.Position,
-                transform.Rotation,
+                localTransform.Position,
+                localTransform.Rotation,
                 _transform
             );
             eventSurfaceObj.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
-            eventSurfaceObj.transform.localScale = transform.Scale * Vector3.one;
+            eventSurfaceObj.transform.localScale = localTransform.Scale * Vector3.one;
             
             var eventSurface = eventSurfaceObj.GetComponent<IEventSurface>();
             eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
             EventSurfaces[instanceIndex] = eventSurface;
         }
 
-        public void DespawnSurface(int instanceIndex) {
-            if (!EventSurfaces.TryGetValue(instanceIndex, out var proxy))
+        public void FlagForDestroySurface(int instanceIndex) {
+            if (!EventSurfaces.TryGetValue(instanceIndex, out var eventSurface))
                 return;
 
-            UnityEngine.Object.Destroy(proxy.GetGameObject());
-            EventSurfaces.Remove(instanceIndex);
+            eventSurface.FlagForDestroy();
         }
 
         public void EntityDistanceQuery(Vector3 playerPosition) {
+            Log.Debug("Entity distance query");
+            LastPovPosition = playerPosition;
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var existingEntities = new NativeList<ProximityEntity>(Entities.Count, Allocator.TempJob);
 
-            foreach (var entity in Entities.Values) {
+            foreach (var kvp in Entities) {
 
-                if (!em.Exists(entity)) {
+                if (!em.Exists(kvp.Value)) {
                     continue;
                 }
                 
-                var transform = em.GetComponentData<LocalTransform>(entity);
-                var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
-                var instanceIndex = em.GetComponentData<InstanceIndexComponent>(entity).Value;
+                var localTransform = em.GetComponentData<LocalTransform>(kvp.Value);
+                var presetUid = em.GetComponentData<PresetUidComponent>(kvp.Value).Value;
+                var isDynamic = em.HasComponent<DynamicTag>(kvp.Value);
                 var preset = presetUid.Value.ResolvePreset();
-
-                var distance = Vector3.Distance(playerPosition, transform.Position);
-                var hasProxy = EventSurfaces.ContainsKey(instanceIndex);
-
-                if (distance < preset.interactionDistance && !hasProxy)
-                    SpawnSurface(transform, instanceIndex, preset);
-                else if (distance > preset.interactionDistance + 10f && hasProxy)
-                    DespawnSurface(instanceIndex);
+                
+                var pos = new int3(
+                    (int)math.round(localTransform.Position.x),
+                    (int)math.round(localTransform.Position.y),
+                    (int)math.round(localTransform.Position.z)
+                );
+                existingEntities.Add(new ProximityEntity() {
+                    Position = pos,
+                    Thresholds = preset.interactionDistance,
+                    InstanceIndex = kvp.Key,
+                    IsDynamic = isDynamic
+                });
             }
+            
+            var povs = new NativeArray<int3>(1, Allocator.TempJob);
+            povs[0] = new int3((int)math.round(playerPosition.x), 
+                (int)math.round(playerPosition.y), 
+                (int)math.round(playerPosition.z)
+                );
+            
+            var existingEventSurfaces = new NativeHashSet<int>(EventSurfaces.Count, Allocator.TempJob);
+            foreach (var key in EventSurfaces.Keys)
+                existingEventSurfaces.Add(key);
+            var instancesToAwaken = new NativeParallelHashSet<int>(existingEntities.Length, Allocator.TempJob);
+            var instancesToSleep = new NativeParallelHashSet<int>(existingEntities.Length, Allocator.TempJob);
+            
+            var eventSurfaceJob = new ProximityEventSurfaceJob() {
+                PovPositions = povs,
+                ProximityEntities = existingEntities,
+                ExistingEventSurfaces = existingEventSurfaces,
+                InstancesToAwaken = instancesToAwaken.AsParallelWriter(),
+                InstancesToSleep = instancesToSleep.AsParallelWriter()
+            };
+            var eventSurfaceJobHandle = eventSurfaceJob.Schedule(existingEntities.Length, 64);
+            eventSurfaceJobHandle.Complete();
+            
+            Log.Debug($"Entity distance query Ran the job with awaken {instancesToAwaken.Count()} and sleep {instancesToSleep.Count()} ");
+
+            foreach (var instanceToAwake in instancesToAwaken) {
+                SpawnSurface(instanceToAwake);
+            }
+            
+            foreach (var instanceToSleep in instancesToSleep) {
+                FlagForDestroySurface(instanceToSleep);
+            }
+            
+            existingEntities.Dispose();
+            povs.Dispose();
+            existingEventSurfaces.Dispose();
+            instancesToAwaken.Dispose();
+            instancesToSleep.Dispose();
         }
     }
 }

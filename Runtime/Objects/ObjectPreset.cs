@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ namespace Spellbound.Core {
 
         public GameObject bakePrefab; // not the proxy, it is the thing that bakes into an entity
         public GameObject eventSurfacePrefab;
-        public float interactionDistance = 50;
+        public int2 interactionDistance = new (50, 70); // x component is minimum, y component is maximum
 
         [SerializeField] public List<PresetSurface> surfaceModules = new();
 

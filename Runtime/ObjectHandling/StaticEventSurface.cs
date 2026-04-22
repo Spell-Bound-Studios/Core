@@ -15,6 +15,11 @@ namespace Spellbound.Core {
         private int _entityIndex;
         private ObjectPreset _objectPreset;
         
+        public void FlagForDestroy() {
+            _parent.ObjectParent.EventSurfaces.Remove(_entityIndex);
+            Destroy(gameObject);
+        }
+        
         public GameObject GetGameObject() => gameObject;
 
         public void Initialize(IObjectParent iobjectParent, int entityIndex, string presetUid) {
