@@ -106,7 +106,13 @@ namespace Spellbound.Core {
 
         private void HandleInstanceAdded(
             int instanceIndex, string presetUid, TransformData transformData) {
-            if (!presetUid.TryGetEntityPrefab(out var prefab)) return;
+            if (_entities == null) {
+                Log.Warn("someone tried to add an instance but the entities dictionary has been disposed.");
+                return;
+            }
+            
+            if (!presetUid.TryGetEntityPrefab(out var prefab)) 
+                return;
 
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
