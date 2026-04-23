@@ -10,6 +10,8 @@ namespace Spellbound.Core {
         void FlagForDestroy();
 
         GameObject GetGameObject();
+        
+        ProximityCandidate ProximityCandidate { get; }
         void Initialize(IObjectParent iobjectParent, int entityIndex, string presetUid);
 
         public void DebugQueryPing();

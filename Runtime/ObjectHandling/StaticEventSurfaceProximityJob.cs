@@ -7,10 +7,10 @@ using Unity.Mathematics;
 
 namespace Spellbound.Core {
     [BurstCompile]
-    public struct ProximityEventSurfaceJob : IJobParallelFor {
-        [NativeDisableParallelForRestriction, ReadOnly] public NativeArray<int3> PovPositions;
+    public struct StaticEventSurfaceProximityJob : IJobParallelFor {
+        [NativeDisableParallelForRestriction, ReadOnly] public NativeArray<float3> PovPositions;
         
-        [NativeDisableParallelForRestriction, ReadOnly] public NativeList<ProximityEntity> ProximityEntities;
+        [NativeDisableParallelForRestriction, ReadOnly] public NativeList<ProximityCandidate> ProximityEntities;
         
         [NativeDisableParallelForRestriction, ReadOnly] public NativeHashSet<int> ExistingEventSurfaces;
         
@@ -22,15 +22,14 @@ namespace Spellbound.Core {
             var instanceIndex = ProximityEntities[index].InstanceIndex;
             var position = ProximityEntities[index].Position;
             var thresholds = ProximityEntities[index].Thresholds;
-            var isDynamic = ProximityEntities[index].IsDynamic;
             
             var canSleep = true;
 
-            foreach (var playerCoord in PovPositions) {
-                switch (ProximityMath.IsWithinChebyshevRange(playerCoord, position, thresholds)) {
+            foreach (var povPosition in PovPositions) {
+                switch (ProximityMath.IsWithinActivationRange(povPosition, position, thresholds)) {
                     case ProximityChange.Whitelist:
                         if (!ExistingEventSurfaces.Contains(instanceIndex)) {
-                            InstancesToAwaken.Add(index);
+                            InstancesToAwaken.Add(instanceIndex);
                         }
 
                         return;

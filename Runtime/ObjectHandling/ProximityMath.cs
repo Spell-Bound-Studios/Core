@@ -6,16 +6,14 @@ namespace Spellbound.Core {
     [BurstCompile]
     public static class ProximityMath {
         [BurstCompile]
-        public static ProximityChange IsWithinChebyshevRange(in int3 a, in int3 b, in int2 threshold) {
-            var chebyshevDist = math.cmax(math.abs(a - b));
+        public static ProximityChange IsWithinActivationRange(in float3 a, in float3 b, in float2 thresholds) {
+            var distSq = math.distancesq(a, b);
 
-            if (chebyshevDist < threshold.x) {
+            if (distSq < thresholds.x * thresholds.x)
                 return ProximityChange.Whitelist;
-            }
 
-            if (chebyshevDist > threshold.y) {
+            if (distSq > thresholds.y * thresholds.y)
                 return ProximityChange.Blacklist;
-            }
 
             return ProximityChange.None;
         }

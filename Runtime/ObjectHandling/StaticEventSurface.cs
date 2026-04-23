@@ -9,16 +9,21 @@ namespace Spellbound.Core {
         [SerializeField, Tooltip("Decide your own surface index schema.")]
         private int surfaceIndex = -1;
 
-        public Vector3 Position => transform.position;
-
         private IObjectParent _parent;
         private int _entityIndex;
         private ObjectPreset _objectPreset;
         
         public void FlagForDestroy() {
-            _parent.ObjectParent.EventSurfaces.Remove(_entityIndex);
+            _parent.ObjectParent.StaticEventSurfaceDict.Remove(_entityIndex);
             Destroy(gameObject);
         }
+
+        public ProximityCandidate ProximityCandidate =>
+                new ProximityCandidate {
+                    Position = transform.position,
+                    Thresholds = _objectPreset.interactionDistance,
+                    InstanceIndex = _entityIndex
+                };
         
         public GameObject GetGameObject() => gameObject;
 

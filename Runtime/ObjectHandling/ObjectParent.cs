@@ -28,7 +28,8 @@ namespace Spellbound.Core {
         
         public IObjectDataAccess DataAccess { get; }
 
-        public readonly Dictionary<int, IEventSurface> EventSurfaces = new();
+        public readonly Dictionary<int, IEventSurface> StaticEventSurfaceDict = new();
+        public readonly Dictionary<int, IEventSurface> DynamicEventSurfaceDict = new();
         public readonly Dictionary<int, Entity> Entities = new();
 
         public void Dispose() {
@@ -127,7 +128,6 @@ namespace Spellbound.Core {
                 Value = instanceIndex
             });
             Entities[instanceIndex] = entity;
-            
         }
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
@@ -171,11 +171,15 @@ namespace Spellbound.Core {
             return DataAccess.MigrateInstance(instanceIndex, destinationCoord, newParent);
         }
 
+        public void RefreshInstanceTransform(int instanceIndex, TransformData transformData) {
+            DataAccess.RefreshInstanceTransform(instanceIndex, transformData);
+        }
+
         private void DeleteEventSurface(int instanceIndex) {
-            if (!EventSurfaces.TryGetValue(instanceIndex, out var surface)) return;
+            if (!StaticEventSurfaceDict.TryGetValue(instanceIndex, out var surface)) return;
 
             UnityEngine.Object.Destroy(surface.GetGameObject());
-            EventSurfaces.Remove(instanceIndex);
+            StaticEventSurfaceDict.Remove(instanceIndex);
         }
 
         public void DeleteEntity(int instanceIndex) {
@@ -184,12 +188,13 @@ namespace Spellbound.Core {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             em.DestroyEntity(entity);
             Entities.Remove(instanceIndex);
+            Log.Debug($"Instance {instanceIndex} removed from entities Dictionary");
         }
 
-        public void SpawnSurface(int instanceIndex) {
+        public void SpawnSurface<T>(int instanceIndex, Dictionary<int, T> registrationDict) where  T : IEventSurface{
             
             if (!Entities.TryGetValue(instanceIndex, out var entity)) {
-                Log.Error($"entity is not in the dictionary");
+                Log.Error($"entity is not in the dictionary with instanceIndex {instanceIndex}");
                 return;
             }
             
@@ -213,69 +218,118 @@ namespace Spellbound.Core {
             eventSurfaceObj.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
             eventSurfaceObj.transform.localScale = localTransform.Scale * Vector3.one;
             
-            var eventSurface = eventSurfaceObj.GetComponent<IEventSurface>();
+            var eventSurface = eventSurfaceObj.GetComponent<T>();
             eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
-
-            if (eventSurface is StaticEventSurface staticEventSurface) {
-                EventSurfaces[instanceIndex] = eventSurface;
-
-                return;
-            }
-            DeleteEntity(instanceIndex);
-            
-            
+            registrationDict[instanceIndex] = eventSurface;
         }
 
-        public void FlagForDestroySurface(int instanceIndex) {
-            if (!EventSurfaces.TryGetValue(instanceIndex, out var eventSurface))
+        public void DespawnSurface(int instanceIndex) {
+            if (!StaticEventSurfaceDict.Remove(instanceIndex, out var eventSurface))
                 return;
 
             eventSurface.FlagForDestroy();
         }
 
-        public void EntityDistanceQuery(Vector3 playerPosition) {
-            Log.Debug("Entity distance query");
-            LastPovPosition = playerPosition;
+        public void DynamicEntityDistanceQuery(float3[] povPositions) {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-            var existingEntities = new NativeList<ProximityEntity>(Entities.Count, Allocator.TempJob);
+            var dynamicEntities = new NativeList<ProximityCandidate>(Entities.Count, Allocator.TempJob);
+            var activeSurfaces = new NativeList<ProximityCandidate>(DynamicEventSurfaceDict.Count, Allocator.TempJob);
+
+            foreach (var kvp in Entities) {
+                if (!em.Exists(kvp.Value)) continue;
+                if (!em.HasComponent<DynamicTag>(kvp.Value)) continue;
+
+                var localTransform = em.GetComponentData<LocalTransform>(kvp.Value);
+                var presetUid = em.GetComponentData<PresetUidComponent>(kvp.Value).Value;
+                var preset = presetUid.Value.ResolvePreset();
+
+
+                dynamicEntities.Add(new ProximityCandidate() {
+                    Position = localTransform.Position,
+                    Thresholds = preset.interactionDistance,
+                    InstanceIndex = kvp.Key,
+                });
+            }
+
+            foreach (var dynamicEventSurface in DynamicEventSurfaceDict.Values) {
+                activeSurfaces.Add(dynamicEventSurface.ProximityCandidate);
+            }
+
+            var povs = new NativeArray<float3>(povPositions, Allocator.TempJob);
+            
+            var instancesToAwaken = new NativeParallelHashSet<int>(dynamicEntities.Length, Allocator.TempJob);
+            var instancesToSleep = new NativeParallelHashSet<int>(activeSurfaces.Length, Allocator.TempJob);
+
+            var awakenJob = new DynamicEventSurfaceAwakenJob() {
+                PovPositions = povs,
+                ProximityEntities = dynamicEntities,
+                InstancesToAwaken = instancesToAwaken.AsParallelWriter()
+            };
+
+            var sleepJob = new DynamicEventSurfaceSleepJob() {
+                PovPositions = povs,
+                ProximityEntities = activeSurfaces,
+                InstancesToSleep = instancesToSleep.AsParallelWriter()
+            };
+
+            var awakenHandle = awakenJob.Schedule(dynamicEntities.Length, 64);
+            var sleepHandle = sleepJob.Schedule(activeSurfaces.Length, 64);
+
+            JobHandle.CombineDependencies(awakenHandle, sleepHandle).Complete();
+
+            foreach (var instanceIndex in instancesToAwaken)
+                SpawnSurface(instanceIndex, DynamicEventSurfaceDict);
+
+            foreach (var instanceIndex in instancesToSleep) {
+                if (DynamicEventSurfaceDict.Remove(instanceIndex, out var eventSurface)) {
+                    eventSurface.FlagForDestroy();
+                }
+            }
+                
+
+            dynamicEntities.Dispose();
+            activeSurfaces.Dispose();
+            povs.Dispose();
+            instancesToAwaken.Dispose();
+            instancesToSleep.Dispose();
+        }
+
+
+        public void StaticEntityDistanceQuery(float3[] povPositions) {
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var existingEntities = new NativeList<ProximityCandidate>(Entities.Count, Allocator.TempJob);
 
             foreach (var kvp in Entities) {
 
                 if (!em.Exists(kvp.Value)) {
                     continue;
                 }
+
+                if (em.HasComponent<DynamicTag>(kvp.Value)) {
+                    continue;
+                }
                 
                 var localTransform = em.GetComponentData<LocalTransform>(kvp.Value);
                 var presetUid = em.GetComponentData<PresetUidComponent>(kvp.Value).Value;
-                var isDynamic = em.HasComponent<DynamicTag>(kvp.Value);
                 var preset = presetUid.Value.ResolvePreset();
                 
-                var pos = new int3(
-                    (int)math.round(localTransform.Position.x),
-                    (int)math.round(localTransform.Position.y),
-                    (int)math.round(localTransform.Position.z)
-                );
-                existingEntities.Add(new ProximityEntity() {
-                    Position = pos,
+                existingEntities.Add(new ProximityCandidate() {
+                    Position = localTransform.Position,
                     Thresholds = preset.interactionDistance,
                     InstanceIndex = kvp.Key,
-                    IsDynamic = isDynamic
                 });
             }
             
-            var povs = new NativeArray<int3>(1, Allocator.TempJob);
-            povs[0] = new int3((int)math.round(playerPosition.x), 
-                (int)math.round(playerPosition.y), 
-                (int)math.round(playerPosition.z)
-                );
+            var povs = new NativeArray<float3>(povPositions, Allocator.TempJob);
+
             
-            var existingEventSurfaces = new NativeHashSet<int>(EventSurfaces.Count, Allocator.TempJob);
-            foreach (var key in EventSurfaces.Keys)
+            var existingEventSurfaces = new NativeHashSet<int>(StaticEventSurfaceDict.Count, Allocator.TempJob);
+            foreach (var key in StaticEventSurfaceDict.Keys)
                 existingEventSurfaces.Add(key);
             var instancesToAwaken = new NativeParallelHashSet<int>(existingEntities.Length, Allocator.TempJob);
             var instancesToSleep = new NativeParallelHashSet<int>(existingEntities.Length, Allocator.TempJob);
             
-            var eventSurfaceJob = new ProximityEventSurfaceJob() {
+            var eventSurfaceJob = new StaticEventSurfaceProximityJob() {
                 PovPositions = povs,
                 ProximityEntities = existingEntities,
                 ExistingEventSurfaces = existingEventSurfaces,
@@ -284,15 +338,13 @@ namespace Spellbound.Core {
             };
             var eventSurfaceJobHandle = eventSurfaceJob.Schedule(existingEntities.Length, 64);
             eventSurfaceJobHandle.Complete();
-            
-            Log.Debug($"Entity distance query Ran the job with awaken {instancesToAwaken.Count()} and sleep {instancesToSleep.Count()} ");
 
             foreach (var instanceToAwake in instancesToAwaken) {
-                SpawnSurface(instanceToAwake);
+                SpawnSurface(instanceToAwake, StaticEventSurfaceDict);
             }
             
             foreach (var instanceToSleep in instancesToSleep) {
-                FlagForDestroySurface(instanceToSleep);
+                DespawnSurface(instanceToSleep);
             }
             
             existingEntities.Dispose();
