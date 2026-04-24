@@ -13,10 +13,18 @@ namespace Spellbound.Core {
         // On Loading this is all the Instances to Instantiate.
         Dictionary<int, InstanceEntry> GetAllInstances();
         
-        // For for reparenting moving objects
-        int MigrateInstance(int instanceIndex, Vector3Int newCoord, IObjectParent newParent);
+        Dictionary<int, IEventSurface> GetDynamicEventSurfaces();
+
+        Func<int, string, TransformData, bool> InstanceCreationFunc { get; set; }
+
+        void RawCreatedThisTick(int instanceIndex, string presetUid, TransformData transformData);
         
-        int AddNewInstanceSilently(InstanceEntry instanceEntry);
+        void RawDestroyedThisTick(int instanceIndex);
+        
+        // For for reparenting moving objects
+        int MigrateInstance(int instanceIndex, IEventSurface eventSurface, Vector3Int newCoord, IObjectParent newParent);
+        
+        int AddNewInstanceSilently(InstanceEntry instanceEntry, IEventSurface eventSurface);
         
         void AddInstanceSilently(int instanceIndex, InstanceEntry instanceEntry);
         

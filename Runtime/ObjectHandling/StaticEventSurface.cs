@@ -13,7 +13,7 @@ namespace Spellbound.Core {
         private int _entityIndex;
         private ObjectPreset _objectPreset;
         
-        public void FlagForDestroy() {
+        public void FlagForDestroy(bool isDestroy) {
             _parent.ObjectParent.StaticEventSurfaceDict.Remove(_entityIndex);
             Destroy(gameObject);
         }

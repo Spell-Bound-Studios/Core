@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Spellbound.Core {
     public interface IEventSurface {
 
-        void FlagForDestroy();
+        void FlagForDestroy(bool isDestroy);
 
         GameObject GetGameObject();
         
