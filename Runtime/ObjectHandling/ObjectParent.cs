@@ -33,7 +33,7 @@ namespace Spellbound.Core {
 
         public void Dispose() {
             DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
-            //DataAccess.OnInstanceCreated -= HandleInstanceAdded;
+            //DataAccess.OnInstanceCreated -= CreateEntity;
 
             var world = World.DefaultGameObjectInjectionWorld;
             if (world is not { IsCreated: true })
@@ -50,7 +50,7 @@ namespace Spellbound.Core {
             _transform = transform;
             DataAccess = dataAccess;
             DataAccess.OnInstanceRemoved += HandleInstanceRemoved;
-            // DataAccess.OnInstanceCreated += HandleInstanceAdded;
+            // DataAccess.OnInstanceCreated += CreateEntity;
         }
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) =>
@@ -90,24 +90,40 @@ namespace Spellbound.Core {
                 if (kvp.Value.Transform == null)
                     continue;
 
-                if (kvp.Key >= objects.Length)
-                    DataAccess.InstanceCreationFunc?.Invoke(kvp.Key, kvp.Value.PresetUid, kvp.Value.Transform.Value);
+                if (kvp.Key >= objects.Length) {
+                    if (kvp.Value.PresetUid.ResolvePreset().isDynamic) {
+                        DataAccess.CreateDynamicInstanceFunc?.Invoke(kvp.Key, kvp.Value.PresetUid, kvp.Value.Transform.Value);
+
+                        continue;
+                    }
+                    DataAccess.CreateStaticInstanceFunc?.Invoke(kvp.Key, kvp.Value.PresetUid, kvp.Value.Transform.Value);
+                }
+                   
             }
         }
 
-        public void HandleInstanceAdded(
+        public bool CreateEntity(
             int instanceIndex, string presetUid, TransformData transformData) {
-            HandleInstanceAdded(instanceIndex, 
+            return CreateEntity(instanceIndex, 
                 presetUid, 
                 transformData.Position, 
                 quaternion.Euler(math.radians(transformData.Rotation)), 
                 transformData.Scale);
         }
         
-        public void HandleInstanceAdded(
+        public bool CreateEntity(
             int instanceIndex, string presetUid, Vector3 position, Quaternion rotation, float scale) {
-            
-            if (!presetUid.TryGetEntityPrefab(out var prefab)) return;
+
+            if (Entities.ContainsKey(instanceIndex)) {
+                Log.Error($"Trying to create an entity but it's already in the dictionary. InstanceIndex: {instanceIndex}, chunk: {_transform.name}");
+
+                return false;
+            }
+
+            if (!presetUid.TryGetEntityPrefab(out var prefab)) {
+                Log.Error($"Trying to create an entity but cant find EntityPrefab. InstanceIndex: {instanceIndex}, chunk: {_transform.name}");
+                return false;
+            }
             
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
@@ -123,6 +139,7 @@ namespace Spellbound.Core {
                 Value = instanceIndex
             });
             Entities[instanceIndex] = entity;
+            return true;
         }
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
@@ -185,31 +202,42 @@ namespace Spellbound.Core {
             Entities.Remove(instanceIndex);
             Log.Debug($"Instance {instanceIndex} removed from entities Dictionary");
         }
-
         
-        public void SpawnEventSurface(int instanceIndex, ObjectPreset preset, Vector3 position, Quaternion rotation, float scale) {
+        private bool TryCreateStaticInstance(int instanceIndex, string presetUid, TransformData transformData) {
+            var preset = presetUid.ResolvePreset();
+            if ( math.distancesq(LastPovPosition, transformData.Position) <= preset.interactionDistance.x * preset.interactionDistance.x) {
+                return SpawnStaticSurface(instanceIndex, presetUid, transformData);
+            }
+
+            return false;
+        }
+
+        public bool SpawnDynamicSurface(
+            int instanceIndex, string presetUid, TransformData transformData) {
+            if (DataAccess.DynamicEventSurfaceDict.ContainsKey(instanceIndex)) {
+                Log.Error($"Instance {instanceIndex} already exists in DynamicEventSurfaceDict in chunk {_transform.gameObject.name}");
+
+                return false;
+            }
+
+            var preset = presetUid.ResolvePreset();
             var eventSurfaceObj = UnityEngine.Object.Instantiate(
                 preset.eventSurfacePrefab,
-                position,
-                rotation,
+                transformData.Position,
+                Quaternion.Euler(transformData.Rotation),
                 _transform
             );
             eventSurfaceObj.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
-            eventSurfaceObj.transform.localScale = scale * Vector3.one;
+            eventSurfaceObj.transform.localScale = transformData.Scale * Vector3.one;
             
             var eventSurface = eventSurfaceObj.GetComponent<IEventSurface>();
             eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
+            DataAccess.DynamicEventSurfaceDict[instanceIndex] = eventSurface;
 
-            if (preset.isDynamic) {
-                DataAccess.GetDynamicEventSurfaces()[instanceIndex] = eventSurface;
-                Log.Debug($"Adding to the dynamiceventsurfaceDict {instanceIndex}");
-                DataAccess.RawDestroyedThisTick(instanceIndex);
-                DeleteEntity(instanceIndex);
-                return;
-            }
-            StaticEventSurfaceDict[instanceIndex] = eventSurface;
+            return true;
         }
-        public void SpawnEventSurface(int instanceIndex) {
+        
+        public void SpawnDynamicSurface(int instanceIndex) {
             
             if (!Entities.TryGetValue(instanceIndex, out var entity)) {
                 Log.Error($"entity is not in the dictionary with instanceIndex {instanceIndex}");
@@ -225,22 +253,62 @@ namespace Spellbound.Core {
                 
             var localTransform = em.GetComponentData<LocalTransform>(entity);
             var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
-            var preset = presetUid.Value.ResolvePreset();
+            var transformData = new TransformData(localTransform.Position, math.degrees(math.Euler(localTransform.Rotation)), localTransform.Scale);
             
-            SpawnEventSurface(instanceIndex, preset, localTransform.Position,  localTransform.Rotation, localTransform.Scale);
+            SpawnDynamicSurface(instanceIndex, presetUid.Value, transformData);
         }
 
-        public void DespawnEventSurface(int instanceIndex) {
-            if (!StaticEventSurfaceDict.Remove(instanceIndex, out var eventSurface))
+        
+        public bool SpawnStaticSurface(
+            int instanceIndex, string presetUid, TransformData transformData) {
+            if (StaticEventSurfaceDict.ContainsKey(instanceIndex)) {
+                Log.Error($"Instance {instanceIndex} already exists in StaticEventSurfaceDict in chunk {_transform.gameObject.name}");
+
+                return false;
+            }
+            
+            var preset = presetUid.ResolvePreset();
+            var eventSurfaceObj = UnityEngine.Object.Instantiate(
+                preset.eventSurfacePrefab,
+                transformData.Position,
+                Quaternion.Euler(transformData.Rotation),
+                _transform
+            );
+            eventSurfaceObj.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
+            eventSurfaceObj.transform.localScale = transformData.Scale * Vector3.one;
+            
+            var eventSurface = eventSurfaceObj.GetComponent<IEventSurface>();
+            eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
+            StaticEventSurfaceDict[instanceIndex] = eventSurface;
+
+            return true;
+        }
+        public void SpawnStaticSurface(int instanceIndex) {
+            
+            if (!Entities.TryGetValue(instanceIndex, out var entity)) {
+                Log.Error($"entity is not in the dictionary with instanceIndex {instanceIndex}");
                 return;
-
-            eventSurface.FlagForDestroy(true);
+            }
+            
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            
+            if (!em.Exists(entity)) {
+                Log.Error($"entity is null");
+                return;
+            }
+                
+            var localTransform = em.GetComponentData<LocalTransform>(entity);
+            var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
+            var transformData = new TransformData(localTransform.Position, math.degrees(math.Euler(localTransform.Rotation)), localTransform.Scale);
+            
+            SpawnStaticSurface(instanceIndex, presetUid.Value, transformData);
         }
+        
 
         public void DynamicEntityDistanceQuery(float3[] povPositions) {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             var dynamicEntities = new NativeList<ProximityCandidate>(Entities.Count, Allocator.TempJob);
-            var activeSurfaces = new NativeList<ProximityCandidate>(DataAccess.GetDynamicEventSurfaces().Count, Allocator.TempJob);
+            var activeSurfaces = new NativeList<ProximityCandidate>(DataAccess.DynamicEventSurfaceDict.Count, Allocator.TempJob);
 
             foreach (var kvp in Entities) {
                 if (!em.Exists(kvp.Value)) continue;
@@ -258,7 +326,7 @@ namespace Spellbound.Core {
                 });
             }
 
-            foreach (var dynamicEventSurface in DataAccess.GetDynamicEventSurfaces().Values) {
+            foreach (var dynamicEventSurface in DataAccess.DynamicEventSurfaceDict.Values) {
                 activeSurfaces.Add(dynamicEventSurface.ProximityCandidate);
             }
             
@@ -284,11 +352,19 @@ namespace Spellbound.Core {
 
             JobHandle.CombineDependencies(awakenHandle, sleepHandle).Complete();
 
-            foreach (var instanceIndex in instancesToAwaken)
-                SpawnEventSurface(instanceIndex);
+            foreach (var instanceIndex in instancesToAwaken) {
+                if (DataAccess.DynamicEventSurfaceDict.TryGetValue(instanceIndex, out var eventSurface)) {
+                    // should never happen?
+                    eventSurface.FlagForDestroy(false);
+                    continue;
+                }
+                SpawnDynamicSurface(instanceIndex);
+                DeleteEntity(instanceIndex);
+            }
+                
 
             foreach (var instanceIndex in instancesToSleep) {
-                if (DataAccess.GetDynamicEventSurfaces().TryGetValue(instanceIndex, out var eventSurface)) {
+                if (DataAccess.DynamicEventSurfaceDict.TryGetValue(instanceIndex, out var eventSurface)) {
 
                     eventSurface.FlagForDestroy(true);
                 }
@@ -349,15 +425,17 @@ namespace Spellbound.Core {
             eventSurfaceJobHandle.Complete();
 
             foreach (var instanceIndex in instancesToAwaken) {
-                if (DataAccess.GetDynamicEventSurfaces().TryGetValue(instanceIndex, out var surface)) {
+                if (StaticEventSurfaceDict.TryGetValue(instanceIndex, out var surface)) {
                     surface.FlagForDestroy(false); 
                 } else {
-                    SpawnEventSurface(instanceIndex);
+                    SpawnStaticSurface(instanceIndex);
                 }
             }
             
             foreach (var instanceToSleep in instancesToSleep) {
-                DespawnEventSurface(instanceToSleep);
+                if (StaticEventSurfaceDict.TryGetValue(instanceToSleep, out var surface)) {
+                    surface.FlagForDestroy(true);
+                }
             }
             
             existingEntities.Dispose();

@@ -13,9 +13,10 @@ namespace Spellbound.Core {
         // On Loading this is all the Instances to Instantiate.
         Dictionary<int, InstanceEntry> GetAllInstances();
         
-        Dictionary<int, IEventSurface> GetDynamicEventSurfaces();
+        Dictionary<int, IEventSurface> DynamicEventSurfaceDict { get; }
 
-        Func<int, string, TransformData, bool> InstanceCreationFunc { get; set; }
+        Func<int, string, TransformData, bool> CreateStaticInstanceFunc { get; set; }
+        Func<int, string, TransformData, bool> CreateDynamicInstanceFunc { get; set;}
 
         void RawCreatedThisTick(int instanceIndex, string presetUid, TransformData transformData);
         
@@ -30,9 +31,6 @@ namespace Spellbound.Core {
         
         // Updates the transform data of an instance
         void RefreshInstanceTransform(int instanceIndex, TransformData transformData);
-        
-        // Intended to flag a non-procedural objects creation via index, presetUid, position, rotation, scale.
-        event Action<int, string, TransformData> OnInstanceCreated;
 
         // Intended to flag any objects deletion via index.
         event Action<int> OnInstanceRemoved;
