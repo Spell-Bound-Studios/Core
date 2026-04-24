@@ -75,7 +75,7 @@ namespace Spellbound.Core {
 
                 em.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
                     objects[i].position,
-                    quaternion.Euler(objects[i].rotation),
+                    quaternion.Euler(math.radians(objects[i].rotation)),
                     objects[i].scale.x
                 ));
 
@@ -100,9 +100,8 @@ namespace Spellbound.Core {
             HandleInstanceAdded(instanceIndex, 
                 presetUid, 
                 transformData.Position, 
-                quaternion.Euler(transformData.Rotation), 
+                quaternion.Euler(math.radians(transformData.Rotation)), 
                 transformData.Scale);
-            
         }
         
         public void HandleInstanceAdded(
