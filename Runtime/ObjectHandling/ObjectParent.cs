@@ -48,7 +48,7 @@ namespace Spellbound.Core {
             _implementer = implementer;
             _transform = transform;
             DataAccess = dataAccess;
-            // DataAccess.OnInstanceCreated += CreateEntity;
+            // DataAccess.OnInstanceCreated += TryCreateEntity;
         }
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) =>
@@ -100,16 +100,16 @@ namespace Spellbound.Core {
             }*/
         }
 
-        public bool CreateEntity(
+        public bool TryCreateEntity(
             int instanceIndex, string presetUid, TransformData transformData) {
-            return CreateEntity(instanceIndex, 
+            return TryCreateEntity(instanceIndex, 
                 presetUid, 
                 transformData.Position, 
                 quaternion.Euler(math.radians(transformData.Rotation)), 
                 transformData.Scale);
         }
         
-        public bool CreateEntity(
+        private bool TryCreateEntity(
             int instanceIndex, string presetUid, Vector3 position, Quaternion rotation, float scale) {
 
             if (Entities.ContainsKey(instanceIndex)) {
@@ -184,7 +184,7 @@ namespace Spellbound.Core {
         public void DeactivateDynamicSurface(int instanceIndex, string presetUid, TransformData transformData) {
             RefreshInstanceTransform(instanceIndex, transformData);
             DynamicEventSurfaceDict.Remove(instanceIndex);
-            CreateEntity(instanceIndex, presetUid, transformData);
+            TryCreateEntity(instanceIndex, presetUid, transformData);
         }
         
         public bool TryDeleteDynamicSurface(int instanceIndex) {
@@ -227,7 +227,7 @@ namespace Spellbound.Core {
                 }
             }
             
-            return CreateEntity(instanceIndex, presetUid, transformData);
+            return TryCreateEntity(instanceIndex, presetUid, transformData);
         }
 
         public bool SpawnDynamicSurface(
