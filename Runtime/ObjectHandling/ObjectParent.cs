@@ -324,6 +324,7 @@ namespace Spellbound.Core {
         
 
         public void DynamicEntityDistanceQuery(float3[] povPositions) {
+            Log.Debug($"DynamicEntityDistanceQuery running for {povPositions.Length} povs");
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             var dynamicEntities = new NativeList<ProximityCandidate>(Entities.Count, Allocator.TempJob);
             var activeSurfaces = new NativeList<ProximityCandidate>(DynamicEventSurfaceDict.Count, Allocator.TempJob);
