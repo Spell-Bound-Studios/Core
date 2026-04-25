@@ -8,19 +8,14 @@ using Spellbound.Core.Packing;
 using UnityEngine;
 
 namespace Spellbound.Core {
-    public interface IObjectDataAccess {
+    public interface IInstanceDataAccess {
+
+        IObjectParentContext ctx { get; }
         
-        // On Loading this is all the Instances to Instantiate.
+        void SetContext(IObjectParentContext context);
+        
         Dictionary<int, InstanceEntry> GetAllInstances();
-        
-        Dictionary<int, IEventSurface> DynamicEventSurfaceDict { get; }
-
-        Func<int, string, TransformData, bool> CreateStaticInstanceFunc { get; set; }
-        Func<int, string, TransformData, bool> CreateDynamicInstanceFunc { get; set;}
-
-        void RawCreatedThisTick(int instanceIndex, string presetUid, TransformData transformData);
-        
-        void RawDestroyedThisTick(int instanceIndex);
+        void InstanceStateChange(int instanceIndex, bool isStateFullyDataDriven);
         
         // For for reparenting moving objects
         int MigrateInstance(int instanceIndex, IEventSurface eventSurface, Vector3Int newCoord, IObjectParent newParent);
@@ -31,15 +26,6 @@ namespace Spellbound.Core {
         
         // Updates the transform data of an instance
         void RefreshInstanceTransform(int instanceIndex, TransformData transformData);
-
-        // Intended to flag any objects deletion via index.
-        event Action<int> OnInstanceRemoved;
-
-        // Intended to flag any objects' transformation.
-        event Action<int, InstanceDataKey> OnInstanceDataChanged;
-
-        // Intended to separate procedural instances from runtime instances.
-        void SetProceduralInstanceCount(int instanceIndex);
 
         // Intended to be the implementation for a non-procedural object creation via index, presetUid, position, rotation, scale.
         void CreateInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
