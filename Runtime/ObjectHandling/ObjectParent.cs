@@ -28,24 +28,6 @@ namespace Spellbound.Core {
         private readonly Dictionary<int, EventSurface> _eventSurfaces = new();
         private Dictionary<int, Entity> _entities = new();
 
-        public void Dispose() {
-            DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
-            DataAccess.OnInstanceCreated -= HandleInstanceAdded;
-
-            var world = World.DefaultGameObjectInjectionWorld;
-            if (world is not { IsCreated: true })
-                return;
-
-            var em = world.EntityManager;
-
-            if (_entities == null)
-                return;
-            
-            using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
-            em.DestroyEntity(entities);
-            _entities = null;
-        }
-
         public ObjectParent(
             IObjectParent implementer, Transform transform, IObjectDataAccess dataAccess, Vector3Int parentId,
             Action<LocalTransform, int, ObjectPreset> surfaceSpawnAction = null) {
@@ -63,6 +45,7 @@ namespace Spellbound.Core {
         public void CreateNewInstanceWithData<T>(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale,
             int eventSurfaceIndex, T data) where T : IPacker, new() =>
                 DataAccess.CreateInstanceWithData(preset.presetUid, position, rotation, scale, eventSurfaceIndex, data);
+        
         public void ActivateObjects(NativeList<ProceduralObjectData> objects) {
             if (!objects.IsCreated)
                 return;
@@ -72,9 +55,8 @@ namespace Spellbound.Core {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             for (var i = 0; i < objects.Length; i++) {
-                if (DataAccess.IsDeleted(i)) {
+                if (DataAccess.IsDeleted(i))
                     continue;
-                }
 
                 var entity = em.Instantiate(objects[i].entityPrefab);
 
@@ -87,26 +69,29 @@ namespace Spellbound.Core {
                 em.SetComponentData(entity, new InstanceIndexComponent {
                     Value = i
                 });
-                if (!_entities.TryAdd(i, entity)){
-                    Log.Error($"Failing to add to entity dictionary. Assume a duplicate entity exists in the dictionary");
-                }
-
+                if (!_entities.TryAdd(i, entity))
+                    Log.Error($"Failing to add index {i} to entity dictionary. " +
+                              $"A duplicate entity must exist for entity: {entity.Index}");
             }
             
             foreach (var kvp in DataAccess.GetAllInstances()) {
-                if (kvp.Value.Transform == null) {
+                if (kvp.Value.Transform == null)
                     continue;
-                }
 
-                if (kvp.Key >= objects.Length) {
+                if (kvp.Key >= objects.Length)
                     HandleInstanceAdded(kvp.Key, kvp.Value.PresetUid, kvp.Value.Transform.Value);
-                }
             }
         }
 
         private void HandleInstanceAdded(
             int instanceIndex, string presetUid, TransformData transformData) {
-            if (!presetUid.TryGetEntityPrefab(out var prefab)) return;
+            if (_entities == null) {
+                Log.Warn("someone tried to add an instance but the entities dictionary has been disposed.");
+                return;
+            }
+            
+            if (!presetUid.TryGetEntityPrefab(out var prefab)) 
+                return;
 
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
@@ -201,10 +186,8 @@ namespace Spellbound.Core {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             foreach (var entity in _entities.Values) {
-
-                if (!em.Exists(entity)) {
+                if (!em.Exists(entity))
                     continue;
-                }
                 
                 var transform = em.GetComponentData<LocalTransform>(entity);
                 var presetUid = em.GetComponentData<PresetUidComponent>(entity).Value;
@@ -220,5 +203,27 @@ namespace Spellbound.Core {
                     DespawnSurface(instanceIndex);
             }
         }
+        
+        #region IDisposable
+        
+        public void Dispose() {
+            DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
+            DataAccess.OnInstanceCreated -= HandleInstanceAdded;
+
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world is not { IsCreated: true })
+                return;
+
+            var em = world.EntityManager;
+
+            if (_entities == null)
+                return;
+            
+            using var entities = new NativeArray<Entity>(_entities.Values.ToArray(), Allocator.Temp);
+            em.DestroyEntity(entities);
+            _entities = null;
+        }
+        
+        #endregion IDisposable
     }
 }
