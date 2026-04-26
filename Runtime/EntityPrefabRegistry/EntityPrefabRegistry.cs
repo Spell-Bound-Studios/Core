@@ -19,7 +19,6 @@ namespace Spellbound.Core {
             PrefabLookup = new NativeHashMap<FixedString64Bytes, Entity>(64, Allocator.Persistent);
             SingletonManager.RegisterSingleton(this);
         }
-        
 
         protected override void OnDestroy() {
             if (PrefabLookup.IsCreated)
@@ -40,6 +39,7 @@ namespace Spellbound.Core {
             }
 
             var buffer = SystemAPI.GetBuffer<EntityPrefabBufferElement>(_registryEntity);
+
             return buffer[index].Prefab;
         }
 

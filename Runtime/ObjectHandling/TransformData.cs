@@ -15,7 +15,7 @@ namespace Spellbound.Core {
             Rotation = rotation;
             Scale = scale;
         }
-        
+
         public void Pack(ref Span<byte> buffer) {
             Packer.WriteVector3(ref buffer, Position);
             Packer.WriteVector3(ref buffer, Rotation);

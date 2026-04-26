@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -36,7 +36,6 @@ namespace Spellbound.Core.Console {
             var registeredCount = 0;
 
             foreach (var preset in allPresets) {
-
                 RegisterPreset(preset);
                 registeredCount++;
             }

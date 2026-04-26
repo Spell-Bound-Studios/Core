@@ -5,7 +5,7 @@ using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
     public interface IHandlerThreshold {
-        bool ThresholdCheck(IQuantitativeData data, out Action<IObjectDataStore, int> thresholdAction);
+        bool ThresholdCheck(IQuantitativeData data, out Action<IObjectDataAccess, int> thresholdAction);
         IPacker GetDefaultData();
     }
 }

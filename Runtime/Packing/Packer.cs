@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Buffers;
@@ -15,7 +15,7 @@ namespace Spellbound.Core.Packing {
     /// </summary>
     public static class Packer {
         public delegate void PackWriter(ref Span<byte> buffer);
-        
+
         // Starting stack buffer size
         private const int StackBufferSize = 4096;
 
@@ -215,7 +215,7 @@ namespace Spellbound.Core.Packing {
         }
 
         #endregion
-        
+
         #region Short
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -524,7 +524,7 @@ namespace Spellbound.Core.Packing {
 
             return result;
         }
-        
+
         /// <summary>
         /// Pack a List directly to bytes where null is empty.
         /// </summary>
@@ -758,7 +758,7 @@ namespace Spellbound.Core.Packing {
             // Helper method that returns a bool if the byte array is null or empty.
             static bool NoData(byte[] x) => x == null || x.Length == 0;
         }
-        
+
         /// <summary>
         /// Handles the stack-first + ArrayPool fallback pattern.
         /// Caller provides only the write logic.
@@ -770,21 +770,26 @@ namespace Spellbound.Core.Packing {
             try {
                 writer(ref span);
                 var written = stackBuf.Length - span.Length;
+
                 return stackBuf[..written].ToArray();
             }
             catch (ArgumentException) { }
 
             var size = Math.Max(StackBufferSize * 2, 8192);
+
             while (size <= MaxRentedBuffer) {
                 var rented = ArrayPool<byte>.Shared.Rent(size);
+
                 try {
                     var rentedSpan = new Span<byte>(rented, 0, size);
                     var working = rentedSpan;
+
                     try {
                         writer(ref working);
                         var written = size - working.Length;
                         var result = new byte[written];
                         Buffer.BlockCopy(rented, 0, result, 0, written);
+
                         return result;
                     }
                     catch (ArgumentException) { }
@@ -792,6 +797,7 @@ namespace Spellbound.Core.Packing {
                 finally {
                     ArrayPool<byte>.Shared.Return(rented);
                 }
+
                 size = Math.Min(size * 2, MaxRentedBuffer);
             }
 

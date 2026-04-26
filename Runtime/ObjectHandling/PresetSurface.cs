@@ -8,8 +8,7 @@ namespace Spellbound.Core {
     [Serializable]
     public class PresetSurface {
         public string surfaceName;
-        
-        [SerializeReference]
-        public List<PresetModule> PresetModules;
+
+        [SerializeReference] public List<PresetModule> presetModules;
     }
 }

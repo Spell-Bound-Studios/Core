@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Collections.Generic;
@@ -20,9 +20,8 @@ namespace Spellbound.Core {
         public GameObject bakePrefab; // not the proxy, it is the thing that bakes into an entity
         public EventSurface eventSurfacePrefab;
         public float interactionDistance = 50;
-        
-        [SerializeField]
-        public List<PresetSurface> surfaceModules = new();
+
+        [SerializeField] public List<PresetSurface> surfaceModules = new();
 
         /// <summary>
         /// Searches ALL surfaces for a module of type T. Returns the first match.
@@ -33,16 +32,19 @@ namespace Spellbound.Core {
         /// <returns></returns>
         public bool TryGetModule<T>(out T result, int surfaceIndex = 0) where T : PresetModule {
             result = null;
+
             if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
                 return false;
 
-            foreach (var pm in surfaceModules[surfaceIndex].PresetModules) {
-                if (pm is not T t) 
+            foreach (var pm in surfaceModules[surfaceIndex].presetModules) {
+                if (pm is not T t)
                     continue;
 
                 result = t;
+
                 return true;
             }
+
             return false;
         }
 
@@ -55,27 +57,31 @@ namespace Spellbound.Core {
         /// <returns></returns>
         public bool TryGetModule(Type moduleType, out PresetModule result, int surfaceIndex = 0) {
             result = null;
+
             if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
                 return false;
 
-            foreach (var pm in surfaceModules[surfaceIndex].PresetModules) {
-                if (!moduleType.IsAssignableFrom(pm.GetType())) 
+            foreach (var pm in surfaceModules[surfaceIndex].presetModules) {
+                if (!moduleType.IsAssignableFrom(pm.GetType()))
                     continue;
 
                 result = pm;
+
                 return true;
             }
+
             return false;
         }
-        
+
         /// <summary>
         /// Returns all modules across all surfaces.
         /// </summary>
         public IEnumerable<PresetModule> GetAllModules() {
             foreach (var surface in surfaceModules)
-            foreach (var pm in surface.PresetModules)
+            foreach (var pm in surface.presetModules) {
                 if (pm != null)
                     yield return pm;
+            }
         }
 
 #if UNITY_EDITOR
@@ -92,9 +98,10 @@ namespace Spellbound.Core {
             }
 
             var assetGuid = AssetDatabase.GUIDFromAssetPath(assetPath).ToString();
-            if (string.IsNullOrEmpty(presetUid) || presetUid != assetGuid) 
+
+            if (string.IsNullOrEmpty(presetUid) || presetUid != assetGuid)
                 presetUid = assetGuid;
-            
+
             EditorUtility.SetDirty(this);
         }
 #endif

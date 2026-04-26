@@ -17,7 +17,7 @@ namespace Spellbound.Core.Packing {
                 foreach (var type in assembly.GetTypes()) {
                     var attr = type.GetCustomAttribute<PackerIdAttribute>();
 
-                    if (attr == null) 
+                    if (attr == null)
                         continue;
 
                     IDToType[attr.Id] = type;
@@ -47,6 +47,7 @@ namespace Spellbound.Core.Packing {
         public static bool TryCreateInstance(string packerId, out IPacker instance) {
             if (Factories.TryGetValue(packerId, out var factory)) {
                 instance = factory();
+
                 return true;
             }
 
@@ -72,6 +73,7 @@ namespace Spellbound.Core.Packing {
             try {
                 ReadOnlySpan<byte> span = data;
                 instance.Unpack(ref span);
+
                 return $"{packerId}: {instance}";
             }
             catch {

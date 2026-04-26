@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Linq;
@@ -26,7 +26,7 @@ namespace Spellbound.Core.Console {
 
             if (args.Length > 0 && int.TryParse(args[0], out var parsedQty))
                 quantity = parsedQty;
-            
+
             else if (preset.TryGetModule<ConsoleModule>(out var module))
                 quantity = module.defaultQuantity;
 
@@ -49,7 +49,6 @@ namespace Spellbound.Core.Console {
 
                 return CommandResult.Ok($"Spawned {quantity}x {preset.objectName}");
             }
-            
 
             return CommandResult.Fail($"No handler found for '{commandName}' with preset '{targetName}'");
         }
@@ -79,7 +78,7 @@ namespace Spellbound.Core.Console {
                     // See if we have a preset uid or not.
                     if (param.ParameterType == typeof(string) && param.Name == "presetUid")
                         invokeArgs[i] = presetUid;
-                    
+
                     // See if we have a rotational argument. (Identity because I don't know how we would do this lol)
                     else if (param.ParameterType == typeof(Quaternion))
                         invokeArgs[i] = Quaternion.identity;

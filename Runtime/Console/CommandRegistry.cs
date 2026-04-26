@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Collections.Generic;
@@ -89,7 +89,7 @@ namespace Spellbound.Core.Console {
                         _aliases[normalizedAlias] = commandName;
                 }
             }
-            
+
             CommandRegistryUtilities.LogCommandRegistered(commandName, command.GetType().Name, aliases);
         }
 
@@ -159,9 +159,10 @@ namespace Spellbound.Core.Console {
                 return CommandResult.Fail($"Unknown command: '{commandName}'\nType 'help' for available commands.");
 
             // Preset commands require a target
-            if (args.Length == 0)
+            if (args.Length == 0) {
                 return CommandResult.Fail(
                     $"Command '{commandName}' requires a target.\nUsage: {commandName} <target> [quantity]");
+            }
 
             var targetName = args[0];
             var remainingArgs = args.Skip(1).ToArray();
