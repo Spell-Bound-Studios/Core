@@ -63,6 +63,7 @@ namespace Spellbound.Core {
         public void CreateNewInstanceWithData<T>(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale,
             int eventSurfaceIndex, T data) where T : IPacker, new() =>
                 DataAccess.CreateInstanceWithData(preset.presetUid, position, rotation, scale, eventSurfaceIndex, data);
+        
         public void ActivateObjects(NativeList<ProceduralObjectData> objects) {
             if (!objects.IsCreated)
                 return;
@@ -72,9 +73,8 @@ namespace Spellbound.Core {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             for (var i = 0; i < objects.Length; i++) {
-                if (DataAccess.IsDeleted(i)) {
+                if (DataAccess.IsDeleted(i))
                     continue;
-                }
 
                 var entity = em.Instantiate(objects[i].entityPrefab);
 
@@ -87,20 +87,17 @@ namespace Spellbound.Core {
                 em.SetComponentData(entity, new InstanceIndexComponent {
                     Value = i
                 });
-                if (!_entities.TryAdd(i, entity)){
-                    Log.Error($"Failing to add to entity dictionary. Assume a duplicate entity exists in the dictionary");
-                }
-
+                if (!_entities.TryAdd(i, entity))
+                    Log.Error($"Failing to add index {i} to entity dictionary. " +
+                              $"A duplicate entity must exist for entity: {entity.Index}");
             }
             
             foreach (var kvp in DataAccess.GetAllInstances()) {
-                if (kvp.Value.Transform == null) {
+                if (kvp.Value.Transform == null)
                     continue;
-                }
 
-                if (kvp.Key >= objects.Length) {
+                if (kvp.Key >= objects.Length)
                     HandleInstanceAdded(kvp.Key, kvp.Value.PresetUid, kvp.Value.Transform.Value);
-                }
             }
         }
 
