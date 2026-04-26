@@ -96,7 +96,7 @@ namespace Spellbound.Core {
                 if (kvp.Value.Transform == null)
                     continue;
 
-                if (kvp.Key >= objects.Length)
+                if (kvp.Key < objects.Length)
                     HandleInstanceAdded(kvp.Key, kvp.Value.PresetUid, kvp.Value.Transform.Value);
             }
         }
