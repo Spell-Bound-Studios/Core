@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Buffers;
@@ -14,6 +14,8 @@ namespace Spellbound.Core.Packing {
     /// Requires IPacker implementers.
     /// </summary>
     public static class Packer {
+        public delegate void PackWriter(ref Span<byte> buffer);
+
         // Starting stack buffer size
         private const int StackBufferSize = 4096;
 
@@ -208,6 +210,40 @@ namespace Spellbound.Core.Packing {
                         | ((long)buffer[6] << 48)
                         | ((long)buffer[7] << 56);
             buffer = buffer[8..];
+
+            return value;
+        }
+
+        #endregion
+
+        #region Short
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteShort(ref Span<byte> buffer, short value) {
+            BitConverter.TryWriteBytes(buffer, value);
+            buffer = buffer[sizeof(short)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short ReadShort(ref ReadOnlySpan<byte> buffer) {
+            var value = BitConverter.ToInt16(buffer);
+            buffer = buffer[sizeof(short)..];
+
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteShortBitwise(ref Span<byte> buffer, short value) {
+            buffer[0] = (byte)value;
+            buffer[1] = (byte)(value >> 8);
+            buffer = buffer[2..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short ReadShortBitwise(ref ReadOnlySpan<byte> buffer) {
+            var value = (short)(buffer[0]
+                                | (buffer[1] << 8));
+            buffer = buffer[2..];
 
             return value;
         }
@@ -488,7 +524,7 @@ namespace Spellbound.Core.Packing {
 
             return result;
         }
-        
+
         /// <summary>
         /// Pack a List directly to bytes where null is empty.
         /// </summary>
@@ -721,6 +757,51 @@ namespace Spellbound.Core.Packing {
 
             // Helper method that returns a bool if the byte array is null or empty.
             static bool NoData(byte[] x) => x == null || x.Length == 0;
+        }
+
+        /// <summary>
+        /// Handles the stack-first + ArrayPool fallback pattern.
+        /// Caller provides only the write logic.
+        /// </summary>
+        public static byte[] BuildPayload(PackWriter writer) {
+            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+            var span = stackBuf;
+
+            try {
+                writer(ref span);
+                var written = stackBuf.Length - span.Length;
+
+                return stackBuf[..written].ToArray();
+            }
+            catch (ArgumentException) { }
+
+            var size = Math.Max(StackBufferSize * 2, 8192);
+
+            while (size <= MaxRentedBuffer) {
+                var rented = ArrayPool<byte>.Shared.Rent(size);
+
+                try {
+                    var rentedSpan = new Span<byte>(rented, 0, size);
+                    var working = rentedSpan;
+
+                    try {
+                        writer(ref working);
+                        var written = size - working.Length;
+                        var result = new byte[written];
+                        Buffer.BlockCopy(rented, 0, result, 0, written);
+
+                        return result;
+                    }
+                    catch (ArgumentException) { }
+                }
+                finally {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+
+                size = Math.Min(size * 2, MaxRentedBuffer);
+            }
+
+            throw new InvalidOperationException($"Payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
         }
 
         #endregion

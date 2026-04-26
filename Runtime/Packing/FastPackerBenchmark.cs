@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Diagnostics;
@@ -7,7 +7,7 @@ using Debug = UnityEngine.Debug;
 
 namespace Spellbound.Core.Packing {
     /// <summary>
-    /// FastPackerBenchmark is attached to a prefab in the prefabs folder and simply runs a quick benchmark of the
+    /// FastPackerBenchmark is attached to a bakePrefab in the prefabs folder and simply runs a quick benchmark of the
     /// available packing methods found in the core system. This script can and should be ignored for any game design
     /// purposes and exists only as a series of unit tests.
     /// </summary>

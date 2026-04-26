@@ -8,7 +8,7 @@
 
 ---
 
-## Console sOverview
+## Console Overview
 
 The Spellbound Console System provides a powerful command-line interface for Unity games. It supports three types of commands:
 

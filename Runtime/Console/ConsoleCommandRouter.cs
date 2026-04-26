@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Linq;
@@ -26,11 +26,11 @@ namespace Spellbound.Core.Console {
 
             if (args.Length > 0 && int.TryParse(args[0], out var parsedQty))
                 quantity = parsedQty;
+
             else if (preset.TryGetModule<ConsoleModule>(out var module))
                 quantity = module.defaultQuantity;
 
-            var moduleTypes = preset.modules
-                    .Where(m => m != null)
+            var moduleTypes = preset.GetAllModules()
                     .Select(m => m.GetType())
                     .ToList();
 
@@ -78,10 +78,6 @@ namespace Spellbound.Core.Console {
                     // See if we have a preset uid or not.
                     if (param.ParameterType == typeof(string) && param.Name == "presetUid")
                         invokeArgs[i] = presetUid;
-
-                    // See if we have a positional argument.
-                    else if (param.ParameterType == typeof(Vector3))
-                        invokeArgs[i] = GetExecutionPosition(consoleModule);
 
                     // See if we have a rotational argument. (Identity because I don't know how we would do this lol)
                     else if (param.ParameterType == typeof(Quaternion))

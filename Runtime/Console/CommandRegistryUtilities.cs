@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace Spellbound.Core.Console {
         /// Warnings and errors are always logged regardless of this setting.
         /// </summary>
         public static bool Verbose = false;
-        
+
         /// <summary>
         /// Gets all assemblies that should be scanned for commands.
         /// Filters out Unity editor assemblies and third-party editor plugins.
@@ -67,9 +67,9 @@ namespace Spellbound.Core.Console {
         /// Logs successful command registration.
         /// </summary>
         public static void LogCommandRegistered(string commandName, string targetInfo, string[] aliases = null) {
-            if (!Verbose) 
+            if (!Verbose)
                 return;
-            
+
             var message = $"Registered command: {commandName} → {targetInfo}";
 
             if (aliases is { Length: > 0 })
@@ -95,17 +95,17 @@ namespace Spellbound.Core.Console {
         /// Logs a summary of command discovery results.
         /// </summary>
         public static void LogDiscoverySummary(string registryName, int commandCount) {
-            if (!Verbose) 
+            if (!Verbose)
                 return;
 
             Debug.Log($"[{registryName}] Registered {commandCount} command(s)");
         }
-        
+
         /// <summary>
         /// Logs a summary with multiple command types.
         /// </summary>
         public static void LogDiscoverySummary(string registryName, params (string type, int count)[] commandTypes) {
-            if (!Verbose) 
+            if (!Verbose)
                 return;
 
             var parts = commandTypes.Select(ct => $"{ct.count} {ct.type}").ToArray();

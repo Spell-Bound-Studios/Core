@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using UnityEngine;
@@ -18,8 +18,6 @@ namespace Spellbound.Core.Console {
 
         [Tooltip("Default quantity if not specified in command.")]
         public int defaultQuantity = 1;
-
-        public override SbbData? GetData(ObjectPreset preset) => throw new NotImplementedException();
     }
 
     public enum SpawnLocation {
