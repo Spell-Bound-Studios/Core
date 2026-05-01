@@ -55,15 +55,63 @@ namespace Spellbound.Core {
         public void SetEcsChunkReadyForObjects() {
             var em =  World.DefaultGameObjectInjectionWorld.EntityManager;
             em.AddComponentData(_ecsChunk, new ReadyForObjectsTag());
-            em.AddSharedComponentManaged(_ecsChunk, new ChunkParentComponent{ChunkCoord = _id});
         }
         
+        
         public void BufferFullStateObjects() {
-            // TODO: Copy everything in instances into the buffer
+            var instances = DataAccess.GetAllInstances();
+            
+            if (instances.Count == 0) {
+                return;
+            }
+            
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            
+            var buffer = em.HasBuffer<EntitySpawnRequestElement>(_ecsChunk) 
+                    ? em.GetBuffer<EntitySpawnRequestElement>(_ecsChunk)
+                    : em.AddBuffer<EntitySpawnRequestElement>(_ecsChunk);
+
+            foreach (var instance in instances) {
+                
+                if (instance.Key < DataAccess.ProceduralInstanceIndexCount) {
+                    continue;
+                }
+                
+                if (instance.Value.Transform == null) {
+                    continue;
+                }
+
+                if (!instance.Value.PresetUid.TryGetEntityPrefab(out var prefab)) {
+                    Log.Error($"Entity prefab could not be found: {instance.Value.PresetUid}");
+                    continue;
+                }
+                
+                buffer.Add(new EntitySpawnRequestElement {
+                    Prefab = prefab,
+                    InstanceIndex = instance.Key,
+                    Transform = LocalTransform.FromPositionRotationScale(
+                        instance.Value.Transform.Value.Position,
+                        quaternion. Euler(instance.Value.Transform.Value.Rotation),
+                        instance.Value.Transform.Value.Scale
+                        )
+                });
+            }
         }
         
         public void BufferFullStateDeletions() {
-            // TODO: Copy everything in deletions into the deletions buffer
+            var deletions = DataAccess.GetAllDeletions();
+
+            if (deletions.Count == 0) {
+                return;
+            }
+            
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            
+            var buffer = em.AddBuffer<DeletionBufferElement>(_ecsChunk);
+            
+            foreach (var deletion in DataAccess.GetAllDeletions()) {
+                buffer.Add(new DeletionBufferElement {Value = deletion });
+            }
         }
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) =>

@@ -8,7 +8,6 @@ using Unity.Entities;
 namespace Spellbound.Core {
     public partial struct InstantiationSystem : ISystem
     {
-        [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate(state.GetEntityQuery(
@@ -46,6 +45,8 @@ namespace Spellbound.Core {
                     deletionsHashSet.Capacity = deletions.Length;
                     foreach (var deletion in deletions)
                         deletionsHashSet.Add(deletion.Value);
+                    
+                    ecb.RemoveComponent<DeletionBufferElement>(entity);
                 }
                 
                 foreach (var element in buffer)
