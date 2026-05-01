@@ -19,7 +19,7 @@ namespace Spellbound.Core {
 
         public GameObject bakePrefab; // not the proxy, it is the thing that bakes into an entity
         public EventSurface eventSurfacePrefab;
-        public float interactionDistance = 50;
+        public Vector2 interactionDistance = new(50, 70);
 
         [SerializeField] public List<PresetSurface> surfaceModules = new();
 

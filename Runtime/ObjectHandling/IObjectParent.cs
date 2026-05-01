@@ -1,5 +1,6 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
+using Unity.Entities;
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -8,6 +9,6 @@ namespace Spellbound.Core {
     /// </summary>
     public interface IObjectParent {
         public ObjectParent ObjectParent { get; }
-        void InitializeObjectParentChunk(Vector3Int id);
+        void InitializeObjectParentChunk(Vector3Int id, Entity ecsChunk);
     }
 }

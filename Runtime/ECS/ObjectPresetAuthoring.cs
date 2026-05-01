@@ -2,6 +2,7 @@
 
 using Spellbound.Core.ECS;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -23,9 +24,15 @@ namespace Spellbound.Core {
                 Value = authoring.preset.presetUid
             });
 
+            AddComponent(entity, new StaticProximityObjectComponent {
+                Value = new float2(authoring.preset.interactionDistance)
+            });
+            
             AddComponent(entity, new InstanceIndexComponent {
                 Value = -1
             });
+            
+            AddSharedComponent(entity, new ChunkParentComponent());
         }
     }
 }
