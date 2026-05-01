@@ -14,10 +14,12 @@ namespace Spellbound.Core {
     public class ObjectPresetBaker : Baker<ObjectPresetAuthoring> {
         public override void Bake(ObjectPresetAuthoring authoring) {
             if (authoring.preset == null) {
-                Debug.LogError($"[ObjectPresetBaker] Missing ObjectPreset on '{authoring.gameObject.name}'!", authoring);
+                Debug.LogError($"[ObjectPresetBaker] Missing ObjectPreset on '{authoring.gameObject.name}'!",
+                    authoring);
+
                 return;
             }
-            
+
             var entity = GetEntity(TransformUsageFlags.Renderable);
 
             AddComponent(entity, new PresetUidComponent {
@@ -27,11 +29,11 @@ namespace Spellbound.Core {
             AddComponent(entity, new StaticProximityObjectComponent {
                 Value = new float2(authoring.preset.interactionDistance)
             });
-            
+
             AddComponent(entity, new InstanceIndexComponent {
                 Value = -1
             });
-            
+
             AddSharedComponent(entity, new ChunkParentComponent());
         }
     }

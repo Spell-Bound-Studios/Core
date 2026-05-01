@@ -1,7 +1,6 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System.Collections.Generic;
-using Unity.Entities;
 using UnityEngine;
 
 namespace Spellbound.Core {

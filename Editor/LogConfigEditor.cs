@@ -1,4 +1,6 @@
-﻿// === LogConfigEditor.cs ===
+﻿// Copyright 2026 Spellbound Studio Inc.
+
+// === LogConfigEditor.cs ===
 // Copyright 2026 Spellbound Studio Inc.
 
 #if UNITY_EDITOR
@@ -17,7 +19,7 @@ namespace Spellbound.Core.Logging.Editor {
         private const string DefineDebug = "SPELLBOUND_LOG_DEBUG";
         private const string DefineInfo = "SPELLBOUND_LOG_INFO";
         private const string DefineWarning = "SPELLBOUND_LOG_WARNING";
-        
+
         private const string GlobalLabel = "Log Level";
         private const string FileLabel = "File Output";
         private const string FileNameLabel = "Log File Name";
@@ -32,7 +34,7 @@ namespace Spellbound.Core.Logging.Editor {
         private const string SinksSubtitle = "Toggle where log output is routed.";
         private const string UndoSinkFilterLabel = "Change Sink Filter Level";
         private const string SinkFilterLabel = "  Filter Level";
-        
+
         private const string LevelDescVerbose = "Compiles all log calls: Verbose, Debug, Info, Warning, and Error.";
         private const string LevelDescDebug = "Compiles Debug, Info, Warning, and Error. Strips Verbose.";
         private const string LevelDescInfo = "Compiles Info, Warning, and Error. Strips Debug and below.";
@@ -92,6 +94,7 @@ namespace Spellbound.Core.Logging.Editor {
             EditorGUILayout.LabelField(LevelSubtitle, _subtitleStyle);
 
             var newLevel = (LogLevel)EditorGUILayout.EnumPopup(config.globalLevel);
+
             if (newLevel != config.globalLevel) {
                 Undo.RecordObject(config, UndoLevelLabel);
                 config.globalLevel = newLevel;
@@ -102,17 +105,16 @@ namespace Spellbound.Core.Logging.Editor {
             EditorGUILayout.EndVertical();
         }
 
-        private static string GetLevelDescription(LogLevel level) {
-            return level switch {
-                LogLevel.Verbose => LevelDescVerbose,
-                LogLevel.Debug   => LevelDescDebug,
-                LogLevel.Info    => LevelDescInfo,
-                LogLevel.Warning => LevelDescWarning,
-                LogLevel.Error   => LevelDescError,
-                LogLevel.None    => LevelDescNone,
-                _                => ""
-            };
-        }
+        private static string GetLevelDescription(LogLevel level) =>
+                level switch {
+                    LogLevel.Verbose => LevelDescVerbose,
+                    LogLevel.Debug => LevelDescDebug,
+                    LogLevel.Info => LevelDescInfo,
+                    LogLevel.Warning => LevelDescWarning,
+                    LogLevel.Error => LevelDescError,
+                    LogLevel.None => LevelDescNone,
+                    _ => ""
+                };
 
         private static void DrawFileSection(LogConfig config) {
             EditorGUILayout.BeginVertical(_sectionStyle);
@@ -121,6 +123,7 @@ namespace Spellbound.Core.Logging.Editor {
             EditorGUILayout.LabelField(FileSubtitle, _subtitleStyle);
 
             var newFileName = EditorGUILayout.TextField(FileNameLabel, config.logFileName);
+
             if (newFileName != config.logFileName) {
                 Undo.RecordObject(config, UndoFileNameLabel);
                 config.logFileName = newFileName;
@@ -141,12 +144,14 @@ namespace Spellbound.Core.Logging.Editor {
                 var entry = config.sinks[i];
 
                 var newEnabled = EditorGUILayout.Toggle(entry.displayName, entry.enabled);
+
                 if (newEnabled != entry.enabled) {
                     Undo.RecordObject(config, UndoSinkLabel);
                     config.sinks[i].enabled = newEnabled;
                 }
 
                 var newFilter = DrawFilteredLevelPopup(SinkFilterLabel, entry.filterLevel, config.globalLevel);
+
                 if (newFilter != entry.filterLevel) {
                     Undo.RecordObject(config, UndoSinkFilterLabel);
                     config.sinks[i].filterLevel = newFilter;
@@ -166,8 +171,10 @@ namespace Spellbound.Core.Logging.Editor {
                 foreach (var type in asm.GetTypes()) {
                     if (!typeof(ILogSink).IsAssignableFrom(type))
                         continue;
+
                     if (type.IsAbstract || type.IsInterface)
                         continue;
+
                     if (type.GetConstructor(Type.EmptyTypes) == null)
                         continue;
 
@@ -181,6 +188,7 @@ namespace Spellbound.Core.Logging.Editor {
             }
 
             sinks.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.Ordinal));
+
             return sinks;
         }
 
@@ -227,28 +235,33 @@ namespace Spellbound.Core.Logging.Editor {
                     defines.Add(DefineDebug);
                     defines.Add(DefineInfo);
                     defines.Add(DefineWarning);
+
                     break;
                 case LogLevel.Debug:
                     defines.Add(DefineDebug);
                     defines.Add(DefineInfo);
                     defines.Add(DefineWarning);
+
                     break;
                 case LogLevel.Info:
                     defines.Add(DefineInfo);
                     defines.Add(DefineWarning);
+
                     break;
                 case LogLevel.Warning:
                     defines.Add(DefineWarning);
+
                     break;
                 case LogLevel.Error:
                 case LogLevel.None:
                     break;
                 default:
                     Debug.LogError($"[LogConfigEditor] Unhandled log level: {level}");
+
                     break;
             }
         }
-        
+
         private static LogLevel DrawFilteredLevelPopup(string label, LogLevel current, LogLevel floor) {
             // Build arrays of only valid options (at or above the global level)
             var validLevels = new List<LogLevel>();
@@ -257,6 +270,7 @@ namespace Spellbound.Core.Logging.Editor {
             foreach (LogLevel level in Enum.GetValues(typeof(LogLevel))) {
                 if (level < floor)
                     continue;
+
                 if (level == LogLevel.None)
                     continue;
 
@@ -266,10 +280,12 @@ namespace Spellbound.Core.Logging.Editor {
 
             // Find current selection index, clamp to floor if invalid
             var currentIndex = validLevels.IndexOf(current);
+
             if (currentIndex < 0)
                 currentIndex = 0;
 
             var newIndex = EditorGUILayout.Popup(label, currentIndex, validNames.ToArray());
+
             return validLevels[newIndex];
         }
 

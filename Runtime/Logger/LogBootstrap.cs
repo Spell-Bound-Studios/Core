@@ -11,9 +11,10 @@ namespace Spellbound.Core.Logging {
     public static class LogBootstrap {
         private const string ConfigResourcePath = "LogConfig";
         private const string BootstrapSource = "LogBootstrap";
+
         private const string NoConfigWarning =
-            "No LogConfig found at Resources/LogConfig. Using default config " +
-            "(Error level, Unity Console sink). Create one via Create > Spellbound > Log Config.";
+                "No LogConfig found at Resources/LogConfig. Using default config " +
+                "(Error level, Unity Console sink). Create one via Create > Spellbound > Log Config.";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Initialize() {
@@ -31,6 +32,7 @@ namespace Spellbound.Core.Logging {
             var config = ScriptableObject.CreateInstance<LogConfig>();
             config.globalLevel = LogLevel.Error;
             config.logFileName = "spellbound.log";
+
             config.sinks = new[] {
                 new SinkEntry {
                     qualifiedTypeName = typeof(UnityConsoleSink).AssemblyQualifiedName,
@@ -38,6 +40,7 @@ namespace Spellbound.Core.Logging {
                     enabled = true
                 }
             };
+
             return config;
         }
 
@@ -47,11 +50,13 @@ namespace Spellbound.Core.Logging {
                     continue;
 
                 var type = Type.GetType(entry.qualifiedTypeName);
+
                 if (type == null) {
                     Debug.LogError(
                         $"[{BootstrapSource}] Could not resolve sink type '{entry.qualifiedTypeName}'. " +
                         "Was the assembly removed or renamed?"
                     );
+
                     continue;
                 }
 

@@ -29,7 +29,8 @@ namespace Spellbound.Core.Logging {
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
             [CallerLineNumber] int line = 0
-        ) => Emit(LogLevel.Verbose, message, file, member, line);
+        ) =>
+                Emit(LogLevel.Verbose, message, file, member, line);
 
         [Conditional("SPELLBOUND_LOG_DEBUG")]
         public static void Debug(
@@ -37,7 +38,8 @@ namespace Spellbound.Core.Logging {
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
             [CallerLineNumber] int line = 0
-        ) => Emit(LogLevel.Debug, message, file, member, line);
+        ) =>
+                Emit(LogLevel.Debug, message, file, member, line);
 
         [Conditional("SPELLBOUND_LOG_INFO")]
         public static void Info(
@@ -45,7 +47,8 @@ namespace Spellbound.Core.Logging {
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
             [CallerLineNumber] int line = 0
-        ) => Emit(LogLevel.Info, message, file, member, line);
+        ) =>
+                Emit(LogLevel.Info, message, file, member, line);
 
         [Conditional("SPELLBOUND_LOG_WARNING")]
         public static void Warn(
@@ -53,21 +56,25 @@ namespace Spellbound.Core.Logging {
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
             [CallerLineNumber] int line = 0
-        ) => Emit(LogLevel.Warning, message, file, member, line);
+        ) =>
+                Emit(LogLevel.Warning, message, file, member, line);
 
         public static void Error(
             string message,
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
             [CallerLineNumber] int line = 0
-        ) => Emit(LogLevel.Error, message, file, member, line);
+        ) =>
+                Emit(LogLevel.Error, message, file, member, line);
 
         public static void Emit(LogLevel level, string message, string file, string member, int line) {
             var source = Path.GetFileNameWithoutExtension(file);
             var sinks = _sinks;
+
             for (var i = 0; i < sinks.Length; i++) {
                 if (level < sinks[i].FilterLevel)
                     continue;
+
                 sinks[i].Sink.Emit(level, source, message, member, line);
             }
         }
