@@ -30,53 +30,92 @@ namespace Spellbound.Core {
         private readonly Dictionary<int, EventSurface> _eventSurfaces = new();
 
         public ObjectParent(
-            IObjectParent implementer, Transform transform, IObjectDataAccess dataAccess, Vector3Int parentId, Entity ecsChunk) {
+            IObjectParent implementer, Transform transform, IObjectDataAccess dataAccess, Vector3Int parentId,
+            Entity ecsChunk) {
             _implementer = implementer;
             _transform = transform;
             _id = new int3(parentId.x, parentId.y, parentId.z);
             _ecsChunk = ecsChunk;
-            
+
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+
             _query = em.CreateEntityQuery(
                 ComponentType.ReadOnly<ChunkParentComponent>(),
                 ComponentType.ReadOnly<LocalTransform>(),
                 ComponentType.ReadOnly<StaticProximityObjectComponent>(),
                 ComponentType.ReadOnly<InstanceIndexComponent>(),
                 ComponentType.ReadOnly<PresetUidComponent>()
-                
-                );
-            _query.SetSharedComponentFilter(new ChunkParentComponent{ChunkCoord = _id});
-            
+            );
+            _query.SetSharedComponentFilter(new ChunkParentComponent { ChunkCoord = _id });
+
             DataAccess = dataAccess;
             DataAccess.OnInstanceRemoved += HandleInstanceRemoved;
             DataAccess.OnInstanceCreated += HandleInstanceAdded;
         }
 
         public void SetEcsChunkReadyForObjects() {
-            var em =  World.DefaultGameObjectInjectionWorld.EntityManager;
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             em.AddComponentData(_ecsChunk, new ReadyForObjectsTag());
-            em.AddSharedComponentManaged(_ecsChunk, new ChunkParentComponent{ChunkCoord = _id});
         }
-        
+
         public void BufferFullStateObjects() {
-            // TODO: Copy everything in instances into the buffer
+            var instances = DataAccess.GetAllInstances();
+
+            if (instances.Count == 0) return;
+
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            var buffer = em.HasBuffer<EntitySpawnRequestElement>(_ecsChunk)
+                    ? em.GetBuffer<EntitySpawnRequestElement>(_ecsChunk)
+                    : em.AddBuffer<EntitySpawnRequestElement>(_ecsChunk);
+
+            foreach (var instance in instances) {
+                if (instance.Key < DataAccess.ProceduralInstanceIndexCount) continue;
+
+                if (instance.Value.Transform == null) continue;
+
+                if (!instance.Value.PresetUid.TryGetEntityPrefab(out var prefab)) {
+                    Log.Error($"Entity prefab could not be found: {instance.Value.PresetUid}");
+
+                    continue;
+                }
+
+                buffer.Add(new EntitySpawnRequestElement {
+                    Prefab = prefab,
+                    InstanceIndex = instance.Key,
+                    Transform = LocalTransform.FromPositionRotationScale(
+                        instance.Value.Transform.Value.Position,
+                        quaternion.Euler(instance.Value.Transform.Value.Rotation),
+                        instance.Value.Transform.Value.Scale
+                    )
+                });
+            }
         }
-        
+
         public void BufferFullStateDeletions() {
-            // TODO: Copy everything in deletions into the deletions buffer
+            var deletions = DataAccess.GetAllDeletions();
+
+            if (deletions.Count == 0) return;
+
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            var buffer = em.AddBuffer<DeletionBufferElement>(_ecsChunk);
+
+            foreach (var deletion in DataAccess.GetAllDeletions())
+                buffer.Add(new DeletionBufferElement { Value = deletion });
         }
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) =>
                 DataAccess.CreateInstance(preset.presetUid, position, rotation, scale);
 
-        public void CreateNewInstanceWithData<T>(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale,
+        public void CreateNewInstanceWithData<T>(
+            ObjectPreset preset, Vector3 position, Vector3 rotation, int scale,
             int eventSurfaceIndex, T data) where T : IPacker, new() =>
                 DataAccess.CreateInstanceWithData(preset.presetUid, position, rotation, scale, eventSurfaceIndex, data);
-        
+
         private void HandleInstanceAdded(
             int instanceIndex, string presetUid, TransformData transformData) {
-            
-            if (!presetUid.TryGetEntityPrefab(out var prefab)) 
+            if (!presetUid.TryGetEntityPrefab(out var prefab))
                 return;
 
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -92,9 +131,8 @@ namespace Spellbound.Core {
             em.SetComponentData(entity, new InstanceIndexComponent {
                 Value = instanceIndex
             });
-            
-            em.SetSharedComponent(entity, new ChunkParentComponent{ChunkCoord = _id});
 
+            em.SetSharedComponent(entity, new ChunkParentComponent { ChunkCoord = _id });
         }
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
@@ -144,18 +182,19 @@ namespace Spellbound.Core {
         private void DeleteEntity(int instanceIndex) {
             var indices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
             var entities = _query.ToEntityArray(Allocator.Temp);
-            
+
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-            for (int i = 0; i < indices.Length; i++) {
+
+            for (var i = 0; i < indices.Length; i++) {
                 if (indices[i].Value == instanceIndex) {
                     em.DestroyEntity(entities[i]);
+
                     break;
                 }
             }
-    
+
             indices.Dispose();
             entities.Dispose();
-            
         }
 
         public void SpawnSurface(LocalTransform transform, int instanceIndex, ObjectPreset preset) {
@@ -181,14 +220,14 @@ namespace Spellbound.Core {
 
         public void EntityDistanceQuery(Vector3 playerPosition) {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
-            
+
             var indices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
             var entities = _query.ToEntityArray(Allocator.Temp);
             var transforms = _query.ToComponentDataArray<LocalTransform>(Allocator.Temp);
             var thresholds = _query.ToComponentDataArray<StaticProximityObjectComponent>(Allocator.Temp);
             var presetUids = _query.ToComponentDataArray<PresetUidComponent>(Allocator.Temp);
 
-            for(var i = 0; i < entities.Length; i++) {
+            for (var i = 0; i < entities.Length; i++) {
                 if (!em.Exists(entities[i]))
                     continue;
 
@@ -198,47 +237,47 @@ namespace Spellbound.Core {
 
                 if (distance < thresholds[i].Value.x && !hasProxy)
                     SpawnSurface(transforms[i], indices[i].Value, preset);
-                else if (distance > preset.interactionDistance.y && hasProxy)
+                else if (distance > thresholds[i].Value.y && hasProxy)
                     DespawnSurface(indices[i].Value);
             }
-            
+
             indices.Dispose();
             entities.Dispose();
             transforms.Dispose();
             thresholds.Dispose();
             presetUids.Dispose();
-            
         }
-        
+
         #region ECS
-        
+
         public void DestroyAllEntities() {
             var world = World.DefaultGameObjectInjectionWorld;
+
             if (world is not { IsCreated: true })
                 return;
 
             var em = world.EntityManager;
-            
+
             var disposeQuery = em.CreateEntityQuery(
                 ComponentType.ReadOnly<ChunkParentComponent>());
-            disposeQuery.SetSharedComponentFilter(new ChunkParentComponent{ChunkCoord = _id});
-            
+            disposeQuery.SetSharedComponentFilter(new ChunkParentComponent { ChunkCoord = _id });
+
             var entities = disposeQuery.ToEntityArray(Allocator.Temp);
             em.DestroyEntity(entities);
             entities.Dispose();
         }
-        
+
         #endregion
-        
+
         #region IDisposable
-        
+
         public void Dispose() {
             DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
             DataAccess.OnInstanceCreated -= HandleInstanceAdded;
 
             DestroyAllEntities();
         }
-        
+
         #endregion IDisposable
     }
 }

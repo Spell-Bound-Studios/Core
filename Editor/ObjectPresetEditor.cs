@@ -1,4 +1,6 @@
-﻿#if UNITY_EDITOR
+﻿// Copyright 2026 Spellbound Studio Inc.
+
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -8,7 +10,7 @@ namespace Spellbound.Core {
     [CustomEditor(typeof(ObjectPreset))]
     public sealed class ObjectPresetEditor : Editor {
         private SerializedProperty _surfacesProp;
-        
+
         // #####################################################
         // RENAME THESE IF YOU RENAME A FIELD - THEY MUST MATCH!
         // #####################################################
@@ -16,9 +18,7 @@ namespace Spellbound.Core {
         private const string FieldNameOnPresetSurfaceList = "presetModules";
         private const string FieldNameOnPresetSurfaceName = "surfaceName";
 
-        private void OnEnable() {
-            _surfacesProp = serializedObject.FindProperty(FieldNameOnObjectPreset);
-        }
+        private void OnEnable() => _surfacesProp = serializedObject.FindProperty(FieldNameOnObjectPreset);
 
         public override void OnInspectorGUI() {
             serializedObject.Update();
@@ -36,12 +36,15 @@ namespace Spellbound.Core {
 
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.PropertyField(nameProp, new GUIContent($"Surface {i}"));
+
                 if (GUILayout.Button("-", GUILayout.Width(25))) {
                     _surfacesProp.DeleteArrayElementAtIndex(i);
                     serializedObject.ApplyModifiedProperties();
                     GUIUtility.ExitGUI();
+
                     return;
                 }
+
                 EditorGUILayout.EndHorizontal();
 
                 DrawModules(modulesProp);
@@ -59,7 +62,7 @@ namespace Spellbound.Core {
 
             serializedObject.ApplyModifiedProperties();
         }
-        
+
         private void DrawModules(SerializedProperty modulesProp) {
             EditorGUI.indentLevel++;
 
@@ -69,34 +72,42 @@ namespace Spellbound.Core {
                 EditorGUILayout.BeginHorizontal();
                 var label = new GUIContent(GetNiceTypeName(p));
                 EditorGUILayout.PropertyField(p, label, true);
+
                 if (GUILayout.Button("-", GUILayout.Width(25))) {
                     modulesProp.DeleteArrayElementAtIndex(i);
+
                     break;
                 }
+
                 EditorGUILayout.EndHorizontal();
             }
 
             var buttonRect = EditorGUILayout.GetControlRect();
+
             if (EditorGUI.DropdownButton(buttonRect, new GUIContent("Add Module"), FocusType.Passive))
                 ShowModuleDropdown(buttonRect, modulesProp);
 
             EditorGUI.indentLevel--;
         }
-        
+
         private void ShowModuleDropdown(Rect buttonRect, SerializedProperty modulesProp) {
             var existing = new HashSet<Type>();
+
             for (var i = 0; i < modulesProp.arraySize; i++) {
                 var el = modulesProp.GetArrayElementAtIndex(i).managedReferenceValue;
-                if (el != null) 
+
+                if (el != null)
                     existing.Add(el.GetType());
             }
 
             var menu = new GenericMenu();
+
             foreach (var type in TypeCache.GetTypesDerivedFrom<PresetModule>()) {
-                if (type.IsAbstract) 
+                if (type.IsAbstract)
                     continue;
 
                 var label = new GUIContent(type.Name);
+
                 if (existing.Contains(type))
                     menu.AddDisabledItem(label);
                 else {
@@ -111,20 +122,22 @@ namespace Spellbound.Core {
 
             menu.DropDown(buttonRect);
         }
-        
+
         private static string GetNiceTypeName(SerializedProperty prop) {
             if (prop.managedReferenceValue == null)
                 return "Missing";
 
             var full = prop.managedReferenceFullTypename;
-            
+
             var lastSpace = full.LastIndexOf(' ');
-            if (lastSpace >= 0) 
+
+            if (lastSpace >= 0)
                 full = full[(lastSpace + 1)..];
-            
+
             var lastDot = full.LastIndexOf('.');
-            return lastDot >= 0 
-                    ? full[(lastDot + 1)..] 
+
+            return lastDot >= 0
+                    ? full[(lastDot + 1)..]
                     : full;
         }
     }

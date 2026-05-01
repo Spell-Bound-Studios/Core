@@ -1,4 +1,6 @@
-﻿// === FileSink.cs ===
+﻿// Copyright 2026 Spellbound Studio Inc.
+
+// === FileSink.cs ===
 // Copyright 2026 Spellbound Studio Inc.
 
 using System;
@@ -10,7 +12,7 @@ using UnityEngine;
 namespace Spellbound.Core.Logging {
     public class FileSink : ILogSink, IDisposable {
         private const string DisplayNameValue = "Write To File";
-        
+
         private const string DefaultLogFileName = "spellbound.log";
         private const string TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff";
         private const string ThreadName = "Spellbound.FileSink";
@@ -34,8 +36,8 @@ namespace Spellbound.Core.Logging {
                 return;
 
             _logFileName = string.IsNullOrWhiteSpace(config.logFileName)
-                ? DefaultLogFileName
-                : config.logFileName;
+                    ? DefaultLogFileName
+                    : config.logFileName;
 
             var directory = Application.persistentDataPath;
             var currentPath = Path.Combine(directory, _logFileName);
@@ -112,6 +114,7 @@ namespace Spellbound.Core.Logging {
 
         private void DrainQueue() {
             var wroteAnything = false;
+
             while (_queue.TryDequeue(out var entry)) {
                 _writer.WriteLine(FormatEntry(entry));
                 wroteAnything = true;
@@ -121,12 +124,11 @@ namespace Spellbound.Core.Logging {
                 _writer.Flush();
         }
 
-        private static string FormatEntry(LogEntry entry) {
-            return $"[{entry.Timestamp.ToString(TimestampFormat)}] " +
-                   $"[{entry.Level}] " +
-                   $"[{entry.Source}.{entry.Member}:{entry.Line}] " +
-                   $"{entry.Message}";
-        }
+        private static string FormatEntry(LogEntry entry) =>
+                $"[{entry.Timestamp.ToString(TimestampFormat)}] " +
+                $"[{entry.Level}] " +
+                $"[{entry.Source}.{entry.Member}:{entry.Line}] " +
+                $"{entry.Message}";
 
         private static void RotateFiles(string directory, string fileName) {
             var baseName = Path.GetFileNameWithoutExtension(fileName);
@@ -134,6 +136,7 @@ namespace Spellbound.Core.Logging {
 
             // Delete oldest
             var oldest = Path.Combine(directory, $"{baseName}.{MaxRotatedFiles}{extension}");
+
             if (File.Exists(oldest))
                 File.Delete(oldest);
 
@@ -141,6 +144,7 @@ namespace Spellbound.Core.Logging {
             for (var i = MaxRotatedFiles - 1; i >= 1; i--) {
                 var from = Path.Combine(directory, $"{baseName}.{i}{extension}");
                 var to = Path.Combine(directory, $"{baseName}.{i + 1}{extension}");
+
                 if (File.Exists(from))
                     File.Move(from, to);
             }
@@ -148,6 +152,7 @@ namespace Spellbound.Core.Logging {
             // Move current session to .1
             var current = Path.Combine(directory, fileName);
             var firstBackup = Path.Combine(directory, $"{baseName}.1{extension}");
+
             if (File.Exists(current))
                 File.Move(current, firstBackup);
         }

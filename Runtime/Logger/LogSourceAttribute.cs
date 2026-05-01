@@ -4,8 +4,11 @@ using System;
 
 namespace Spellbound.Core.Logging {
     [AttributeUsage(AttributeTargets.Assembly)]
-    public class LogSourceAttribute : System.Attribute {
+    public class LogSourceAttribute : Attribute {
         public string Name { get; }
-        public LogSourceAttribute(string name) => Name = name;
+
+        public LogSourceAttribute(string name) {
+            Name = name;
+        }
     }
 }

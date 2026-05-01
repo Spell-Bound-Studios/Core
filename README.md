@@ -4,19 +4,19 @@
 
 # Introduction
 
-
-
 ---
 
 ## Console Overview
 
-The Spellbound Console System provides a powerful command-line interface for Unity games. It supports three types of commands:
+The Spellbound Console System provides a powerful command-line interface for Unity games. It supports three types of
+commands:
 
 1. **ICommand Classes** - Self-contained command implementations (e.g., `help`, `clear`, `list`)
 2. **Utility Commands** - Static methods that can be called directly (e.g., `terraform_flatten`)
 3. **Preset Commands** - Methods that operate on ObjectPresets with specific modules (e.g., `spawn sword`)
 
 ### Key Features
+
 - ✅ Automatic command discovery via attributes
 - ✅ Type-safe parameter parsing (int, float, bool, Vector3, Vector2, enums, etc.)
 - ✅ Command aliases
@@ -50,6 +50,7 @@ consoleHistoryDownAction.performed += consoleController.OnHistoryDownPerformed;
 ### 3. Start Using Commands
 
 Open the console and try:
+
 ```
 > help
 > list
@@ -67,6 +68,7 @@ Best for: Standalone utility commands that don't need external context.
 **Examples:** `help`, `clear`, `list`, custom help commands
 
 **Characteristics:**
+
 - Self-contained logic
 - Support aliases
 - Auto-registered via `[ConsoleCommandClass]` attribute
@@ -79,6 +81,7 @@ Best for: Static helper methods, debug utilities, system commands.
 **Examples:** Terrain manipulation, stats display, debug toggles
 
 **Characteristics:**
+
 - Must be static methods
 - Decorated with `[ConsoleUtilityCommand]`
 - No preset/target required
@@ -91,6 +94,7 @@ Best for: Commands that operate on game objects/presets.
 **Examples:** `spawn`, `delete`, `modify`
 
 **Characteristics:**
+
 - Can be static or instance methods
 - Decorated with `[ConsolePresetCommand]`
 - Require a preset target: `commandname targetname [args]`
@@ -126,6 +130,7 @@ public class MyCommand : ICommand {
 ```
 
 **Usage in console:**
+
 ```
 > mycommand test
 > mc test          (alias)
@@ -161,6 +166,7 @@ public static class MyUtilities {
 ```
 
 **Usage in console:**
+
 ```
 > setgravity 0 -20 0
 > resetgravity
@@ -196,11 +202,13 @@ public class GameObjectSpawner : MonoBehaviour {
 ```
 
 **Setup:**
+
 1. Your ObjectPreset must have a `ConsoleModule` attached
 2. Set `autoRegister = true` on the ConsoleModule
 3. Place the preset in a Resources folder
 
 **Usage in console:**
+
 ```
 > spawn sword
 > spawn sword 5     (spawns 5 swords)
@@ -382,6 +390,7 @@ Utility and preset commands automatically parse these types:
 - Any `enum` type
 
 **Example:**
+
 ```csharp
 [ConsoleUtilityCommand("moveobject")]
 public static void MoveObject(string name, Vector3 position, bool instant = false) {
@@ -549,6 +558,7 @@ public class AudioHelpCommand : ICommand {
 
 **Problem:** Preset command not routing  
 **Solution:**
+
 1. Check preset has `ConsoleModule` with `autoRegister = true`
 2. Verify preset is in a Resources folder
 3. Ensure method has `[ConsolePresetCommand]` with correct module type
@@ -557,6 +567,7 @@ public class AudioHelpCommand : ICommand {
 
 **Problem:** Commands don't show up  
 **Solution:**
+
 1. Ensure `CommandRegistry.Instance.AutoRegisterCommands()` is called (done in ConsoleController.Awake)
 2. Check that AttributeCommandRegistry initializes before scene load
 3. Verify namespace is `Spellbound.Core.Console`
@@ -565,6 +576,7 @@ public class AudioHelpCommand : ICommand {
 
 **Problem:** "Invalid arguments" errors  
 **Solution:**
+
 1. Check parameter types are supported
 2. Ensure correct number of arguments
 3. Use correct format for Vector3/Vector2 (space-separated)

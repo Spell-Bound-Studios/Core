@@ -8,10 +8,12 @@ using UnityEngine;
 
 namespace Spellbound.Core {
     public interface IObjectDataAccess {
-        
         // On Loading this is all the Instances to Instantiate.
         Dictionary<int, InstanceEntry> GetAllInstances();
-        
+
+        // On Loading this is all the Deletions.
+        HashSet<int> GetAllDeletions();
+
         // Intended to flag a non-procedural objects creation via index, presetUid, position, rotation, scale.
         event Action<int, string, TransformData> OnInstanceCreated;
 
@@ -22,7 +24,7 @@ namespace Spellbound.Core {
         event Action<int, InstanceDataKey> OnInstanceDataChanged;
 
         // Intended to separate procedural instances from runtime instances.
-        void SetProceduralInstanceCount(int instanceIndex);
+        int ProceduralInstanceIndexCount { get; set; }
 
         // Intended to be the implementation for a non-procedural object creation via index, presetUid, position, rotation, scale.
         void CreateInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
