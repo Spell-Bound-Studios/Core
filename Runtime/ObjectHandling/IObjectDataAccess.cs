@@ -1,6 +1,5 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Spellbound.Core.Packing;
@@ -10,17 +9,14 @@ namespace Spellbound.Core {
     public interface IObjectDataAccess {
         // Intended to separate procedural instances from runtime instances.
         int ProceduralInstanceIndexCount { get; set; }
+        void SetConsumer(IObjectInstanceConsumer consumer);
+        
+        #region Bulk Access
+        
         Dictionary<int, NonProceduralStaticInstanceEntry> GetAllRuntimeInstances();
-        public IReadOnlyCollection<int> GetAllSeedInstanceDeletions();
-
-        // Intended to flag a non-procedural objects creation via index, presetUid, position, rotation, scale.
-        event Action<int, string, TransformData> OnInstanceCreated;
-
-        // Intended to flag any objects deletion via index.
-        event Action<int> OnInstanceRemoved;
-
-        // Intended to flag any objects' transformation.
-        event Action<int, InstanceDataKey> OnInstanceDataChanged;
+        IReadOnlyCollection<int> GetAllSeedInstanceDeletions();
+        
+        #endregion Bulk Access
 
         #region Runtime Instance Creation
         
