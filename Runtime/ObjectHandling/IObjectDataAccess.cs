@@ -1,6 +1,5 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Spellbound.Core.Packing;
@@ -8,31 +7,22 @@ using UnityEngine;
 
 namespace Spellbound.Core {
     public interface IObjectDataAccess {
-        // On Loading this is all the Instances to Instantiate.
-        Dictionary<int, InstanceEntry> GetAllInstances();
-
-        // On Loading this is all the Deletions.
-        HashSet<int> GetAllDeletions();
-
-        // Intended to flag a non-procedural objects creation via index, presetUid, position, rotation, scale.
-        event Action<int, string, TransformData> OnInstanceCreated;
-
-        // Intended to flag any objects deletion via index.
-        event Action<int> OnInstanceRemoved;
-
-        // Intended to flag any objects' transformation.
-        event Action<int, InstanceDataKey> OnInstanceDataChanged;
-
         // Intended to separate procedural instances from runtime instances.
         int ProceduralInstanceIndexCount { get; set; }
+        void SetConsumer(IObjectInstanceConsumer consumer);
+        
+        #region Bulk Access
+        
+        Dictionary<int, NonProceduralStaticInstanceEntry> GetAllRuntimeInstances();
+        IReadOnlyCollection<int> GetAllSeedInstanceDeletions();
+        
+        #endregion Bulk Access
 
-        // Intended to be the implementation for a non-procedural object creation via index, presetUid, position, rotation, scale.
-        void CreateInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
+        #region Runtime Instance Creation
+        
+        void CreateRuntimeInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
 
-        // Intended to be the implementation for a non-procedural object creation via index, presetUid, position, rotation, scale, and additional data.
-        void CreateInstanceWithData<T>(
-            string presetUid, Vector3 position, Vector3 rotation, int scale, int eventSurfaceIndex, T data)
-                where T : IPacker, new();
+        #endregion
 
         // Helper method to see if the index exists.
         bool HasInstance(int instanceIndex);
