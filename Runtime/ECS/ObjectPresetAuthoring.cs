@@ -22,7 +22,7 @@ namespace Spellbound.Core {
 
             var entity = GetEntity(TransformUsageFlags.Renderable);
 
-            AddComponent(entity, new PresetUidComponent {
+            AddSharedComponentManaged(entity, new PresetUidComponent {
                 Value = authoring.preset.presetUid
             });
 

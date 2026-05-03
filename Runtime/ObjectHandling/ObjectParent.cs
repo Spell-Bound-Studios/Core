@@ -8,6 +8,7 @@ using Spellbound.Core.Logging;
 using Spellbound.Core.Packing;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
@@ -105,9 +106,11 @@ namespace Spellbound.Core {
                 buffer.Add(new DeletionBufferElement { Value = deletion });
         }
 
-        public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) =>
-                DataAccess.CreateInstance(preset.presetUid, position, rotation, scale);
-
+        public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) {
+            DataAccess.CreateInstance(preset.presetUid, position, rotation, scale);
+        }
+        
+        
         public void CreateNewInstanceWithData<T>(
             ObjectPreset preset, Vector3 position, Vector3 rotation, int scale,
             int eventSurfaceIndex, T data) where T : IPacker, new() =>
@@ -218,39 +221,126 @@ namespace Spellbound.Core {
             _eventSurfaces.Remove(instanceIndex);
         }
 
-        public void EntityDistanceQuery(Vector3 playerPosition) {
+        public void EntityDistanceQuery(float3[] povPositions) {
+            
+            var existingEventSurfaces = new NativeHashSet<int>(_eventSurfaces.Count, Allocator.TempJob);
+            foreach (var key in _eventSurfaces.Keys)
+                existingEventSurfaces.Add(key);
+
+            var maxCapacity = _query.CalculateEntityCount();
+            
+            var instancesToAwaken = new NativeParallelHashMap<int, (FixedString64Bytes, LocalTransform)>(maxCapacity, Allocator.TempJob);
+            var instancesToSleep = new NativeParallelHashSet<int>(maxCapacity, Allocator.TempJob);
+            
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            
+            var chunks = _query.ToArchetypeChunkArray(Allocator.TempJob);
+            var sharedHandle = em.GetSharedComponentTypeHandle<PresetUidComponent>();
+            var entityCount = _query.CalculateEntityCount();
+            var presetUids = new NativeArray<PresetUidComponent>(entityCount, Allocator.TempJob);
 
-            var indices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
-            var entities = _query.ToEntityArray(Allocator.Temp);
-            var transforms = _query.ToComponentDataArray<LocalTransform>(Allocator.Temp);
-            var thresholds = _query.ToComponentDataArray<StaticProximityObjectComponent>(Allocator.Temp);
-            var presetUids = _query.ToComponentDataArray<PresetUidComponent>(Allocator.Temp);
+            int entityIndex = 0;
+            foreach (var chunk in chunks)
+            {
+                PresetUidComponent sharedValue = chunk.GetSharedComponent(sharedHandle);
+                for (int i = 0; i < chunk.Count; i++)
+                {
+                    presetUids[entityIndex++] = sharedValue;
+                }
+            }
+            chunks.Dispose();
 
-            for (var i = 0; i < entities.Length; i++) {
-                if (!em.Exists(entities[i]))
-                    continue;
+            var job = new StaticEventSurfaceProximityJob {
+                PovPositions = new NativeArray<float3>(povPositions, Allocator.TempJob),
+                Transforms = _query.ToComponentDataArray<LocalTransform>(Allocator.TempJob),
+                Thresholds = _query.ToComponentDataArray<StaticProximityObjectComponent>(Allocator.TempJob),
+                InstanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.TempJob),
+                PresetUids = presetUids,
+                ExistingEventSurfaces = existingEventSurfaces,
 
-                var distance = Vector3.Distance(playerPosition, transforms[i].Position);
-                var hasProxy = _eventSurfaces.ContainsKey(indices[i].Value);
-                var preset = presetUids[i].Value.Value.ResolvePreset();
+                InstancesToAwaken = instancesToAwaken.AsParallelWriter(),
+                InstancesToSleep = instancesToSleep.AsParallelWriter()
+            };
+            var jobHandle = job.Schedule(maxCapacity, 64);
+            jobHandle.Complete();
 
-                if (distance < thresholds[i].Value.x && !hasProxy)
-                    SpawnSurface(transforms[i], indices[i].Value, preset);
-                else if (distance > thresholds[i].Value.y && hasProxy)
-                    DespawnSurface(indices[i].Value);
+            foreach (var toAwaken in instancesToAwaken) {
+                SpawnSurface(toAwaken.Value.Item2, toAwaken.Key, toAwaken.Value.Item1.Value.ResolvePreset());
             }
 
-            indices.Dispose();
-            entities.Dispose();
-            transforms.Dispose();
-            thresholds.Dispose();
-            presetUids.Dispose();
+            foreach (var toSleep in instancesToSleep) {
+                DespawnSurface(toSleep);
+            }
+
+            job.PovPositions.Dispose();
+            job.Transforms.Dispose();
+            job.Thresholds.Dispose();
+            job.InstanceIndices.Dispose();
+            job.PresetUids.Dispose();
+            existingEventSurfaces.Dispose();
+            instancesToAwaken.Dispose();
+            instancesToSleep.Dispose();
+            
         }
 
-        #region ECS
+        #region API
 
         public void DestroyAllEntities() {
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var entities = _query.ToEntityArray(Allocator.Temp);
+            em.DestroyEntity(entities);
+            
+            //TODO make it persistent
+            
+        }
+        
+        public void DestroyAllPlacedEntities() {
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var proceduralCount = DataAccess.ProceduralInstanceIndexCount;
+            var entities = _query.ToEntityArray(Allocator.Temp);
+            var instanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
+
+            for (var i = 0; i < entities.Length; i++) {
+                if (instanceIndices[i].Value < proceduralCount)
+                    continue;
+                em.DestroyEntity(entities[i]);
+            }
+            
+            //TODO make it persistent
+            
+        }
+        
+        public void DestroyAllProcGenEntities() {
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var proceduralCount = DataAccess.ProceduralInstanceIndexCount;
+            var entities = _query.ToEntityArray(Allocator.Temp);
+            var instanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
+
+            for (var i = 0; i < entities.Length; i++) {
+                if (instanceIndices[i].Value >= proceduralCount)
+                    continue;
+                em.DestroyEntity(entities[i]);
+            }
+            
+            //TODO make it persistent
+            
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        public void Dispose() {
+            DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
+            DataAccess.OnInstanceCreated -= HandleInstanceAdded;
+
+            DisposeEcs();
+        }
+        
+        /// <summary>
+        /// Destroys all entities associated with this chunk, including the entity representing the chunk itself. 
+        /// </summary>
+        private void DisposeEcs() {
             var world = World.DefaultGameObjectInjectionWorld;
 
             if (world is not { IsCreated: true })
@@ -265,17 +355,6 @@ namespace Spellbound.Core {
             var entities = disposeQuery.ToEntityArray(Allocator.Temp);
             em.DestroyEntity(entities);
             entities.Dispose();
-        }
-
-        #endregion
-
-        #region IDisposable
-
-        public void Dispose() {
-            DataAccess.OnInstanceRemoved -= HandleInstanceRemoved;
-            DataAccess.OnInstanceCreated -= HandleInstanceAdded;
-
-            DestroyAllEntities();
         }
 
         #endregion IDisposable
