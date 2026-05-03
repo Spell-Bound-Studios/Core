@@ -59,9 +59,10 @@ namespace Spellbound.Core {
         }
 
         public void BufferFullStateObjects() {
-            var instances = DataAccess.GetAllInstances();
+            var instances = DataAccess.GetAllRuntimeInstances();
 
-            if (instances.Count == 0) return;
+            if (instances.Count == 0) 
+                return;
 
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
@@ -70,13 +71,8 @@ namespace Spellbound.Core {
                     : em.AddBuffer<EntitySpawnRequestElement>(_ecsChunk);
 
             foreach (var instance in instances) {
-                if (instance.Key < DataAccess.ProceduralInstanceIndexCount) continue;
-
-                if (instance.Value.Transform == null) continue;
-
                 if (!instance.Value.PresetUid.TryGetEntityPrefab(out var prefab)) {
                     Log.Error($"Entity prefab could not be found: {instance.Value.PresetUid}");
-
                     continue;
                 }
 
@@ -84,16 +80,16 @@ namespace Spellbound.Core {
                     Prefab = prefab,
                     InstanceIndex = instance.Key,
                     Transform = LocalTransform.FromPositionRotationScale(
-                        instance.Value.Transform.Value.Position,
-                        quaternion.Euler(instance.Value.Transform.Value.Rotation),
-                        instance.Value.Transform.Value.Scale
+                        instance.Value.Transform.Position,
+                        quaternion.Euler(instance.Value.Transform.Rotation),
+                        instance.Value.Transform.Scale
                     )
                 });
             }
         }
 
         public void BufferFullStateDeletions() {
-            var deletions = DataAccess.GetAllDeletions();
+            var deletions = DataAccess.GetAllSeedInstanceDeletions();
 
             if (deletions.Count == 0) return;
 
@@ -101,17 +97,12 @@ namespace Spellbound.Core {
 
             var buffer = em.AddBuffer<DeletionBufferElement>(_ecsChunk);
 
-            foreach (var deletion in DataAccess.GetAllDeletions())
+            foreach (var deletion in deletions)
                 buffer.Add(new DeletionBufferElement { Value = deletion });
         }
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) =>
-                DataAccess.CreateInstance(preset.presetUid, position, rotation, scale);
-
-        public void CreateNewInstanceWithData<T>(
-            ObjectPreset preset, Vector3 position, Vector3 rotation, int scale,
-            int eventSurfaceIndex, T data) where T : IPacker, new() =>
-                DataAccess.CreateInstanceWithData(preset.presetUid, position, rotation, scale, eventSurfaceIndex, data);
+                DataAccess.CreateRuntimeInstance(preset.presetUid, position, rotation, scale);
 
         private void HandleInstanceAdded(
             int instanceIndex, string presetUid, TransformData transformData) {

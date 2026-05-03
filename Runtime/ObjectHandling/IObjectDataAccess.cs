@@ -8,11 +8,10 @@ using UnityEngine;
 
 namespace Spellbound.Core {
     public interface IObjectDataAccess {
-        // On Loading this is all the Instances to Instantiate.
-        Dictionary<int, InstanceEntry> GetAllInstances();
-
-        // On Loading this is all the Deletions.
-        HashSet<int> GetAllDeletions();
+        // Intended to separate procedural instances from runtime instances.
+        int ProceduralInstanceIndexCount { get; set; }
+        Dictionary<int, NonProceduralStaticInstanceEntry> GetAllRuntimeInstances();
+        public IReadOnlyCollection<int> GetAllSeedInstanceDeletions();
 
         // Intended to flag a non-procedural objects creation via index, presetUid, position, rotation, scale.
         event Action<int, string, TransformData> OnInstanceCreated;
@@ -23,16 +22,11 @@ namespace Spellbound.Core {
         // Intended to flag any objects' transformation.
         event Action<int, InstanceDataKey> OnInstanceDataChanged;
 
-        // Intended to separate procedural instances from runtime instances.
-        int ProceduralInstanceIndexCount { get; set; }
+        #region Runtime Instance Creation
+        
+        void CreateRuntimeInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
 
-        // Intended to be the implementation for a non-procedural object creation via index, presetUid, position, rotation, scale.
-        void CreateInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
-
-        // Intended to be the implementation for a non-procedural object creation via index, presetUid, position, rotation, scale, and additional data.
-        void CreateInstanceWithData<T>(
-            string presetUid, Vector3 position, Vector3 rotation, int scale, int eventSurfaceIndex, T data)
-                where T : IPacker, new();
+        #endregion
 
         // Helper method to see if the index exists.
         bool HasInstance(int instanceIndex);
