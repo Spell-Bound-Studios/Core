@@ -14,7 +14,6 @@ using UnityEngine;
 
 namespace Spellbound.Core {
     /// <summary>
-    /// Poco1
     /// Poco to assist management of object data by the parent.
     /// </summary>
     public class ObjectParent : IDisposable, IObjectInstanceConsumer {
@@ -229,10 +228,10 @@ namespace Spellbound.Core {
                         Value = creation.InstanceIndex
                     });
                 }
-
-                // Single SetSharedComponent call sets the chunk parent for
-                // every entity in this preset group, in one structural change.
-                em.SetSharedComponent(entities, new ChunkParentComponent { ChunkCoord = _id });
+                
+                em.SetSharedComponent(entities, new ChunkParentComponent {
+                    ChunkCoord = _id
+                });
 
                 entities.Dispose();
             }
