@@ -26,7 +26,7 @@ namespace Spellbound.Core {
         private EntityQuery _query;
         private readonly Entity _ecsChunk;
 
-        private readonly Dictionary<int, EventSurface> _eventSurfaces = new();
+        private readonly Dictionary<int, IEventSurface> _eventSurfaces = new();
         private Vector3 _lastPovPosition;
 
         public IObjectDataAccess DataAccess { get; }
@@ -109,7 +109,7 @@ namespace Spellbound.Core {
         /// <summary>
         /// Indicates to the ECS world that the Chunk is ready for the Instantiation System to make entities.
         /// </summary>
-        public void BridgeChunkReady() {
+        public void SetEcsChunkReady() {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
             em.AddComponentData(_ecsChunk, new ReadyForObjectsTag());
         }
@@ -118,13 +118,13 @@ namespace Spellbound.Core {
         /// Sends the full state as Entity Spawn Requests to the ECS world.
         /// Note: event surfaces will not be added immediately.
         /// </summary>
-        public void BridgeFullStateStaticInstances() {
+        public void BufferFullStateStaticInstances() {
             var instances = DataAccess.GetAllRuntimeInstances();
 
             if (instances.Count == 0)
                 return;
 
-            BridgeEntitySpawnRequests(instances.Select(kvp => (kvp.Key, kvp.Value)));
+            BufferEntitySpawnRequests(instances.Select(kvp => (kvp.Key, kvp.Value)));
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace Spellbound.Core {
         /// These are all the procedurally-generated objects that the save state knows are deleted.
         /// These will be skipped over when the Instantiation System instantiates entities.
         /// </summary>
-        public void BridgeFullStateDeletions() {
+        public void BufferFullStateDeletions() {
             var deletions = DataAccess.GetAllSeedInstanceDeletions();
 
             if (deletions.Count == 0)
@@ -195,7 +195,7 @@ namespace Spellbound.Core {
             entities.Dispose();
         }
 
-        private void BridgeEntitySpawnRequests(IEnumerable<(int, NonProceduralStaticInstanceEntry)> instances) {
+        private void BufferEntitySpawnRequests(IEnumerable<(int, NonProceduralStaticInstanceEntry)> instances) {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             var buffer = em.HasBuffer<EntitySpawnRequestElement>(_ecsChunk)
@@ -226,11 +226,10 @@ namespace Spellbound.Core {
         /// Sends to ECS world, and evaluates if it needs an event surface immediately.
         /// </summary>
         /// <param name="instances"></param>
-        public void OnRuntimeInstancesCreated(IEnumerable<(int, NonProceduralStaticInstanceEntry)> instances) {
-            var instanceList = instances.ToList();
-            BridgeEntitySpawnRequests(instanceList);
+        public void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> instances) {
+            BufferEntitySpawnRequests(instances);
 
-            foreach (var (instanceIndex, entry) in instanceList) {
+            foreach (var (instanceIndex, entry) in instances) {
                 var preset = entry.PresetUid.ResolvePreset();
 
                 var proximityChange = ProximityMath.IsWithinActivationRange(entry.Transform.Position, _lastPovPosition,
@@ -243,10 +242,11 @@ namespace Spellbound.Core {
         public void OnInstancesDeleted(IReadOnlyList<int> instanceIndices) {
             if (instanceIndices.Count == 0)
                 return;
+            
+            foreach (var instanceIndex in instanceIndices) 
+                DespawnSurface(instanceIndex);
 
             DestroyEntities(instanceIndices);
-
-            foreach (var instanceIndex in instanceIndices) DespawnSurface(instanceIndex);
         }
 
         public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key) { }
@@ -255,15 +255,20 @@ namespace Spellbound.Core {
 
         #region EventSurfaces
 
-        private void SpawnSurface(ObjectPreset preset, TransformData transformData, int instanceIndex = 0) {
+        private void SpawnSurface(ObjectPreset preset, TransformData transformData, int instanceIndex) {
+            if (_eventSurfaces.ContainsKey(instanceIndex)) {
+                Log.Error($"Instance index {instanceIndex} already a key in eventSurfacesDictionary");
+
+                return;
+            }
             var eventSurface = UnityEngine.Object.Instantiate(
                 preset.eventSurfacePrefab,
                 transformData.Position,
                 transformData.RotAsQuaternion(),
                 _transform
-            );
-            eventSurface.gameObject.name = $"{preset.name} Event Surface {instanceIndex}";
-            eventSurface.transform.localScale = transformData.ScaleAsVector3();
+            ).GetComponent<IEventSurface>();
+            eventSurface.GameObject.name = $"{preset.name} Event Surface {instanceIndex}";
+            eventSurface.GameObject.transform.localScale = transformData.ScaleAsVector3();
             eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
             _eventSurfaces[instanceIndex] = eventSurface;
         }
@@ -274,9 +279,10 @@ namespace Spellbound.Core {
         /// </summary>
         /// <param name="instanceIndex"></param>
         private void DespawnSurface(int instanceIndex) {
-            if (!_eventSurfaces.Remove(instanceIndex, out var surface)) return;
+            if (!_eventSurfaces.Remove(instanceIndex, out var surface)) 
+                return;
 
-            UnityEngine.Object.Destroy(surface.gameObject);
+            UnityEngine.Object.Destroy(surface.GameObject);
         }
 
         #endregion EventSurfaces
@@ -322,7 +328,8 @@ namespace Spellbound.Core {
                     instanceIndices[toAwaken].Value);
             }
 
-            foreach (var toSleep in instancesToSleep) DespawnSurface(toSleep);
+            foreach (var toSleep in instancesToSleep) 
+                DespawnSurface(instanceIndices[toSleep].Value); 
 
             proximityJob.PovPositions.Dispose();
             transforms.Dispose();
@@ -338,7 +345,9 @@ namespace Spellbound.Core {
 
         #region IDisposable
 
-        public void Dispose() => DestroyAllEntities();
+        public void Dispose(){
+            DestroyAllEntities();
+        } 
 
         #endregion IDisposable
     }

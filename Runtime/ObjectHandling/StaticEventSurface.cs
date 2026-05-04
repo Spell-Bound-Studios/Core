@@ -5,11 +5,13 @@ using UnityEngine;
 
 namespace Spellbound.Core {
     [RequireComponent(typeof(Collider))]
-    public class EventSurface : MonoBehaviour {
+    public class StaticEventSurface : MonoBehaviour, IEventSurface {
         [SerializeField, Tooltip("Decide your own surface index schema.")]
         private int surfaceIndex = -1;
 
         public Vector3 Position => transform.position;
+        
+        public GameObject GameObject => gameObject;
 
         private IObjectParent _parent;
         private int _entityIndex;
@@ -21,7 +23,7 @@ namespace Spellbound.Core {
             _objectPreset = presetUid.ResolvePreset();
 
             // Check for children.
-            var childSurfaces = GetComponentsInChildren<EventSurface>(true);
+            var childSurfaces = GetComponentsInChildren<StaticEventSurface>(true);
 
             foreach (var childSurface in childSurfaces) {
                 if (childSurface == this)
