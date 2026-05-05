@@ -331,7 +331,7 @@ namespace Spellbound.Core {
             foreach (var toSleep in instancesToSleep) 
                 DespawnSurface(instanceIndices[toSleep].Value); 
 
-            proximityJob.PovPositions.Dispose();
+            povPositions.Dispose();
             transforms.Dispose();
             thresholds.Dispose();
             instanceIndices.Dispose();
