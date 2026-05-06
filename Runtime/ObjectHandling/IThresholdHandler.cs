@@ -7,6 +7,6 @@ using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
     public interface IThresholdHandler {
-        bool ThresholdCheck(IQuantitativeData data, ObjectParent parent,  out List<Action<int, Transform>> structuralActions, out List<Action<int, Transform>> cosmeticActions);
+        bool ThresholdCheck(IQuantitativeData data, ObjectParent parent,  out List<Action<int, TransformData>> actions);
     }
 }

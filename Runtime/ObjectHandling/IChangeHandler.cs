@@ -7,6 +7,8 @@ using UnityEngine;
 
 namespace Spellbound.Core {
     public interface IChangeHandler {
-        void OnChange(IPacker data, int instanceIndex, ObjectParent parent, out List<Action<int, Transform>> structuralActions, out List<Action<int, Transform>> cosmeticActions);
+        void OnChangeStructural(IPacker data, int instanceIndex, ObjectParent parent, out List<Action<int, TransformData>> actions);
+        
+        void OnChangeCosmetic(IPacker data, int instanceIndex, ObjectParent parent, out List<Action<int, TransformData>> actions);
     }
 }

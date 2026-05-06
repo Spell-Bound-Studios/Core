@@ -13,6 +13,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace Spellbound.Core {
     /// <summary>
@@ -242,26 +243,103 @@ namespace Spellbound.Core {
         public void OnInstancesDeleted(IReadOnlyList<int> instanceIndices) {
             if (instanceIndices.Count == 0)
                 return;
-            
-            foreach (var instanceIndex in instanceIndices) 
+
+
+
+            foreach (var instanceIndex in instanceIndices) {
+                if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
+                    continue;
+                }
+
+                if (surface == null) {
+                    Log.Error($"surface is null");
+                    continue;
+                }
+                surface.Preset.TryGetModule(typeof(IDestroyedHandler), out var module);
+
+                if (module is IDestroyedHandler handler) {
+                    handler.OnDestruction(instanceIndex, this, out var actions);
+
+                    foreach (var action in actions) {
+                        action.Invoke(instanceIndex, new TransformData(surface.Transform));
+                    }
+                }
+                
                 DespawnSurface(instanceIndex);
+            } 
+                
 
             DestroyEntities(instanceIndices);
         }
 
-        public void OnInstanceDataChanged<T>(int instanceIndex, InstanceDataKey key, Func<T> dataFunc, bool isCosmetic = false) where  T : IPacker{
-            if (!TryResolveModuleAndSurface(instanceIndex, key, out var module, out var surface))
-                return;
+        public void OnInstanceDataStructuralChanged<T>(int instanceIndex, InstanceDataKey key, Func<T> dataFunc) where  T : IPacker {
+            TransformData transformData = default;
+            ObjectPreset preset = null;
 
+            if (_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
+                transformData = new TransformData(surface.Transform);
+                preset = surface.Preset;
+            }
+            else {
+                var instanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
+                var entities = _query.ToEntityArray(Allocator.Temp);
+                
+
+                for (var i = 0; i < instanceIndices.Length; i++) {
+                    if (instanceIndices[i].Value != instanceIndex) {
+                        continue;
+                    }
+                    
+                    var em  = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+                    transformData = new TransformData(em.GetComponentData<LocalTransform>(entities[i]));
+                    preset = em.GetSharedComponentManaged<PresetUidComponent>(entities[i]).Value.Value.ResolvePreset();
+
+                    break;
+                }
+                instanceIndices.Dispose();
+                entities.Dispose();
+            }
+            
+            if (!PackerRegistry.TryGetHandlerType(key.PackerId, out var handlerType)) {
+                Log.Error($"Can't get handler type for packerid {key.PackerId}");
+                return;
+            }
+
+            if (preset == null) {
+                Log.Error($"preset is null");
+
+                return;
+            }
+
+            preset.TryGetModule(handlerType, out var module, key.SurfaceIndex);
             var data = dataFunc();
-            var transform = surface.Transform;
 
             if (module is IThresholdHandler thresholdHandler && data is IQuantitativeData quantitativeData)
-                if (TryHandleThreshold(thresholdHandler, instanceIndex, quantitativeData, transform, isCosmetic))
+                if (TryHandleThreshold(thresholdHandler, instanceIndex, quantitativeData, transformData))
                     return;
 
             if (module is IChangeHandler changeHandler)
-                HandleChange(changeHandler, data, instanceIndex, transform, isCosmetic);
+                HandleChangeStructural(changeHandler, data, instanceIndex, transformData);
+        }
+        
+        public void OnInstanceDataCosmeticChanged<T>(int instanceIndex, InstanceDataKey key, Func<T> dataFunc) where  T : IPacker{
+            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface))
+                return;
+
+            if (!PackerRegistry.TryGetHandlerType(key.PackerId, out var handlerType)) {
+                Log.Error($"Can't get handler type for packerid {key.PackerId}");
+                return;
+            }
+
+            surface.Preset.TryGetModule(handlerType, out var module, key.SurfaceIndex);
+
+            var data = dataFunc();
+            var transformData = new TransformData(surface.Transform);
+            
+
+            if (module is IChangeHandler changeHandler)
+                HandleChangeCosmetic(changeHandler, data, instanceIndex, transformData);
         }
 
         public void OnInstanceDataInitialized<T>(
@@ -269,45 +347,31 @@ namespace Spellbound.Core {
             
         }
         
-        private bool TryResolveModuleAndSurface(int instanceIndex, InstanceDataKey key, out PresetModule module, out IEventSurface surface) {
-            module = null;
-
-            if (!_eventSurfaces.TryGetValue(instanceIndex, out surface))
+        private bool TryHandleThreshold(IThresholdHandler handler, int instanceIndex, IQuantitativeData data, TransformData transformData) {
+            if (!handler.ThresholdCheck(data, this, out var actions))
                 return false;
 
-            if (!PackerRegistry.TryGetHandlerType(key.PackerId, out var handlerType)) {
-                Log.Error($"Can't get handler type for packerid {key.PackerId}");
-                return false;
-            }
-
-            return surface.Preset.TryGetModule(handlerType, out module, key.SurfaceIndex);
-        }
-        
-        private bool TryHandleThreshold(IThresholdHandler handler, int instanceIndex, IQuantitativeData data, Transform transform, bool isCosmetic) {
-            if (!handler.ThresholdCheck(data, this, out var structuralActions, out var cosmeticActions))
-                return false;
-
-            InvokeActions(cosmeticActions, instanceIndex, transform);
-
-            if (!isCosmetic)
-                InvokeActions(structuralActions, instanceIndex, transform);
-
+            foreach (var action in actions)
+                action.Invoke(instanceIndex, transformData);
             return true;
         }
         
-        private void HandleChange(IChangeHandler handler, IPacker data, int instanceIndex, Transform transform, bool isCosmetic) {
-            handler.OnChange(data, instanceIndex, this, out var structuralActions, out var cosmeticActions);
+        private void HandleChangeStructural(IChangeHandler handler, IPacker data, int instanceIndex, TransformData transformData) {
+            handler.OnChangeStructural(data, instanceIndex, this, out var actions);
 
-            InvokeActions(cosmeticActions, instanceIndex, transform);
-
-            if (!isCosmetic)
-                InvokeActions(structuralActions, instanceIndex, transform);
+            foreach (var action in actions)
+                action.Invoke(instanceIndex, transformData);
+            
         }
         
-        private static void InvokeActions(List<Action<int, Transform>> actions, int instanceIndex, Transform transform) {
+        private void HandleChangeCosmetic(IChangeHandler handler, IPacker data, int instanceIndex, TransformData transformData) {
+            handler.OnChangeCosmetic(data, instanceIndex, this, out var actions);
+
             foreach (var action in actions)
-                action.Invoke(instanceIndex, transform);
+                action.Invoke(instanceIndex, transformData);
+            
         }
+        
 
         #endregion IObjectInstanceConsumer Implementation
 
