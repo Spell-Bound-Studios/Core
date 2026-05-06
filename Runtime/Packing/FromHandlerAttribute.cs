@@ -8,8 +8,8 @@ namespace Spellbound.Core.Packing {
         public Type HandlerType { get; }
 
         public FromHandlerAttribute(Type handlerType) {
-            if (!typeof(IHandlerThreshold).IsAssignableFrom(handlerType))
-                throw new ArgumentException($"{handlerType.Name} must implement IHandlerThreshold");
+            if (!typeof(IThresholdHandler).IsAssignableFrom(handlerType))
+                throw new ArgumentException($"{handlerType.Name} must implement IThresholdHandler");
 
             HandlerType = handlerType;
         }

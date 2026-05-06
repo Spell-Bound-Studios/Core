@@ -249,7 +249,65 @@ namespace Spellbound.Core {
             DestroyEntities(instanceIndices);
         }
 
-        public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key) { }
+        public void OnInstanceDataChanged<T>(int instanceIndex, InstanceDataKey key, Func<T> dataFunc, bool isCosmetic = false) where  T : IPacker{
+            if (!TryResolveModuleAndSurface(instanceIndex, key, out var module, out var surface))
+                return;
+
+            var data = dataFunc();
+            var transform = surface.Transform;
+
+            if (module is IThresholdHandler thresholdHandler && data is IQuantitativeData quantitativeData)
+                if (TryHandleThreshold(thresholdHandler, instanceIndex, quantitativeData, transform, isCosmetic))
+                    return;
+
+            if (module is IChangeHandler changeHandler)
+                HandleChange(changeHandler, data, instanceIndex, transform, isCosmetic);
+        }
+
+        public void OnInstanceDataInitialized<T>(
+            int instanceIndex, InstanceDataKey key, Func<T> dataFunc) where T : IPacker {
+            
+        }
+        
+        private bool TryResolveModuleAndSurface(int instanceIndex, InstanceDataKey key, out PresetModule module, out IEventSurface surface) {
+            module = null;
+
+            if (!_eventSurfaces.TryGetValue(instanceIndex, out surface))
+                return false;
+
+            if (!PackerRegistry.TryGetHandlerType(key.PackerId, out var handlerType)) {
+                Log.Error($"Can't get handler type for packerid {key.PackerId}");
+                return false;
+            }
+
+            return surface.Preset.TryGetModule(handlerType, out module, key.SurfaceIndex);
+        }
+        
+        private bool TryHandleThreshold(IThresholdHandler handler, int instanceIndex, IQuantitativeData data, Transform transform, bool isCosmetic) {
+            if (!handler.ThresholdCheck(data, this, out var structuralActions, out var cosmeticActions))
+                return false;
+
+            InvokeActions(cosmeticActions, instanceIndex, transform);
+
+            if (!isCosmetic)
+                InvokeActions(structuralActions, instanceIndex, transform);
+
+            return true;
+        }
+        
+        private void HandleChange(IChangeHandler handler, IPacker data, int instanceIndex, Transform transform, bool isCosmetic) {
+            handler.OnChange(data, instanceIndex, this, out var structuralActions, out var cosmeticActions);
+
+            InvokeActions(cosmeticActions, instanceIndex, transform);
+
+            if (!isCosmetic)
+                InvokeActions(structuralActions, instanceIndex, transform);
+        }
+        
+        private static void InvokeActions(List<Action<int, Transform>> actions, int instanceIndex, Transform transform) {
+            foreach (var action in actions)
+                action.Invoke(instanceIndex, transform);
+        }
 
         #endregion IObjectInstanceConsumer Implementation
 
