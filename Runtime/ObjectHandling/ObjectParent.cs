@@ -222,11 +222,12 @@ namespace Spellbound.Core {
         #region IObjectInstanceConsumer Implementation
 
         /// <summary>
-        /// Handles Runtime InstanceCreations.
-        /// Sends to ECS world, and evaluates if it needs an event surface immediately.
+        /// Handles the in-game consequences Instances being loaded.
+        /// Buffers them to be created as entities,
+        /// and spawns an EventSurface for those who pass the proximymath check. 
         /// </summary>
         /// <param name="instances"></param>
-        public void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> instances) {
+        public void OnRuntimeInstancesLoaded(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> instances) {
             BufferEntitySpawnRequests(instances);
 
             foreach (var (instanceIndex, entry) in instances) {
@@ -239,17 +240,228 @@ namespace Spellbound.Core {
             }
         }
 
+        /// <summary>
+        /// Handles the in-game consequences Instances being loaded.
+        /// Buffers them to be created as entities,
+        /// and for those that pass the proximitymath check, spawns an EventSurface and calls ICreationHandler's OnCreation actions.
+        /// </summary>
+        /// <param name="instances"></param>
+        public void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> instances) {
+            BufferEntitySpawnRequests(instances);
+
+            foreach (var (instanceIndex, entry) in instances) {
+                var preset = entry.PresetUid.ResolvePreset();
+
+                var proximityChange = ProximityMath.IsWithinActivationRange(entry.Transform.Position, _lastPovPosition,
+                    preset.interactionDistance);
+
+                if (proximityChange == ProximityChange.Whitelist) {
+                    SpawnSurface(preset, entry.Transform, instanceIndex);
+
+                    if (!preset.TryGetModule(typeof(ICreationHandler), out var module)) {
+                        return; // safe return
+                    }
+                    
+                    if (module is ICreationHandler handler) {
+                        handler.OnCreation(instanceIndex, this, out var actions);
+
+                        foreach (var action in actions) {
+                            action.Invoke(instanceIndex, entry.Transform);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles the in-game consequences of an Instances being deleted.
+        /// Destroys their associated entities,
+        /// Destroys their associated EventSurfaces if they exist.
+        /// And calls IDestructionHandler's OnDestruction actions.
+        /// </summary>
+        /// <param name="instanceIndices"></param>
         public void OnInstancesDeleted(IReadOnlyList<int> instanceIndices) {
             if (instanceIndices.Count == 0)
                 return;
-            
-            foreach (var instanceIndex in instanceIndices) 
+
+            foreach (var instanceIndex in instanceIndices) {
+                if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
+                    continue;
+                }
+
+                if (surface == null) {
+                    Log.Error($"surface is null");
+                    continue;
+                }
+
+                if (!surface.Preset.TryGetModule(typeof(IDestuctionHandler), out var module)) {
+                    continue; // safe return
+                }
+
+                if (module is IDestuctionHandler handler) {
+                    handler.OnDestruction(instanceIndex, this, out var actions);
+
+                    foreach (var action in actions) {
+                        action.Invoke(instanceIndex, new TransformData(surface.Transform));
+                    }
+                }
+                
                 DespawnSurface(instanceIndex);
+            } 
+                
 
             DestroyEntities(instanceIndices);
         }
 
-        public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key) { }
+        /// <summary>
+        /// Handles the in-game structural changes of data changing.
+        /// Structural means it's going to create or destroy instance(s) or make changes to another instance.
+        /// It will call the IThresholdHandler's actions if it's passed a threshold.
+        /// And call the IChangeHandler's OnChangeStructural actions.
+        /// An example of a Threshold check and action is for something "dying";
+        /// he threshold is at 0 hp and the action is death or deletion
+        /// </summary>
+        /// <param name="instanceIndex"></param>
+        /// <param name="key"></param>
+        /// <param name="dataFunc"></param>
+        /// <param name="handlerType"></param>
+        public void OnInstanceDataStructuralChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType) {
+            if (!typeof(IChangeHandler).IsAssignableFrom(handlerType) && !typeof(IThresholdHandler).IsAssignableFrom(handlerType))
+                return;
+            
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, out var transformData, out var preset)) {
+                if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
+                    Log.Error($"Neither event surface nor entity could be found for instanceIndex {instanceIndex}");
+
+                    return;
+                }
+            }
+            
+            if (!preset.TryGetModule(handlerType, out var module, key.SurfaceIndex)) {
+                Log.Error($"Preset does not have expected module for preset {preset}");
+                return;
+            }
+            
+            var data = dataFunc();
+
+            if (module is IThresholdHandler handler && data is IQuantitativeData quantitativeData) {
+                if (handler.ThresholdCheck(quantitativeData, this, out var actions)) {
+                    foreach (var action in actions)
+                        action.Invoke(instanceIndex, transformData);
+
+                    return;
+                }
+            }
+
+            if (module is IChangeHandler changeHandler) {
+                changeHandler.OnChangeStructural(data, instanceIndex, this, out var actions);
+
+                foreach (var action in actions)
+                    action.Invoke(instanceIndex, transformData);
+            }
+        }
+        
+        /// <summary>
+        /// Handles the in-game cosmetic changes of data changings.
+        /// Cosmetic is defined in contrast to structural.
+        /// Cosmetic means it's just visual and auditory "juice" to make the changes noticable and game-feely.
+        /// Calls the IChangeHandler's OnChangeCosmetic Actions.
+        /// </summary>
+        /// <param name="instanceIndex"></param>
+        /// <param name="key"></param>
+        /// <param name="dataFunc"></param>
+        /// <param name="handlerType"></param>
+        public void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType){
+            // TODO: Call an event here for tooltips to subscribe to keep their data from going stale if they are open
+            // TODO while data continues to change.
+            
+            if (!typeof(IChangeHandler).IsAssignableFrom(handlerType))
+                return;
+            
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, out var transformData, out var preset)) {
+                return;
+            }
+
+            if (!preset.TryGetModule(handlerType, out var module, key.SurfaceIndex)) {
+                Log.Error($"Preset does not have expected module for preset {preset}");
+                return;
+            }
+            
+            var data = dataFunc();
+
+            if (module is IChangeHandler changeHandler) {
+                changeHandler.OnChangeCosmetic(data, instanceIndex, this, out var actions);
+
+                foreach (var action in actions)
+                    action.Invoke(instanceIndex, transformData);
+            }
+        }
+
+        /// <summary>
+        /// Handles the in-game consequences of an instances Data being set.
+        /// This is very similar to OnRuntimeInstancesLoaded, but for seeded instances.
+        /// The method is currently empty because there are as of yet no consequences for this.
+        /// </summary>
+        /// <param name="instanceIndex"></param>
+        /// <param name="key"></param>
+        /// <param name="dataFunc"></param>
+        public void OnInstanceDataInitialized(
+            int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc) {
+            
+        }
+        
+        /// <summary>
+        /// Helper Method to get Transform and Preset from Event Surface
+        /// </summary>
+        /// <param name="instanceIndex"></param>
+        /// <param name="transformData"></param>
+        /// <param name="preset"></param>
+        /// <returns></returns>
+        private bool TryGetCallbackParamsFromEventSurface(int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
+            transformData = default;
+            preset = null;
+            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
+                return false;
+            }
+            
+            transformData = new TransformData(surface.Transform);
+            preset = surface.Preset;
+
+            return true;
+        }
+        
+        /// <summary>
+        /// Helper Method to get Transform and Preset from Entity
+        /// </summary>
+        /// <param name="instanceIndex"></param>
+        /// <param name="transformData"></param>
+        /// <param name="preset"></param>
+        /// <returns></returns>
+        private bool TryGetCallbackParamsFromEntity(int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
+            transformData = default;
+            preset = null;
+            var instanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
+            var entities = _query.ToEntityArray(Allocator.Temp);
+            
+            for (var i = 0; i < instanceIndices.Length; i++) {
+                if (instanceIndices[i].Value != instanceIndex) {
+                    continue;
+                }
+                    
+                var em  = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+                transformData = new TransformData(em.GetComponentData<LocalTransform>(entities[i]));
+                preset = em.GetSharedComponentManaged<PresetUidComponent>(entities[i]).Value.Value.ResolvePreset();
+
+                instanceIndices.Dispose();
+                entities.Dispose();
+                return true;
+            }
+
+            instanceIndices.Dispose();
+            entities.Dispose();
+            return false;
+        }
 
         #endregion IObjectInstanceConsumer Implementation
 
@@ -281,7 +493,7 @@ namespace Spellbound.Core {
         private void DespawnSurface(int instanceIndex) {
             if (!_eventSurfaces.Remove(instanceIndex, out var surface)) 
                 return;
-
+            
             UnityEngine.Object.Destroy(surface.GameObject);
         }
 
