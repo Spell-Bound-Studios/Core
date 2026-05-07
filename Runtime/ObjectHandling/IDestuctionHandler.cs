@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
-    public interface IDestroyedHandler {
+    public interface IDestuctionHandler {
         void OnDestruction(
             int instanceIndex, ObjectParent parent, out List<Action<int, TransformData>> actions);
     }

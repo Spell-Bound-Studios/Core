@@ -5,6 +5,6 @@ using System.Collections.Generic;
 
 namespace Spellbound.Core {
     public interface ICreationHandler {
-        void OnCreate(int instanceIndex, ObjectParent parent, out List<Action<int, TransformData>> actions);
+        void OnCreation(int instanceIndex, ObjectParent parent, out List<Action<int, TransformData>> actions);
     }
 }
