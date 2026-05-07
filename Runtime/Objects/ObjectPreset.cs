@@ -18,11 +18,10 @@ namespace Spellbound.Core {
         public string objectDescription;
 
         public GameObject bakePrefab; // not the proxy, it is the thing that bakes into an entity
-        public EventSurface eventSurfacePrefab;
+        public GameObject eventSurfacePrefab;
         public Vector2 interactionDistance = new(50, 70);
 
         [SerializeField] public List<PresetSurface> surfaceModules = new();
-
         /// <summary>
         /// Searches ALL surfaces for a module of type T. Returns the first match.
         /// </summary>
@@ -89,6 +88,10 @@ namespace Spellbound.Core {
         /// Creates guids based on an asset path for us when something gets updated.
         /// </summary>
         private void OnValidate() {
+            if (eventSurfacePrefab != null && eventSurfacePrefab.GetComponent<IEventSurface>() == null) {
+                Debug.LogError("EventSurfacePrefab not found");
+            }
+            
             var assetPath = AssetDatabase.GetAssetPath(this);
 
             if (assetPath == null) {

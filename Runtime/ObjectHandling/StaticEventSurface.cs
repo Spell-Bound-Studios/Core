@@ -1,56 +1,72 @@
 // Copyright 2026 Spellbound Studio Inc.
 
 using System;
+using Spellbound.Core.Packing;
 using UnityEngine;
 
 namespace Spellbound.Core {
     [RequireComponent(typeof(Collider))]
-    public class EventSurface : MonoBehaviour {
+    public class StaticEventSurface : MonoBehaviour, IEventSurface {
         [SerializeField, Tooltip("Decide your own surface index schema.")]
         private int surfaceIndex = -1;
 
         public Vector3 Position => transform.position;
+        
+        public GameObject GameObject => gameObject;
+        
+        public Transform Transform => transform;
 
         private IObjectParent _parent;
         private int _entityIndex;
-        private ObjectPreset _objectPreset;
+
+        public ObjectPreset Preset { get; private set; }
 
         public void Initialize(IObjectParent parent, int entityIndex, string presetUid) {
             _parent = parent;
             _entityIndex = entityIndex;
-            _objectPreset = presetUid.ResolvePreset();
+            Preset = presetUid.ResolvePreset();
 
             // Check for children.
-            var childSurfaces = GetComponentsInChildren<EventSurface>(true);
+            var childSurfaces = GetComponentsInChildren<StaticEventSurface>(true);
 
             foreach (var childSurface in childSurfaces) {
                 if (childSurface == this)
                     continue;
 
-                childSurface.Initialize(_parent, _entityIndex, _objectPreset.presetUid);
+                childSurface.Initialize(_parent, _entityIndex, Preset.presetUid);
             }
         }
 
         public void DebugQueryPing() =>
-                Debug.Log($"Pinging Event Surface for {_objectPreset.name} " +
+                Debug.Log($"Pinging Event Surface for {Preset.name} " +
                           $"index {_entityIndex} " +
                           $"and surface index {surfaceIndex}");
 
         // Declare a THandler type at runtime that will pass in a pointer of that type to THAT types implementation.
         public void Dispatch<THandler>(Action<THandler, IObjectParent, int, string, int> invoke)
                 where THandler : class {
-            if (_objectPreset == null)
+            if (Preset == null)
                 return;
 
             // If this event surface doesn't have children - early return.
-            if (surfaceIndex < 0 || surfaceIndex >= _objectPreset.surfaceModules.Count)
+            if (surfaceIndex < 0 || surfaceIndex >= Preset.surfaceModules.Count)
                 return;
 
             // If it does have children loop through them and invoke.
-            foreach (var module in _objectPreset.surfaceModules[surfaceIndex].presetModules) {
+            foreach (var module in Preset.surfaceModules[surfaceIndex].presetModules) {
                 if (module is THandler handler)
-                    invoke(handler, _parent, _entityIndex, _objectPreset.presetUid, surfaceIndex);
+                    invoke(handler, _parent, _entityIndex, Preset.presetUid, surfaceIndex);
             }
+        }
+
+        public void Receive(){
+            AudioSource.PlayClipAtPoint(
+                AudioClip.Create("beep", 4096, 1, 44100, false, data => {
+                    for (int i = 0; i < data.Length; i++)
+                        data[i] = Mathf.Sin(2 * Mathf.PI * 440f * i / 44100f);
+                }),
+                GameObject.transform.position
+            );
         }
     }
 }
