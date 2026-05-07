@@ -13,7 +13,6 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 namespace Spellbound.Core {
     /// <summary>
@@ -240,11 +239,37 @@ namespace Spellbound.Core {
             }
         }
 
+        public void OnRuntimeInstancesCreatedNew(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> instances) {
+            BufferEntitySpawnRequests(instances);
+
+            foreach (var (instanceIndex, entry) in instances) {
+                var preset = entry.PresetUid.ResolvePreset();
+
+                var proximityChange = ProximityMath.IsWithinActivationRange(entry.Transform.Position, _lastPovPosition,
+                    preset.interactionDistance);
+
+                if (proximityChange == ProximityChange.Whitelist) {
+                    SpawnSurface(preset, entry.Transform, instanceIndex);
+
+                    if (!preset.TryGetModule(typeof(ICreationHandler), out var module)) {
+                        return; // safe return
+                    }
+                    
+                    if (module is ICreationHandler handler) {
+                        handler.OnCreate(instanceIndex, this, out var actions);
+
+                        foreach (var action in actions) {
+                            action.Invoke(instanceIndex, entry.Transform);
+                        }
+                    }
+                    
+                }
+            }
+        }
+
         public void OnInstancesDeleted(IReadOnlyList<int> instanceIndices) {
             if (instanceIndices.Count == 0)
                 return;
-
-
 
             foreach (var instanceIndex in instanceIndices) {
                 if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
@@ -255,7 +280,10 @@ namespace Spellbound.Core {
                     Log.Error($"surface is null");
                     continue;
                 }
-                surface.Preset.TryGetModule(typeof(IDestroyedHandler), out var module);
+
+                if (!surface.Preset.TryGetModule(typeof(IDestroyedHandler), out var module)) {
+                    continue; // safe return
+                }
 
                 if (module is IDestroyedHandler handler) {
                     handler.OnDestruction(instanceIndex, this, out var actions);
@@ -272,106 +300,110 @@ namespace Spellbound.Core {
             DestroyEntities(instanceIndices);
         }
 
-        public void OnInstanceDataStructuralChanged<T>(int instanceIndex, InstanceDataKey key, Func<T> dataFunc) where  T : IPacker {
-            TransformData transformData = default;
-            ObjectPreset preset = null;
-
-            if (_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
-                transformData = new TransformData(surface.Transform);
-                preset = surface.Preset;
-            }
-            else {
-                var instanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
-                var entities = _query.ToEntityArray(Allocator.Temp);
-                
-
-                for (var i = 0; i < instanceIndices.Length; i++) {
-                    if (instanceIndices[i].Value != instanceIndex) {
-                        continue;
-                    }
-                    
-                    var em  = World.DefaultGameObjectInjectionWorld.EntityManager;
-
-                    transformData = new TransformData(em.GetComponentData<LocalTransform>(entities[i]));
-                    preset = em.GetSharedComponentManaged<PresetUidComponent>(entities[i]).Value.Value.ResolvePreset();
-
-                    break;
-                }
-                instanceIndices.Dispose();
-                entities.Dispose();
-            }
-            
-            if (!PackerRegistry.TryGetHandlerType(key.PackerId, out var handlerType)) {
-                Log.Error($"Can't get handler type for packerid {key.PackerId}");
-                return;
-            }
-
-            if (preset == null) {
-                Log.Error($"preset is null");
-
-                return;
-            }
-
-            preset.TryGetModule(handlerType, out var module, key.SurfaceIndex);
-            var data = dataFunc();
-
-            if (module is IThresholdHandler thresholdHandler && data is IQuantitativeData quantitativeData)
-                if (TryHandleThreshold(thresholdHandler, instanceIndex, quantitativeData, transformData))
-                    return;
-
-            if (module is IChangeHandler changeHandler)
-                HandleChangeStructural(changeHandler, data, instanceIndex, transformData);
-        }
-        
-        public void OnInstanceDataCosmeticChanged<T>(int instanceIndex, InstanceDataKey key, Func<T> dataFunc) where  T : IPacker{
-            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface))
-                return;
-
-            if (!PackerRegistry.TryGetHandlerType(key.PackerId, out var handlerType)) {
-                Log.Error($"Can't get handler type for packerid {key.PackerId}");
-                return;
-            }
-
-            surface.Preset.TryGetModule(handlerType, out var module, key.SurfaceIndex);
-
-            var data = dataFunc();
-            var transformData = new TransformData(surface.Transform);
-            
-
-            if (module is IChangeHandler changeHandler)
-                HandleChangeCosmetic(changeHandler, data, instanceIndex, transformData);
-        }
-
-        public void OnInstanceDataInitialized<T>(
-            int instanceIndex, InstanceDataKey key, Func<T> dataFunc) where T : IPacker {
-            
-        }
-        
-        private bool TryHandleThreshold(IThresholdHandler handler, int instanceIndex, IQuantitativeData data, TransformData transformData) {
-            if (!handler.ThresholdCheck(data, this, out var actions))
+        private bool TryGetCallbackParamsFromEventSurface(int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
+            transformData = default;
+            preset = null;
+            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
                 return false;
+            }
+            
+            transformData = new TransformData(surface.Transform);
+            preset = surface.Preset;
 
-            foreach (var action in actions)
-                action.Invoke(instanceIndex, transformData);
             return true;
         }
         
-        private void HandleChangeStructural(IChangeHandler handler, IPacker data, int instanceIndex, TransformData transformData) {
-            handler.OnChangeStructural(data, instanceIndex, this, out var actions);
-
-            foreach (var action in actions)
-                action.Invoke(instanceIndex, transformData);
+        private bool TryGetCallbackParamsFromEntity(int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
+            transformData = default;
+            preset = null;
+            var instanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
+            var entities = _query.ToEntityArray(Allocator.Temp);
             
+            for (var i = 0; i < instanceIndices.Length; i++) {
+                if (instanceIndices[i].Value != instanceIndex) {
+                    continue;
+                }
+                    
+                var em  = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+                transformData = new TransformData(em.GetComponentData<LocalTransform>(entities[i]));
+                preset = em.GetSharedComponentManaged<PresetUidComponent>(entities[i]).Value.Value.ResolvePreset();
+
+                instanceIndices.Dispose();
+                entities.Dispose();
+                return true;
+            }
+
+            instanceIndices.Dispose();
+            entities.Dispose();
+            return false;
+        }
+
+        public void OnInstanceDataStructuralChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType) {
+            if (!typeof(IChangeHandler).IsAssignableFrom(handlerType) && !typeof(IThresholdHandler).IsAssignableFrom(handlerType))
+                return;
+            
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, out var transformData, out var preset)) {
+                if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
+                    Log.Error($"Neither event surface nor entity could be found for instanceIndex {instanceIndex}");
+
+                    return;
+                }
+            }
+            
+            if (!preset.TryGetModule(handlerType, out var module, key.SurfaceIndex)) {
+                Log.Error($"Preset does not have expected module for preset {preset}");
+                return;
+            }
+            
+            var data = dataFunc();
+
+            if (module is IThresholdHandler handler && data is IQuantitativeData quantitativeData) {
+                if (handler.ThresholdCheck(quantitativeData, this, out var actions)) {
+                    foreach (var action in actions)
+                        action.Invoke(instanceIndex, transformData);
+
+                    return;
+                }
+            }
+
+            if (module is IChangeHandler changeHandler) {
+                changeHandler.OnChangeStructural(data, instanceIndex, this, out var actions);
+
+                foreach (var action in actions)
+                    action.Invoke(instanceIndex, transformData);
+            }
         }
         
-        private void HandleChangeCosmetic(IChangeHandler handler, IPacker data, int instanceIndex, TransformData transformData) {
-            handler.OnChangeCosmetic(data, instanceIndex, this, out var actions);
+        public void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType){
+            // call event
+            
+            if (!typeof(IChangeHandler).IsAssignableFrom(handlerType))
+                return;
+            
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, out var transformData, out var preset)) {
+                return;
+            }
 
-            foreach (var action in actions)
-                action.Invoke(instanceIndex, transformData);
+            if (!preset.TryGetModule(handlerType, out var module, key.SurfaceIndex)) {
+                Log.Error($"Preset does not have expected module for preset {preset}");
+                return;
+            }
+            
+            var data = dataFunc();
+
+            if (module is IChangeHandler changeHandler) {
+                changeHandler.OnChangeCosmetic(data, instanceIndex, this, out var actions);
+
+                foreach (var action in actions)
+                    action.Invoke(instanceIndex, transformData);
+            }
+        }
+
+        public void OnInstanceDataInitialized(
+            int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc) {
             
         }
-        
 
         #endregion IObjectInstanceConsumer Implementation
 
@@ -403,7 +435,7 @@ namespace Spellbound.Core {
         private void DespawnSurface(int instanceIndex) {
             if (!_eventSurfaces.Remove(instanceIndex, out var surface)) 
                 return;
-
+            
             UnityEngine.Object.Destroy(surface.GameObject);
         }
 

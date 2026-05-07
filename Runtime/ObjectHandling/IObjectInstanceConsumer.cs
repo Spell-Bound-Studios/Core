@@ -7,11 +7,13 @@ using Spellbound.Core.Packing;
 namespace Spellbound.Core {
     public interface IObjectInstanceConsumer {
         void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
+
+        void OnRuntimeInstancesCreatedNew(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
         void OnInstancesDeleted(IReadOnlyList<int> instanceIndices);
-        void OnInstanceDataStructuralChanged<T>(int instanceIndex, InstanceDataKey key, Func<T> dataFunc) where T : IPacker;
+        void OnInstanceDataStructuralChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handler);
         
-        void OnInstanceDataCosmeticChanged<T>(int instanceIndex, InstanceDataKey key, Func<T> dataFunc) where T : IPacker;
+        void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handler);
         
-        void OnInstanceDataInitialized<T>(int instanceIndex, InstanceDataKey key, Func<T> dataFunc) where T : IPacker;
+        void OnInstanceDataInitialized(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc);
     }
 }
