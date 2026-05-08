@@ -333,7 +333,7 @@ namespace Spellbound.Core {
             if (!typeof(IChangeHandler).IsAssignableFrom(handlerType) && !typeof(IThresholdHandler).IsAssignableFrom(handlerType))
                 return;
             
-            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, out var transformData, out var preset)) {
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData, out var preset, out var surface)) {
                 if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
                     Log.Error($"Neither event surface nor entity could be found for instanceIndex {instanceIndex}");
 
@@ -376,16 +376,14 @@ namespace Spellbound.Core {
         /// <param name="dataFunc"></param>
         /// <param name="handlerType"></param>
         public void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType){
-            if (_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
-                surface.AlertChanged();
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData, out var preset, out var surface)) {
+                return;
             }
+            surface.AlertChanged();
             
             if (!typeof(IChangeHandler).IsAssignableFrom(handlerType))
                 return;
             
-            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, out var transformData, out var preset)) {
-                return;
-            }
 
             if (!preset.TryGetModule(handlerType, out var module, key.SurfaceIndex)) {
                 Log.Error($"Preset does not have expected module for preset {preset}");
@@ -414,19 +412,26 @@ namespace Spellbound.Core {
             int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc) {
             
         }
-        
+
         /// <summary>
-        /// Helper Method to get Transform and Preset from Event Surface
+        /// /// Helper Method to get Transform and Preset from Event Surface
         /// </summary>
         /// <param name="instanceIndex"></param>
+        /// <param name="surfaceIndex"></param>
         /// <param name="transformData"></param>
         /// <param name="preset"></param>
+        /// <param name="surface"></param>
         /// <returns></returns>
-        private bool TryGetCallbackParamsFromEventSurface(int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
+        private bool TryGetCallbackParamsFromEventSurface(int instanceIndex, int surfaceIndex, out TransformData transformData, out ObjectPreset preset, out IEventSurface surface) {
+            surface = null;
             transformData = default;
             preset = null;
-            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
+            if (!_eventSurfaces.TryGetValue(instanceIndex, out var mainSurface)) {
                 return false;
+            }
+
+            if (!mainSurface.TryGetEventSurfaceByIndex(surfaceIndex, out surface)) {
+                Log.Error($"Surface not found for instanceIndex {instanceIndex} and surfaceIndex  {surfaceIndex}");
             }
             
             transformData = new TransformData(surface.Transform);

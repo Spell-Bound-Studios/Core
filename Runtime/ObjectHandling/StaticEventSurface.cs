@@ -1,6 +1,8 @@
 // Copyright 2026 Spellbound Studio Inc.
 
 using System;
+using System.Collections.Generic;
+using Spellbound.Core.Logging;
 using Spellbound.Core.Packing;
 using UnityEngine;
 
@@ -19,23 +21,30 @@ namespace Spellbound.Core {
         private IObjectParent _parent;
         private int _entityIndex;
 
+        private Dictionary<int, IEventSurface> _childEventSurfaces = new();
+
         public ObjectPreset Preset { get; private set; }
 
-        public void Initialize(IObjectParent parent, int entityIndex, string presetUid) {
+        public int Initialize(IObjectParent parent, int entityIndex, string presetUid) {
             _parent = parent;
             _entityIndex = entityIndex;
             Preset = presetUid.ResolvePreset();
 
-            // Check for children.
             var childSurfaces = GetComponentsInChildren<StaticEventSurface>(true);
 
             foreach (var childSurface in childSurfaces) {
                 if (childSurface == this)
                     continue;
 
-                childSurface.Initialize(_parent, _entityIndex, Preset.presetUid);
+                var childSurfaceIndex = childSurface.Initialize(_parent, _entityIndex, Preset.presetUid);
+
+                if (!_childEventSurfaces.TryAdd(childSurfaceIndex, childSurface))
+                    Log.Error($"Duplicate surfaceIndex {childSurfaceIndex} on {childSurface.gameObject.name}");
             }
+
+            return surfaceIndex;
         }
+
 
         public void DebugQueryPing() =>
                 Debug.Log($"Pinging Event Surface for {Preset.name} " +
@@ -63,16 +72,15 @@ namespace Spellbound.Core {
 
         public void AlertChanged() {
             OnChanged?.Invoke();
-            
-            var childSurfaces = GetComponentsInChildren<StaticEventSurface>(true);
-
-            foreach (var childSurface in childSurfaces) {
-                if (childSurface == this)
-                    continue;
-
-                childSurface.AlertChanged();
-            }
         }
-        
+
+        public bool TryGetEventSurfaceByIndex(int desiredSurfaceIndex, out IEventSurface surface) {
+            if (desiredSurfaceIndex == surfaceIndex) {
+                surface = this;
+                return true;
+            }
+
+            return _childEventSurfaces.TryGetValue(desiredSurfaceIndex, out surface);
+        }
     }
 }

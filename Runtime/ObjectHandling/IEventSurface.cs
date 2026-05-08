@@ -13,7 +13,7 @@ namespace Spellbound.Core {
         
         ObjectPreset Preset { get; }
         
-        void Initialize(IObjectParent parent, int entityIndex, string presetUid);
+        int Initialize(IObjectParent parent, int entityIndex, string presetUid);
 
         void DebugQueryPing();
         
@@ -23,6 +23,8 @@ namespace Spellbound.Core {
         public event Action OnChanged;
 
         void AlertChanged();
+
+        bool TryGetEventSurfaceByIndex(int desiredSurfaceIndex, out IEventSurface surface);
 
 
     }
