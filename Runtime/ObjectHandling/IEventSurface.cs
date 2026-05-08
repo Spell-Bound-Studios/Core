@@ -20,6 +20,10 @@ namespace Spellbound.Core {
         void Dispatch<THandler>(Action<THandler, IObjectParent, int, string, int> invoke)
                 where THandler : class;
 
-        void Receive();
+        public event Action OnChanged;
+
+        void AlertChanged();
+
+
     }
 }

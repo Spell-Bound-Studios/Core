@@ -83,6 +83,10 @@ namespace Spellbound.Core {
 
             return false;
         }
+        
+        public bool TryReadDataAllData(int instanceIndex, string presetUid, int eventSurfaceIndex, out List<IPacker> results) {
+            return DataAccess.TryReadAll(instanceIndex, eventSurfaceIndex, out results);
+        }
 
         public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData)
                 where T : IPacker, new() {
@@ -372,8 +376,9 @@ namespace Spellbound.Core {
         /// <param name="dataFunc"></param>
         /// <param name="handlerType"></param>
         public void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType){
-            // TODO: Call an event here for tooltips to subscribe to keep their data from going stale if they are open
-            // TODO while data continues to change.
+            if (_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
+                surface.AlertChanged();
+            }
             
             if (!typeof(IChangeHandler).IsAssignableFrom(handlerType))
                 return;

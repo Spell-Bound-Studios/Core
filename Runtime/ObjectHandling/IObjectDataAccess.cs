@@ -33,6 +33,8 @@ namespace Spellbound.Core {
         // Intended to be the implementation for simply reading data on an instance.
         bool TryRead<T>(int instanceIndex, int eventSurfaceIndex, out T data)
                 where T : IPacker, new();
+        
+        bool TryReadAll(int instanceIndex, int eventSurfaceIndex, out List<IPacker> data);
 
         // Intended to be the implementation for simply reading data on an instance, guaranteeing a result.
         Task<T> Read<T>(int instanceIndex, string presetUid, int eventSurfaceIndex)

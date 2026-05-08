@@ -59,14 +59,20 @@ namespace Spellbound.Core {
             }
         }
 
-        public void Receive(){
-            AudioSource.PlayClipAtPoint(
-                AudioClip.Create("beep", 4096, 1, 44100, false, data => {
-                    for (int i = 0; i < data.Length; i++)
-                        data[i] = Mathf.Sin(2 * Mathf.PI * 440f * i / 44100f);
-                }),
-                GameObject.transform.position
-            );
+        public event Action OnChanged;
+
+        public void AlertChanged() {
+            OnChanged?.Invoke();
+            
+            var childSurfaces = GetComponentsInChildren<StaticEventSurface>(true);
+
+            foreach (var childSurface in childSurfaces) {
+                if (childSurface == this)
+                    continue;
+
+                childSurface.AlertChanged();
+            }
         }
+        
     }
 }
