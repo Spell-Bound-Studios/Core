@@ -6,6 +6,7 @@ using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
     public interface IObjectInstanceConsumer {
+        int GetNextInstanceIndex();
         void OnRuntimeInstancesLoaded(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
 
         void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);

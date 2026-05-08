@@ -29,18 +29,20 @@ namespace Spellbound.Core {
         private readonly Dictionary<int, IEventSurface> _eventSurfaces = new();
         private Vector3 _lastPovPosition;
 
-        public IObjectDataAccess DataAccess { get; }
+        public IObjectDataAccess StaticDataAccess { get; }
+        
+        private int _seedInstanceCount;
 
         /// <summary>
         /// Constructor. Includes the creation of ready-made entity queries.
         /// </summary>
         /// <param name="implementer"></param>
         /// <param name="transform"></param>
-        /// <param name="dataAccess"></param>
+        /// <param name="staticDataAccess"></param>
         /// <param name="parentId"></param>
         /// <param name="ecsChunk"></param>
         public ObjectParent(
-            IObjectParent implementer, Transform transform, IObjectDataAccess dataAccess, Vector3Int parentId,
+            IObjectParent implementer, Transform transform, IObjectDataAccess staticDataAccess, Vector3Int parentId,
             Entity ecsChunk) {
             _implementer = implementer;
             _transform = transform;
@@ -61,18 +63,20 @@ namespace Spellbound.Core {
                 ChunkCoord = _id
             });
 
-            DataAccess = dataAccess;
-            DataAccess.SetConsumer(this);
+            StaticDataAccess = staticDataAccess;
+            StaticDataAccess.SetConsumer(this);
         }
 
         #region API
+        
+        public void SetSeedInstanceCount(int seedCount) => _seedInstanceCount = seedCount;
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) =>
-                DataAccess.CreateRuntimeInstance(preset.presetUid, position, rotation, scale);
+                StaticDataAccess.CreateRuntimeInstance(preset.presetUid, position, rotation, scale);
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
                 where T : IPacker, new() {
-            if (DataAccess.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
+            if (StaticDataAccess.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
                 result = data;
                 Debug.Log($"result is {result}");
 
@@ -86,7 +90,7 @@ namespace Spellbound.Core {
 
         public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData)
                 where T : IPacker, new() {
-            DataAccess.Write(instanceIndex, presetUid, eventSurfaceIndex, newData);
+            StaticDataAccess.Write(instanceIndex, presetUid, eventSurfaceIndex, newData);
 
             return true;
         }
@@ -95,12 +99,12 @@ namespace Spellbound.Core {
             int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IQuantitativeData, new() {
             Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, delta {delta}");
 
-            DataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
+            StaticDataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
 
             return true;
         }
 
-        public async Task<bool> TryDeleteData(int instanceIndex) => await DataAccess.TryDeleteInstance(instanceIndex);
+        public async Task<bool> TryDeleteData(int instanceIndex) => await StaticDataAccess.TryDeleteInstance(instanceIndex);
 
         #endregion API
 
@@ -119,7 +123,7 @@ namespace Spellbound.Core {
         /// Note: event surfaces will not be added immediately.
         /// </summary>
         public void BufferFullStateStaticInstances() {
-            var instances = DataAccess.GetAllRuntimeInstances();
+            var instances = StaticDataAccess.GetAllRuntimeInstances();
 
             if (instances.Count == 0)
                 return;
@@ -133,7 +137,7 @@ namespace Spellbound.Core {
         /// These will be skipped over when the Instantiation System instantiates entities.
         /// </summary>
         public void BufferFullStateDeletions() {
-            var deletions = DataAccess.GetAllSeedInstanceDeletions();
+            var deletions = StaticDataAccess.GetAllSeedInstanceDeletions();
 
             if (deletions.Count == 0)
                 return;
@@ -221,6 +225,14 @@ namespace Spellbound.Core {
 
         #region IObjectInstanceConsumer Implementation
 
+        public int GetNextInstanceIndex() {
+            var i = _seedInstanceCount;
+            while (StaticDataAccess.HasInstance(i)
+                   /* || DynamicDataAccess.HasInstance(i) */)
+                i++;
+            return i;
+        }
+
         /// <summary>
         /// Handles the in-game consequences Instances being loaded.
         /// Buffers them to be created as entities,
@@ -236,7 +248,8 @@ namespace Spellbound.Core {
                 var proximityChange = ProximityMath.IsWithinActivationRange(entry.Transform.Position, _lastPovPosition,
                     preset.interactionDistance);
 
-                if (proximityChange == ProximityChange.Whitelist) SpawnSurface(preset, entry.Transform, instanceIndex);
+                if (proximityChange == ProximityChange.Whitelist)
+                    SpawnSurface(preset, entry.Transform, instanceIndex);
             }
         }
 
@@ -255,21 +268,21 @@ namespace Spellbound.Core {
                 var proximityChange = ProximityMath.IsWithinActivationRange(entry.Transform.Position, _lastPovPosition,
                     preset.interactionDistance);
 
-                if (proximityChange == ProximityChange.Whitelist) {
-                    SpawnSurface(preset, entry.Transform, instanceIndex);
+                if (proximityChange != ProximityChange.Whitelist)
+                    continue;
 
-                    if (!preset.TryGetModule(typeof(ICreationHandler), out var module)) {
-                        return; // safe return
-                    }
-                    
-                    if (module is ICreationHandler handler) {
-                        handler.OnCreation(instanceIndex, this, out var actions);
+                SpawnSurface(preset, entry.Transform, instanceIndex);
 
-                        foreach (var action in actions) {
-                            action.Invoke(instanceIndex, entry.Transform);
-                        }
-                    }
-                }
+                if (!preset.TryGetModule(typeof(ICreationHandler), out var module))
+                    return;
+
+                if (module is not ICreationHandler handler)
+                    continue;
+
+                handler.OnCreation(instanceIndex, this, out var actions);
+
+                foreach (var action in actions)
+                    action.Invoke(instanceIndex, entry.Transform);
             }
         }
 
@@ -285,30 +298,24 @@ namespace Spellbound.Core {
                 return;
 
             foreach (var instanceIndex in instanceIndices) {
-                if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
-                    continue;
-                }
+                if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) continue;
 
                 if (surface == null) {
                     Log.Error($"surface is null");
+
                     continue;
                 }
 
-                if (!surface.Preset.TryGetModule(typeof(IDestuctionHandler), out var module)) {
-                    continue; // safe return
-                }
+                if (!surface.Preset.TryGetModule(typeof(IDestuctionHandler), out var module)) continue; // safe return
 
                 if (module is IDestuctionHandler handler) {
                     handler.OnDestruction(instanceIndex, this, out var actions);
 
-                    foreach (var action in actions) {
-                        action.Invoke(instanceIndex, new TransformData(surface.Transform));
-                    }
+                    foreach (var action in actions) action.Invoke(instanceIndex, new TransformData(surface.Transform));
                 }
-                
+
                 DespawnSurface(instanceIndex);
-            } 
-                
+            }
 
             DestroyEntities(instanceIndices);
         }
@@ -325,10 +332,12 @@ namespace Spellbound.Core {
         /// <param name="key"></param>
         /// <param name="dataFunc"></param>
         /// <param name="handlerType"></param>
-        public void OnInstanceDataStructuralChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType) {
-            if (!typeof(IChangeHandler).IsAssignableFrom(handlerType) && !typeof(IThresholdHandler).IsAssignableFrom(handlerType))
+        public void OnInstanceDataStructuralChanged(
+            int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType) {
+            if (!typeof(IChangeHandler).IsAssignableFrom(handlerType) &&
+                !typeof(IThresholdHandler).IsAssignableFrom(handlerType))
                 return;
-            
+
             if (!TryGetCallbackParamsFromEventSurface(instanceIndex, out var transformData, out var preset)) {
                 if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
                     Log.Error($"Neither event surface nor entity could be found for instanceIndex {instanceIndex}");
@@ -336,12 +345,13 @@ namespace Spellbound.Core {
                     return;
                 }
             }
-            
+
             if (!preset.TryGetModule(handlerType, out var module, key.SurfaceIndex)) {
                 Log.Error($"Preset does not have expected module for preset {preset}");
+
                 return;
             }
-            
+
             var data = dataFunc();
 
             if (module is IThresholdHandler handler && data is IQuantitativeData quantitativeData) {
@@ -360,7 +370,7 @@ namespace Spellbound.Core {
                     action.Invoke(instanceIndex, transformData);
             }
         }
-        
+
         /// <summary>
         /// Handles the in-game cosmetic changes of data changings.
         /// Cosmetic is defined in contrast to structural.
@@ -371,30 +381,31 @@ namespace Spellbound.Core {
         /// <param name="key"></param>
         /// <param name="dataFunc"></param>
         /// <param name="handlerType"></param>
-        public void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType){
+        public void OnInstanceDataCosmeticChanged(
+            int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType) {
             // TODO: Call an event here for tooltips to subscribe to keep their data from going stale if they are open
             // TODO while data continues to change.
-            
+
             if (!typeof(IChangeHandler).IsAssignableFrom(handlerType))
                 return;
-            
-            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, out var transformData, out var preset)) {
-                return;
-            }
+
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, out var transformData, out var preset)) return;
 
             if (!preset.TryGetModule(handlerType, out var module, key.SurfaceIndex)) {
                 Log.Error($"Preset does not have expected module for preset {preset}");
+
                 return;
             }
-            
+
             var data = dataFunc();
 
-            if (module is IChangeHandler changeHandler) {
-                changeHandler.OnChangeCosmetic(data, instanceIndex, this, out var actions);
+            if (module is not IChangeHandler changeHandler) 
+                return;
 
-                foreach (var action in actions)
-                    action.Invoke(instanceIndex, transformData);
-            }
+            changeHandler.OnChangeCosmetic(data, instanceIndex, this, out var actions);
+
+            foreach (var action in actions)
+                action.Invoke(instanceIndex, transformData);
         }
 
         /// <summary>
@@ -406,10 +417,8 @@ namespace Spellbound.Core {
         /// <param name="key"></param>
         /// <param name="dataFunc"></param>
         public void OnInstanceDataInitialized(
-            int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc) {
-            
-        }
-        
+            int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc) { }
+
         /// <summary>
         /// Helper Method to get Transform and Preset from Event Surface
         /// </summary>
@@ -417,19 +426,19 @@ namespace Spellbound.Core {
         /// <param name="transformData"></param>
         /// <param name="preset"></param>
         /// <returns></returns>
-        private bool TryGetCallbackParamsFromEventSurface(int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
+        private bool TryGetCallbackParamsFromEventSurface(
+            int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
             transformData = default;
             preset = null;
-            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) {
-                return false;
-            }
-            
+
+            if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) return false;
+
             transformData = new TransformData(surface.Transform);
             preset = surface.Preset;
 
             return true;
         }
-        
+
         /// <summary>
         /// Helper Method to get Transform and Preset from Entity
         /// </summary>
@@ -437,29 +446,30 @@ namespace Spellbound.Core {
         /// <param name="transformData"></param>
         /// <param name="preset"></param>
         /// <returns></returns>
-        private bool TryGetCallbackParamsFromEntity(int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
+        private bool TryGetCallbackParamsFromEntity(
+            int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
             transformData = default;
             preset = null;
             var instanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
             var entities = _query.ToEntityArray(Allocator.Temp);
-            
+
             for (var i = 0; i < instanceIndices.Length; i++) {
-                if (instanceIndices[i].Value != instanceIndex) {
-                    continue;
-                }
-                    
-                var em  = World.DefaultGameObjectInjectionWorld.EntityManager;
+                if (instanceIndices[i].Value != instanceIndex) continue;
+
+                var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
                 transformData = new TransformData(em.GetComponentData<LocalTransform>(entities[i]));
                 preset = em.GetSharedComponentManaged<PresetUidComponent>(entities[i]).Value.Value.ResolvePreset();
 
                 instanceIndices.Dispose();
                 entities.Dispose();
+
                 return true;
             }
 
             instanceIndices.Dispose();
             entities.Dispose();
+
             return false;
         }
 
@@ -473,6 +483,7 @@ namespace Spellbound.Core {
 
                 return;
             }
+
             var eventSurface = UnityEngine.Object.Instantiate(
                 preset.eventSurfacePrefab,
                 transformData.Position,
@@ -491,9 +502,9 @@ namespace Spellbound.Core {
         /// </summary>
         /// <param name="instanceIndex"></param>
         private void DespawnSurface(int instanceIndex) {
-            if (!_eventSurfaces.Remove(instanceIndex, out var surface)) 
+            if (!_eventSurfaces.Remove(instanceIndex, out var surface))
                 return;
-            
+
             UnityEngine.Object.Destroy(surface.GameObject);
         }
 
@@ -540,8 +551,8 @@ namespace Spellbound.Core {
                     instanceIndices[toAwaken].Value);
             }
 
-            foreach (var toSleep in instancesToSleep) 
-                DespawnSurface(instanceIndices[toSleep].Value); 
+            foreach (var toSleep in instancesToSleep)
+                DespawnSurface(instanceIndices[toSleep].Value);
 
             povPositions.Dispose();
             transforms.Dispose();
@@ -557,9 +568,7 @@ namespace Spellbound.Core {
 
         #region IDisposable
 
-        public void Dispose(){
-            DestroyAllEntities();
-        } 
+        public void Dispose() => DestroyAllEntities();
 
         #endregion IDisposable
     }
