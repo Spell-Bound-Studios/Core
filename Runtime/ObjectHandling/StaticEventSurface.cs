@@ -21,8 +21,8 @@ namespace Spellbound.Core {
 
         public ObjectPreset Preset { get; private set; }
 
-        public void Initialize(IObjectParent parent, int entityIndex, string presetUid) {
-            _parent = parent;
+        public void Initialize(IObjectParent objectParent, int entityIndex, string presetUid) {
+            _parent = objectParent;
             _entityIndex = entityIndex;
             Preset = presetUid.ResolvePreset();
 

@@ -13,7 +13,7 @@ namespace Spellbound.Core {
         
         ObjectPreset Preset { get; }
         
-        void Initialize(IObjectParent parent, int entityIndex, string presetUid);
+        void Initialize(IObjectParent objectParent, int entityIndex, string presetUid);
 
         void DebugQueryPing();
         

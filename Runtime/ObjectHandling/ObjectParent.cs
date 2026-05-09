@@ -30,6 +30,7 @@ namespace Spellbound.Core {
         private Vector3 _lastPovPosition;
 
         public IObjectDataAccess StaticDataAccess { get; }
+        public IDynamicDataAccess DynamicDataAccess { get; }
         
         private int _seedInstanceCount;
 
@@ -71,8 +72,25 @@ namespace Spellbound.Core {
         
         public void SetSeedInstanceCount(int seedCount) => _seedInstanceCount = seedCount;
 
-        public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) =>
+        public void Instantiate(
+            ObjectPreset preset, Vector3 position, Vector3 rotation, int scale, List<(InstanceDataKey, byte[])> dataSlots = null) {
+            if (!preset.isDynamic) {
                 StaticDataAccess.CreateRuntimeInstance(preset.presetUid, position, rotation, scale);
+                return;
+            }
+
+            DynamicDataAccess.CreateRuntimeObject(preset.presetUid, position, rotation, scale);
+        }
+
+        public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) {
+            if (!preset.isDynamic) {
+                StaticDataAccess.CreateRuntimeInstance(preset.presetUid, position, rotation, scale);
+                return;
+            }
+
+            DynamicDataAccess.CreateRuntimeObject(preset.presetUid, position, rotation, scale);
+        }
+                
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
                 where T : IPacker, new() {
@@ -283,6 +301,30 @@ namespace Spellbound.Core {
 
                 foreach (var action in actions)
                     action.Invoke(instanceIndex, entry.Transform);
+            }
+        }
+
+        public void OnDynamicObjectsLoaded(IReadOnlyList<(int, DynamicInstanceEntry)> loaded) {
+            
+        }
+        
+        public void OnDynamicObjectsCreated(IReadOnlyList<(int, DynamicInstanceEntry)> creations) {
+            foreach (var (instanceIndex, entry) in creations) {
+                var preset = entry.PresetUid.ResolvePreset();
+
+                if (preset == null || preset.eventSurfacePrefab == null) {
+                    Log.Error($"OnDynamicInstancesCreated: missing preset or prefab for {entry.PresetUid}");
+                    continue;
+                }
+                
+                var instance = UnityEngine.Object.Instantiate(
+                    preset.eventSurfacePrefab.gameObject,
+                    entry.Transform.Position,
+                    entry.Transform.RotAsQuaternion(),
+                    _transform);
+
+                if (instance.TryGetComponent<IEventSurface>(out var surface))
+                    surface.Initialize(_implementer, instanceIndex, entry.PresetUid);
             }
         }
 
