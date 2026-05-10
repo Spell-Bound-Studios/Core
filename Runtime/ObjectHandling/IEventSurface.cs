@@ -1,6 +1,7 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
+using System.Collections.Generic;
 using Spellbound.Core.Packing;
 using UnityEngine;
 
@@ -13,7 +14,7 @@ namespace Spellbound.Core {
         
         ObjectPreset Preset { get; }
         
-        void Initialize(IObjectParent objectParent, int entityIndex, string presetUid);
+        void Initialize(IObjectParent objectParent, int entityIndex, string presetUid, Dictionary<InstanceDataKey, byte[]> dataSlots = null);
 
         void DebugQueryPing();
         

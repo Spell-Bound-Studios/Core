@@ -40,10 +40,11 @@ namespace Spellbound.Core {
         /// <param name="implementer"></param>
         /// <param name="transform"></param>
         /// <param name="staticDataAccess"></param>
+        /// <param name="dynamicDataAccess"></param>
         /// <param name="parentId"></param>
         /// <param name="ecsChunk"></param>
         public ObjectParent(
-            IObjectParent implementer, Transform transform, IObjectDataAccess staticDataAccess, Vector3Int parentId,
+            IObjectParent implementer, Transform transform, IObjectDataAccess staticDataAccess, IDynamicDataAccess dynamicDataAccess, Vector3Int parentId,
             Entity ecsChunk) {
             _implementer = implementer;
             _transform = transform;
@@ -66,6 +67,9 @@ namespace Spellbound.Core {
 
             StaticDataAccess = staticDataAccess;
             StaticDataAccess.SetConsumer(this);
+
+            DynamicDataAccess = dynamicDataAccess;
+            DynamicDataAccess.SetConsumer(this);
         }
 
         #region API
@@ -79,7 +83,12 @@ namespace Spellbound.Core {
                 return;
             }
 
-            DynamicDataAccess.CreateRuntimeObject(preset.presetUid, position, rotation, scale);
+            DynamicDataAccess.CreateRuntimeObject(preset.presetUid, position, rotation, scale, dataSlots);
+        }
+        
+        public void AdoptMigratedDynamic(int newIndex, DynamicInstanceEntry entry, IEventSurface surface) {
+            surface.Transform.SetParent(_transform, true);
+            surface.Initialize(_implementer, newIndex, entry.PresetUid);
         }
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) {
@@ -245,8 +254,7 @@ namespace Spellbound.Core {
 
         public int GetNextInstanceIndex() {
             var i = _seedInstanceCount;
-            while (StaticDataAccess.HasInstance(i)
-                   /* || DynamicDataAccess.HasInstance(i) */)
+            while (StaticDataAccess.HasInstance(i) || DynamicDataAccess.HasInstance(i))
                 i++;
             return i;
         }

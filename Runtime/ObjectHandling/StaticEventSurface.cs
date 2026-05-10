@@ -1,6 +1,7 @@
 // Copyright 2026 Spellbound Studio Inc.
 
 using System;
+using System.Collections.Generic;
 using Spellbound.Core.Packing;
 using UnityEngine;
 
@@ -21,7 +22,7 @@ namespace Spellbound.Core {
 
         public ObjectPreset Preset { get; private set; }
 
-        public void Initialize(IObjectParent objectParent, int entityIndex, string presetUid) {
+        public void Initialize(IObjectParent objectParent, int entityIndex, string presetUid, Dictionary<InstanceDataKey, byte[]> dataSlots = null) {
             _parent = objectParent;
             _entityIndex = entityIndex;
             Preset = presetUid.ResolvePreset();
@@ -33,7 +34,7 @@ namespace Spellbound.Core {
                 if (childSurface == this)
                     continue;
 
-                childSurface.Initialize(_parent, _entityIndex, Preset.presetUid);
+                childSurface.Initialize(_parent, _entityIndex, Preset.presetUid, dataSlots);
             }
         }
 

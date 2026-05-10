@@ -4,12 +4,15 @@ using UnityEngine;
 
 namespace Spellbound.Core {
     public readonly struct MigrationRequest {
+        public readonly IEventSurface Surface;
         public readonly int InstanceIndex;
         public readonly Vector3Int SourceChunk;
         public readonly Vector3Int DestinationChunk;
         public readonly bool IsSeedDerived;
+        
 
-        public MigrationRequest(int instanceIndex, Vector3Int sourceChunk, Vector3Int destinationChunk, bool isSeedDerived) {
+        public MigrationRequest(IEventSurface surface, int instanceIndex, Vector3Int sourceChunk, Vector3Int destinationChunk, bool isSeedDerived) {
+            Surface = surface;
             InstanceIndex = instanceIndex;
             SourceChunk = sourceChunk;
             DestinationChunk = destinationChunk;
