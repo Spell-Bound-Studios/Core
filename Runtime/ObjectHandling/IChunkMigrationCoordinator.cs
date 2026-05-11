@@ -2,6 +2,6 @@
 
 namespace Spellbound.Core {
     public interface IChunkMigrationCoordinator {
-        bool TryRequestMigration(MigrationRequest request);
+        void RequestMigration(IMigratable migratable);
     }
 }
