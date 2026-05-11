@@ -7,62 +7,44 @@ using System.Reflection;
 
 namespace Spellbound.Core.Packing {
     public static class PackerRegistry {
-        private static readonly Dictionary<string, Type> IDToType = new();
-        private static readonly Dictionary<Type, string> TypeToId = new();
-        private static readonly Dictionary<string, Type> IDToHandlerType = new();
-        private static readonly Dictionary<string, Func<IPacker>> Factories = new();
+        private static readonly Dictionary<string, Func<IDecodableData>> Factories = new();
 
         static PackerRegistry() {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()) {
                 foreach (var type in assembly.GetTypes()) {
-                    var attr = type.GetCustomAttribute<PackerIdAttribute>();
-
-                    if (attr == null)
+                    if (!typeof(IDecodableData).IsAssignableFrom(type))
                         continue;
 
-                    IDToType[attr.Id] = type;
-                    TypeToId[type] = attr.Id;
+                    if (type.IsAbstract || type.IsInterface)
+                        continue;
 
-                    var handlerAttr = type.GetCustomAttribute<FromHandlerAttribute>();
+                    var field = type.GetField("ID", BindingFlags.Public | BindingFlags.Static);
 
-                    if (handlerAttr != null)
-                        IDToHandlerType[attr.Id] = handlerAttr.HandlerType;
+                    if (field == null)
+                        continue;
 
-                    if (typeof(IPacker).IsAssignableFrom(type)) {
-                        Factories[attr.Id] = Expression.Lambda<Func<IPacker>>(
-                            Expression.Convert(Expression.New(type), typeof(IPacker))
-                        ).Compile();
-                    }
+                    var id = field.GetValue(null) as string;
+
+                    if (string.IsNullOrEmpty(id))
+                        continue;
+
+                    Factories[id] = Expression.Lambda<Func<IDecodableData>>(
+                        Expression.Convert(Expression.New(type), typeof(IDecodableData))
+                    ).Compile();
                 }
             }
         }
 
-        public static bool TryGetType(string id, out Type type) => IDToType.TryGetValue(id, out type);
-
-        public static bool TryGetId(Type type, out string id) => TypeToId.TryGetValue(type, out id);
-
-        public static bool TryGetHandlerType(string packerId, out Type handlerType) =>
-                IDToHandlerType.TryGetValue(packerId, out handlerType);
-
-        public static bool TryCreateInstance(string packerId, out IPacker instance) {
+        public static bool TryCreateInstance(string packerId, out IDecodableData instance) {
             if (Factories.TryGetValue(packerId, out var factory)) {
                 instance = factory();
-
                 return true;
             }
 
             instance = null;
-
             return false;
         }
 
-        /// <summary>
-        /// Provides a readable string based on what's inside a byte[] if we have the packerId.
-        /// </summary>
-        /// <remarks>
-        /// This is useful if you're debugging, logging, or creating an editor tool and don't want to see byte[] in
-        /// the inspector.
-        /// </remarks>
         public static string Decode(string packerId, byte[] data) {
             if (data == null || data.Length == 0)
                 return $"{packerId}: [empty]";
@@ -73,7 +55,6 @@ namespace Spellbound.Core.Packing {
             try {
                 ReadOnlySpan<byte> span = data;
                 instance.Unpack(ref span);
-
                 return $"{packerId}: {instance}";
             }
             catch {

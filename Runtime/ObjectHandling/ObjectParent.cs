@@ -71,7 +71,7 @@ namespace Spellbound.Core {
                 DataAccess.CreateRuntimeInstance(preset.presetUid, position, rotation, scale);
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
-                where T : IPacker, new() {
+                where T : IDecodableData, new() {
             if (DataAccess.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
                 result = data;
                 Debug.Log($"result is {result}");
@@ -84,12 +84,12 @@ namespace Spellbound.Core {
             return false;
         }
         
-        public bool TryReadDataAllData(int instanceIndex, string presetUid, int eventSurfaceIndex, out List<IPacker> results) {
+        public bool TryReadDataAllData(int instanceIndex, string presetUid, int eventSurfaceIndex, out List<IDecodableData> results) {
             return DataAccess.TryReadAll(instanceIndex, eventSurfaceIndex, out results);
         }
 
         public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData)
-                where T : IPacker, new() {
+                where T : IDecodableData, new() {
             DataAccess.Write(instanceIndex, presetUid, eventSurfaceIndex, newData);
 
             return true;
@@ -317,101 +317,10 @@ namespace Spellbound.Core {
             DestroyEntities(instanceIndices);
         }
 
-        /// <summary>
-        /// Handles the in-game structural changes of data changing.
-        /// Structural means it's going to create or destroy instance(s) or make changes to another instance.
-        /// It will call the IThresholdHandler's actions if it's passed a threshold.
-        /// And call the IChangeHandler's OnChangeStructural actions.
-        /// An example of a Threshold check and action is for something "dying";
-        /// he threshold is at 0 hp and the action is death or deletion
-        /// </summary>
-        /// <param name="instanceIndex"></param>
-        /// <param name="key"></param>
-        /// <param name="dataFunc"></param>
-        /// <param name="handlerType"></param>
-        public void OnInstanceDataStructuralChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType) {
-            if (!typeof(IChangeHandler).IsAssignableFrom(handlerType) && !typeof(IThresholdHandler).IsAssignableFrom(handlerType))
-                return;
-            
-            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData, out var preset, out var surface)) {
-                if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
-                    Log.Error($"Neither event surface nor entity could be found for instanceIndex {instanceIndex}");
-
-                    return;
-                }
-            }
-            
-            if (!preset.TryGetModule(handlerType, out var module, key.SurfaceIndex)) {
-                Log.Error($"Preset does not have expected module for preset {preset}");
-                return;
-            }
-            
-            var data = dataFunc();
-
-            if (module is IThresholdHandler handler && data is IQuantitativeData quantitativeData) {
-                if (handler.ThresholdCheck(quantitativeData, this, out var actions)) {
-                    foreach (var action in actions)
-                        action.Invoke(instanceIndex, transformData);
-
-                    return;
-                }
-            }
-
-            if (module is IChangeHandler changeHandler) {
-                changeHandler.OnChangeStructural(data, instanceIndex, this, out var actions);
-
-                foreach (var action in actions)
-                    action.Invoke(instanceIndex, transformData);
-            }
-        }
-        
-        /// <summary>
-        /// Handles the in-game cosmetic changes of data changings.
-        /// Cosmetic is defined in contrast to structural.
-        /// Cosmetic means it's just visual and auditory "juice" to make the changes noticable and game-feely.
-        /// Calls the IChangeHandler's OnChangeCosmetic Actions.
-        /// </summary>
-        /// <param name="instanceIndex"></param>
-        /// <param name="key"></param>
-        /// <param name="dataFunc"></param>
-        /// <param name="handlerType"></param>
-        public void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handlerType){
-            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData, out var preset, out var surface)) {
-                return;
-            }
-            surface.AlertChanged();
-            
-            if (!typeof(IChangeHandler).IsAssignableFrom(handlerType))
-                return;
-            
-
-            if (!preset.TryGetModule(handlerType, out var module, key.SurfaceIndex)) {
-                Log.Error($"Preset does not have expected module for preset {preset}");
-                return;
-            }
-            
-            var data = dataFunc();
-
-            if (module is IChangeHandler changeHandler) {
-                changeHandler.OnChangeCosmetic(data, instanceIndex, this, out var actions);
-
-                foreach (var action in actions)
-                    action.Invoke(instanceIndex, transformData);
-            }
-        }
-
-        /// <summary>
-        /// Handles the in-game consequences of an instances Data being set.
-        /// This is very similar to OnRuntimeInstancesLoaded, but for seeded instances.
-        /// The method is currently empty because there are as of yet no consequences for this.
-        /// </summary>
-        /// <param name="instanceIndex"></param>
-        /// <param name="key"></param>
-        /// <param name="dataFunc"></param>
-        public void OnInstanceDataInitialized(
-            int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc) {
+        public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data) {
             
         }
+
 
         /// <summary>
         /// /// Helper Method to get Transform and Preset from Event Surface

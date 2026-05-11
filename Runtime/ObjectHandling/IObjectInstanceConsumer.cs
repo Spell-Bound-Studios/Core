@@ -10,10 +10,7 @@ namespace Spellbound.Core {
 
         void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
         void OnInstancesDeleted(IReadOnlyList<int> instanceIndices);
-        void OnInstanceDataStructuralChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handler);
+        void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data);
         
-        void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handler);
-        
-        void OnInstanceDataInitialized(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc);
     }
 }

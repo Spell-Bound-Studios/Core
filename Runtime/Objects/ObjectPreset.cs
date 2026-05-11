@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Spellbound.Core.Logging;
 using UnityEditor;
 using UnityEngine;
 
@@ -71,6 +73,26 @@ namespace Spellbound.Core {
 
             return false;
         }
+        
+        public bool TryGetModules<T>(out IEnumerable<T> results, int surfaceIndex = 0) where T : class {
+            results = Enumerable.Empty<T>();
+    
+            if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
+                return false;
+
+            var matches = new List<T>();
+    
+            foreach (var module in surfaceModules[surfaceIndex].presetModules) {
+                if (module is T t)
+                    matches.Add(t);
+            }
+
+            if (matches.Count == 0)
+                return false;
+
+            results = matches;
+            return true;
+        }
 
         /// <summary>
         /// Returns all modules across all surfaces.
@@ -91,6 +113,26 @@ namespace Spellbound.Core {
             if (eventSurfacePrefab != null && eventSurfacePrefab.GetComponent<IEventSurface>() == null) {
                 Debug.LogError("EventSurfacePrefab not found");
             }
+            
+            foreach (var surface in surfaceModules) {
+                if (surface.presetModules == null) continue;
+                
+                var seenDispatchTypes = new HashSet<Type>();
+                foreach (var module in surface.presetModules) {
+                    if (module == null) continue;
+    
+                    foreach (var iface in module.GetType().GetInterfaces()) {
+                        if (!iface.IsGenericType) continue;
+                        if (!typeof(IDispatch).IsAssignableFrom(iface)) continue;
+        
+                        if (!seenDispatchTypes.Add(iface))
+                            Debug.LogError($"Duplicate {iface.Name}<{iface.GenericTypeArguments[0].Name}> " +
+                                           $"on surface '{surface.surfaceName}' in preset '{name}'");
+                    }
+                }
+            }
+            
+            
             
             var assetPath = AssetDatabase.GetAssetPath(this);
 

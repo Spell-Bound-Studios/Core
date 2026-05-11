@@ -32,21 +32,21 @@ namespace Spellbound.Core {
 
         // Intended to be the implementation for simply reading data on an instance.
         bool TryRead<T>(int instanceIndex, int eventSurfaceIndex, out T data)
-                where T : IPacker, new();
+                where T : IDecodableData, new();
         
-        bool TryReadAll(int instanceIndex, int eventSurfaceIndex, out List<IPacker> data);
+        bool TryReadAll(int instanceIndex, int eventSurfaceIndex, out List<IDecodableData> data);
 
         // Intended to be the implementation for simply reading data on an instance, guaranteeing a result.
         Task<T> Read<T>(int instanceIndex, string presetUid, int eventSurfaceIndex)
-                where T : IPacker, new();
+                where T : IDecodableData, new();
 
         // Intended to be the implementation for writing over any data with new data on an object.
         void Write<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData)
-                where T : IPacker, new();
+                where T : IDecodableData, new();
 
         // Intended to be the implementation for transforming current object data with incoming data.
         void Delta<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T delta)
-                where T : IQuantitativeData, new();
+                where T : IDecodableData, IQuantitativeData, new();
 
         // Intended to be the implementation for deleting an instance with confirmation of deletion.
         Task<bool> TryDeleteInstance(int instanceIndex);
