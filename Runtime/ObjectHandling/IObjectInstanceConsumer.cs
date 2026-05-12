@@ -9,14 +9,18 @@ namespace Spellbound.Core {
         int GetNextInstanceIndex();
         void OnRuntimeInstancesLoaded(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
         void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
-        void OnDynamicObjectsLoaded(IReadOnlyList<(int, DynamicInstanceEntry)> loaded);
-        void OnDynamicObjectsCreated(IReadOnlyList<(int, DynamicInstanceEntry)> creations);
-        void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests);
+       
         void OnInstancesDeleted(IReadOnlyList<int> instanceIndices);
         void OnInstanceDataStructuralChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handler);
         
         void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handler);
         
         void OnInstanceDataInitialized(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc);
+        
+        void OnDynamicObjectsLoaded(IReadOnlyList<(int, DynamicInstanceEntry)> loaded);
+        void OnDynamicObjectsCreated(IReadOnlyList<(int, DynamicInstanceEntry)> creations);
+        void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests);
+        
+        void OnDynamicObjectEntityDeleteRequested(IReadOnlyList<int> entityDeleteRequests);
     }
 }

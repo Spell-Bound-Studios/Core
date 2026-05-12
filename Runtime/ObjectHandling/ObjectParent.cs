@@ -200,11 +200,13 @@ namespace Spellbound.Core {
         /// Destroys Static Entities from a list. 
         /// </summary>
         /// <param name="instanceIndices"></param>
-        private void DestroyStaticEntities(IReadOnlyList<int> instanceIndices) {
+        private void DestroyEntities(IReadOnlyList<int> instanceIndices, EntityQuery query) {
             var removedSet = new HashSet<int>(instanceIndices);
+            
+            var selectedQuery = query;
 
-            var indices = _staticQuery.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
-            var entities = _staticQuery.ToEntityArray(Allocator.Temp);
+            var indices = selectedQuery.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
+            var entities = selectedQuery.ToEntityArray(Allocator.Temp);
             var entitiesToDestroy = new NativeList<Entity>(removedSet.Count, Allocator.Temp);
 
             for (var i = 0; i < indices.Length; i++) {
@@ -386,6 +388,10 @@ namespace Spellbound.Core {
         public void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests) =>
             BufferEntitySpawnRequests(entityRequests);
 
+        public void OnDynamicObjectEntityDeleteRequested(IReadOnlyList<int> entityDeleteRequests) {
+            DestroyEntities(entityDeleteRequests, _dynamicQuery);
+        }
+
         /// <summary>
         /// Handles the in-game consequences of an Instances being deleted.
         /// Destroys their associated entities,
@@ -418,7 +424,7 @@ namespace Spellbound.Core {
                 DespawnSurface(instanceIndex);
             }
 
-            DestroyStaticEntities(instanceIndices);
+            DestroyEntities(instanceIndices, _staticQuery);
         }
 
         /// <summary>
@@ -648,11 +654,7 @@ namespace Spellbound.Core {
             jobHandle.Complete();
 
             foreach (var toAwaken in instancesToAwaken) {
-                if (DynamicDataAccess.TryAwaken(toAwaken))
-                    continue;
-
-                Log.Error($"Tried to awaken an object with index {toAwaken} that does not exist.");
-                return;
+                DynamicDataAccess.Awaken(instanceIndices[toAwaken].Value);
             }
 
             povPositions.Dispose();
