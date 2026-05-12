@@ -74,7 +74,6 @@ namespace Spellbound.Core {
                 where T : IDecodableData, new() {
             if (DataAccess.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
                 result = data;
-                Debug.Log($"result is {result}");
 
                 return true;
             }
@@ -97,7 +96,6 @@ namespace Spellbound.Core {
 
         public bool TryTransformData<T>(
             int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IQuantitativeData, new() {
-            Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, delta {delta}");
 
             DataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
 
@@ -317,8 +315,31 @@ namespace Spellbound.Core {
             DestroyEntities(instanceIndices);
         }
 
-        public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data) {
+        public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context) {
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData,
+                    out var preset, out IEventSurface surface)) {
+                return;
+            }
+            surface.AlertChanged();
+
+            data.InvokeChangeCallback(context, DataAccess, instanceIndex, preset, key.SurfaceIndex,
+                transformData);
+        }
+        
+        public void OnInstanceDataResolved(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context) {
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData,
+                    out var preset, out IEventSurface surface)) {
+                return;
+            }
             
+            if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
+                Log.Error("failed to find entity");
+                return;
+            }
+            
+
+            data.InvokeResolveCallback(context, DataAccess, instanceIndex, preset, key.SurfaceIndex,
+                transformData);
         }
 
 

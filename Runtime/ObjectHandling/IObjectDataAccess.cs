@@ -46,7 +46,7 @@ namespace Spellbound.Core {
 
         // Intended to be the implementation for transforming current object data with incoming data.
         void Delta<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T delta)
-                where T : IDecodableData, IQuantitativeData, new();
+                where T : IQuantitativeData, new();
 
         // Intended to be the implementation for deleting an instance with confirmation of deletion.
         Task<bool> TryDeleteInstance(int instanceIndex);

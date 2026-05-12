@@ -10,7 +10,8 @@ namespace Spellbound.Core {
 
         void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
         void OnInstancesDeleted(IReadOnlyList<int> instanceIndices);
-        void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data);
+        void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context);
+        void OnInstanceDataResolved(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context);
         
     }
 }

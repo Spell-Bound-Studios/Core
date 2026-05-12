@@ -17,8 +17,8 @@ namespace Spellbound.Core {
 
         void DebugQueryPing();
         
-        void Dispatch<THandler>(Action<THandler, IObjectParent, int, string, int> invoke)
-                where THandler : class;
+        void Dispatch<TContext>(TContext context)
+                where TContext : struct;
 
         public event Action OnChanged;
 

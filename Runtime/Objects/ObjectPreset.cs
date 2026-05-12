@@ -31,7 +31,7 @@ namespace Spellbound.Core {
         /// <param name="surfaceIndex"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public bool TryGetModule<T>(out T result, int surfaceIndex = 0) where T : PresetModule {
+        public bool TryGetModule<T>(out T result, int surfaceIndex = 0) where T : class {
             result = null;
 
             if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
@@ -114,20 +114,35 @@ namespace Spellbound.Core {
                 Debug.LogError("EventSurfacePrefab not found");
             }
             
+            
+            //Prohibits Multiple IDispatch<T> of the same T, and multiple IMouseoverHandler of any T or no T at all.
             foreach (var surface in surfaceModules) {
                 if (surface.presetModules == null) continue;
-                
+
                 var seenDispatchTypes = new HashSet<Type>();
+                var hasMouseoverHandler = false;
+
                 foreach (var module in surface.presetModules) {
                     if (module == null) continue;
-    
+
+                    // Enforce: only one IDispatch<T> per T per surface
                     foreach (var iface in module.GetType().GetInterfaces()) {
                         if (!iface.IsGenericType) continue;
-                        if (!typeof(IDispatch).IsAssignableFrom(iface)) continue;
-        
+                        if (iface.GetGenericTypeDefinition() != typeof(IDispatch<>)) continue;
+
                         if (!seenDispatchTypes.Add(iface))
-                            Debug.LogError($"Duplicate {iface.Name}<{iface.GenericTypeArguments[0].Name}> " +
-                                           $"on surface '{surface.surfaceName}' in preset '{name}'");
+                            Debug.LogError(
+                                $"Duplicate {iface.Name}<{iface.GenericTypeArguments[0].Name}> " +
+                                $"on surface '{surface.surfaceName}' in preset '{name}'");
+                    }
+
+                    // Enforce: only one IMouseoverHandler of any kind per surface
+                    if (module is IMouseoverHandler) {
+                        if (hasMouseoverHandler)
+                            Debug.LogError(
+                                $"Duplicate IMouseoverHandler on surface '{surface.surfaceName}' in preset '{name}'");
+
+                        hasMouseoverHandler = true;
                     }
                 }
             }
