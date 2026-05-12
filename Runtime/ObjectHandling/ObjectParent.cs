@@ -245,6 +245,10 @@ namespace Spellbound.Core {
             entities.Dispose();
         }
 
+        /// <summary>
+        /// Overload for static entries created.
+        /// </summary>
+        /// <param name="instances"></param>
         private void BufferEntitySpawnRequests(IEnumerable<(int, NonProceduralStaticInstanceEntry)> instances) {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
@@ -254,8 +258,7 @@ namespace Spellbound.Core {
 
             foreach (var (instanceIndex, entry) in instances) {
                 if (!entry.PresetUid.TryGetEntityPrefab(out var prefab)) {
-                    Log.Error($"Entity prefab could not be found: {entry.PresetUid}");
-
+                    Log.Error($"Entity prefab could not be found for preset: {entry.PresetUid}");
                     continue;
                 }
 
@@ -263,6 +266,31 @@ namespace Spellbound.Core {
                     Prefab = prefab,
                     InstanceIndex = instanceIndex,
                     Transform = entry.Transform.ToLocalTransform()
+                });
+            }
+        }
+
+        /// <summary>
+        /// Overload for dynamic requests converting to entities.
+        /// </summary>
+        /// <param name="requests"></param>
+        private void BufferEntitySpawnRequests(IReadOnlyList<(int, string, TransformData)> requests) {
+            var em = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            var buffer = em.HasBuffer<EntitySpawnRequestElement>(_ecsChunk)
+                    ? em.GetBuffer<EntitySpawnRequestElement>(_ecsChunk)
+                    : em.AddBuffer<EntitySpawnRequestElement>(_ecsChunk);
+
+            foreach (var (instanceIndex, presetUid, transformData) in requests) {
+                if (!presetUid.TryGetEntityPrefab(out var prefab)) {
+                    Log.Error($"Entity prefab could not be found for preset: {presetUid}");
+                    continue;
+                }
+
+                buffer.Add(new EntitySpawnRequestElement {
+                    Prefab = prefab,
+                    InstanceIndex = instanceIndex,
+                    Transform = transformData.ToLocalTransform()
                 });
             }
         }
@@ -355,6 +383,9 @@ namespace Spellbound.Core {
             }
         }
 
+        public void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests) =>
+            BufferEntitySpawnRequests(entityRequests);
+
         /// <summary>
         /// Handles the in-game consequences of an Instances being deleted.
         /// Destroys their associated entities,
@@ -367,15 +398,16 @@ namespace Spellbound.Core {
                 return;
 
             foreach (var instanceIndex in instanceIndices) {
-                if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) continue;
+                if (!_eventSurfaces.TryGetValue(instanceIndex, out var surface)) 
+                    continue;
 
                 if (surface == null) {
                     Log.Error($"surface is null");
-
                     continue;
                 }
 
-                if (!surface.Preset.TryGetModule(typeof(IDestuctionHandler), out var module)) continue; // safe return
+                if (!surface.Preset.TryGetModule(typeof(IDestuctionHandler), out var module)) 
+                    continue; // safe return
 
                 if (module is IDestuctionHandler handler) {
                     handler.OnDestruction(instanceIndex, this, out var actions);
@@ -577,18 +609,22 @@ namespace Spellbound.Core {
             UnityEngine.Object.Destroy(surface.GameObject);
         }
         
-        public void TrySleepDynamicObject(IMigratable dynamicObject) {
-            Log.Info("TrySleepDynamicObject");
-        }
-
+        public void SleepDynamicObject(int instanceIndex, DynamicInstanceEntry entry) => DynamicDataAccess.Sleep(instanceIndex, entry);
+        
         #endregion EventSurfaces
 
         #region Distance Queries
         
         public void DynamicDistanceQuery(float3[] povs) {
+            OnDynamicProximityEval?.Invoke(povs);
+            
             var existingEventSurfaces = new NativeHashSet<int>(1, Allocator.TempJob);
             
             var maxCapacity = _dynamicQuery.CalculateEntityCount();
+            
+            if (maxCapacity == 0) 
+                return;
+            
             var entities = _dynamicQuery.ToEntityArray(Allocator.TempJob);
             var transforms = _dynamicQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
             var thresholds = _dynamicQuery.ToComponentDataArray<ProximityThresholdComponent>(Allocator.TempJob);
@@ -612,7 +648,7 @@ namespace Spellbound.Core {
             jobHandle.Complete();
 
             foreach (var toAwaken in instancesToAwaken) {
-                if (DynamicDataAccess.TryAwaken(toAwaken)) 
+                if (DynamicDataAccess.TryAwaken(toAwaken))
                     continue;
 
                 Log.Error($"Tried to awaken an object with index {toAwaken} that does not exist.");

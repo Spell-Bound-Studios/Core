@@ -13,6 +13,12 @@ namespace Spellbound.Core {
         
         public DynamicInstanceEntry() { }
 
+        /// <summary>
+        /// Ctor for DynamicInstanceEntry.
+        /// </summary>
+        /// <param name="presetUid"></param>
+        /// <param name="transform"></param>
+        /// <param name="wasMovingAtSave"></param>
         public DynamicInstanceEntry(string presetUid, TransformData transform, bool wasMovingAtSave) {
             PresetUid = presetUid;
             Transform = transform;

@@ -11,6 +11,7 @@ namespace Spellbound.Core {
         void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
         void OnDynamicObjectsLoaded(IReadOnlyList<(int, DynamicInstanceEntry)> loaded);
         void OnDynamicObjectsCreated(IReadOnlyList<(int, DynamicInstanceEntry)> creations);
+        void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests);
         void OnInstancesDeleted(IReadOnlyList<int> instanceIndices);
         void OnInstanceDataStructuralChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handler);
         
