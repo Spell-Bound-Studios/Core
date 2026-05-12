@@ -618,12 +618,12 @@ namespace Spellbound.Core {
         public void DynamicDistanceQuery(float3[] povs) {
             OnDynamicProximityEval?.Invoke(povs);
             
-            var existingEventSurfaces = new NativeHashSet<int>(1, Allocator.TempJob);
-            
             var maxCapacity = _dynamicQuery.CalculateEntityCount();
             
             if (maxCapacity == 0) 
                 return;
+            
+            var existingEventSurfaces = new NativeHashSet<int>(1, Allocator.TempJob);
             
             var entities = _dynamicQuery.ToEntityArray(Allocator.TempJob);
             var transforms = _dynamicQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
