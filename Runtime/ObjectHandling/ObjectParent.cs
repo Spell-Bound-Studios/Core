@@ -615,7 +615,8 @@ namespace Spellbound.Core {
             UnityEngine.Object.Destroy(surface.GameObject);
         }
         
-        public void SleepDynamicObject(int instanceIndex, DynamicInstanceEntry entry) => DynamicDataAccess.Sleep(instanceIndex, entry);
+        public void SleepDynamicObject(int instanceIndex, DynamicInstanceEntry entry, IEventSurface eventSurface) 
+            => DynamicDataAccess.Sleep(instanceIndex, entry, eventSurface);
         
         #endregion EventSurfaces
 

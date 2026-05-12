@@ -12,6 +12,6 @@ namespace Spellbound.Core {
         void CreateRuntimeObject(string presetUid, Vector3 position, Vector3 rotation, int scale, List<(InstanceDataKey, byte[])> dataSlots = null);
 
         void Awaken(int instanceIndex);
-        void Sleep(int instanceIndex, DynamicInstanceEntry entry);
+        void Sleep(int instanceIndex, DynamicInstanceEntry entry, IEventSurface eventSurface);
     }
 }
