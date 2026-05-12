@@ -23,7 +23,8 @@ namespace Spellbound.Core {
         private readonly Transform _transform;
 
         private readonly int3 _id;
-        private EntityQuery _query;
+        private EntityQuery _staticQuery;
+        private EntityQuery _dynamicQuery;
         private readonly Entity _ecsChunk;
 
         private readonly Dictionary<int, IEventSurface> _eventSurfaces = new();
@@ -33,6 +34,8 @@ namespace Spellbound.Core {
         public IDynamicDataAccess DynamicDataAccess { get; }
         
         private int _seedInstanceCount;
+
+        public event Action<float3[]> OnDynamicProximityEval = delegate { };
 
         /// <summary>
         /// Constructor. Includes the creation of ready-made entity queries.
@@ -53,15 +56,29 @@ namespace Spellbound.Core {
 
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            _query = em.CreateEntityQuery(
+            _staticQuery = em.CreateEntityQuery(
                 ComponentType.ReadOnly<ChunkParentComponent>(),
                 ComponentType.ReadOnly<LocalTransform>(),
-                ComponentType.ReadOnly<StaticProximityObjectComponent>(),
+                ComponentType.ReadOnly<ProximityThresholdComponent>(),
                 ComponentType.ReadOnly<InstanceIndexComponent>(),
-                ComponentType.ReadOnly<PresetUidComponent>()
+                ComponentType.ReadOnly<PresetUidComponent>(),
+                ComponentType.Exclude<DynamicTag>()
             );
 
-            _query.SetSharedComponentFilter(new ChunkParentComponent {
+            _dynamicQuery = em.CreateEntityQuery(
+                ComponentType.ReadOnly<ChunkParentComponent>(),
+                ComponentType.ReadOnly<LocalTransform>(),
+                ComponentType.ReadOnly<ProximityThresholdComponent>(),
+                ComponentType.ReadOnly<InstanceIndexComponent>(),
+                ComponentType.ReadOnly<PresetUidComponent>(),
+                ComponentType.ReadOnly<DynamicTag>()
+                );
+
+            _staticQuery.SetSharedComponentFilter(new ChunkParentComponent {
+                ChunkCoord = _id
+            });
+            
+            _dynamicQuery.SetSharedComponentFilter(new ChunkParentComponent {
                 ChunkCoord = _id
             });
 
@@ -180,14 +197,14 @@ namespace Spellbound.Core {
         }
 
         /// <summary>
-        /// Destroys Entities from a list. 
+        /// Destroys Static Entities from a list. 
         /// </summary>
         /// <param name="instanceIndices"></param>
-        private void DestroyEntities(IReadOnlyList<int> instanceIndices) {
+        private void DestroyStaticEntities(IReadOnlyList<int> instanceIndices) {
             var removedSet = new HashSet<int>(instanceIndices);
 
-            var indices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
-            var entities = _query.ToEntityArray(Allocator.Temp);
+            var indices = _staticQuery.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
+            var entities = _staticQuery.ToEntityArray(Allocator.Temp);
             var entitiesToDestroy = new NativeList<Entity>(removedSet.Count, Allocator.Temp);
 
             for (var i = 0; i < indices.Length; i++) {
@@ -219,7 +236,9 @@ namespace Spellbound.Core {
 
             var disposeQuery = em.CreateEntityQuery(
                 ComponentType.ReadOnly<ChunkParentComponent>());
-            disposeQuery.SetSharedComponentFilter(new ChunkParentComponent { ChunkCoord = _id });
+            disposeQuery.SetSharedComponentFilter(new ChunkParentComponent {
+                ChunkCoord = _id
+            });
 
             var entities = disposeQuery.ToEntityArray(Allocator.Temp);
             em.DestroyEntity(entities);
@@ -367,7 +386,7 @@ namespace Spellbound.Core {
                 DespawnSurface(instanceIndex);
             }
 
-            DestroyEntities(instanceIndices);
+            DestroyStaticEntities(instanceIndices);
         }
 
         /// <summary>
@@ -500,8 +519,8 @@ namespace Spellbound.Core {
             int instanceIndex, out TransformData transformData, out ObjectPreset preset) {
             transformData = default;
             preset = null;
-            var instanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
-            var entities = _query.ToEntityArray(Allocator.Temp);
+            var instanceIndices = _staticQuery.ToComponentDataArray<InstanceIndexComponent>(Allocator.Temp);
+            var entities = _staticQuery.ToEntityArray(Allocator.Temp);
 
             for (var i = 0; i < instanceIndices.Length; i++) {
                 if (instanceIndices[i].Value != instanceIndex) continue;
@@ -557,10 +576,58 @@ namespace Spellbound.Core {
 
             UnityEngine.Object.Destroy(surface.GameObject);
         }
+        
+        public void TrySleepDynamicObject(IMigratable dynamicObject) {
+            Log.Info("TrySleepDynamicObject");
+        }
 
         #endregion EventSurfaces
 
         #region Distance Queries
+        
+        public void DynamicDistanceQuery(float3[] povs) {
+            var existingEventSurfaces = new NativeHashSet<int>(1, Allocator.TempJob);
+            
+            var maxCapacity = _dynamicQuery.CalculateEntityCount();
+            var entities = _dynamicQuery.ToEntityArray(Allocator.TempJob);
+            var transforms = _dynamicQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
+            var thresholds = _dynamicQuery.ToComponentDataArray<ProximityThresholdComponent>(Allocator.TempJob);
+            var instanceIndices = _dynamicQuery.ToComponentDataArray<InstanceIndexComponent>(Allocator.TempJob);
+            var povPositions = new NativeArray<float3>(povs, Allocator.TempJob);
+            
+            var instancesToAwaken = new NativeParallelHashSet<int>(maxCapacity, Allocator.TempJob);
+            var instancesToSleep = new NativeParallelHashSet<int>(maxCapacity, Allocator.TempJob);
+
+            var proximityJob = new EventSurfaceProximityJob {
+                PovPositions = povPositions,
+                Transforms = transforms,
+                Thresholds = thresholds,
+                InstanceIndices = instanceIndices,
+                ExistingEventSurfaces = existingEventSurfaces,
+                InstancesToAwaken = instancesToAwaken.AsParallelWriter(),
+                InstancesToSleep = instancesToSleep.AsParallelWriter()
+            };
+            
+            var jobHandle = proximityJob.Schedule(maxCapacity, 64);
+            jobHandle.Complete();
+
+            foreach (var toAwaken in instancesToAwaken) {
+                if (DynamicDataAccess.TryAwaken(toAwaken)) 
+                    continue;
+
+                Log.Error($"Tried to awaken an object with index {toAwaken} that does not exist.");
+                return;
+            }
+
+            povPositions.Dispose();
+            transforms.Dispose();
+            thresholds.Dispose();
+            instanceIndices.Dispose();
+            entities.Dispose();
+            existingEventSurfaces.Dispose();
+            instancesToAwaken.Dispose();
+            instancesToSleep.Dispose();
+        }
 
         public void StaticEntityDistanceQuery(float3 localPov) {
             _lastPovPosition = localPov;
@@ -569,18 +636,18 @@ namespace Spellbound.Core {
             foreach (var key in _eventSurfaces.Keys)
                 existingEventSurfaces.Add(key);
 
-            var maxCapacity = _query.CalculateEntityCount();
-            var entities = _query.ToEntityArray(Allocator.TempJob);
-            var transforms = _query.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
-            var thresholds = _query.ToComponentDataArray<StaticProximityObjectComponent>(Allocator.TempJob);
-            var instanceIndices = _query.ToComponentDataArray<InstanceIndexComponent>(Allocator.TempJob);
+            var maxCapacity = _staticQuery.CalculateEntityCount();
+            var entities = _staticQuery.ToEntityArray(Allocator.TempJob);
+            var transforms = _staticQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
+            var thresholds = _staticQuery.ToComponentDataArray<ProximityThresholdComponent>(Allocator.TempJob);
+            var instanceIndices = _staticQuery.ToComponentDataArray<InstanceIndexComponent>(Allocator.TempJob);
             var povPositions = new NativeArray<float3>(1, Allocator.TempJob);
             povPositions[0] = localPov;
 
             var instancesToAwaken = new NativeParallelHashSet<int>(maxCapacity, Allocator.TempJob);
             var instancesToSleep = new NativeParallelHashSet<int>(maxCapacity, Allocator.TempJob);
 
-            var proximityJob = new StaticEventSurfaceProximityJob {
+            var proximityJob = new EventSurfaceProximityJob {
                 PovPositions = povPositions,
                 Transforms = transforms,
                 Thresholds = thresholds,

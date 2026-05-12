@@ -8,5 +8,6 @@ namespace Spellbound.Core {
         Vector3Int CurrentChunk { get; }
         Vector3Int DesiredChunk { get; }
         bool IsSeedDerived { get; }
+        void HandleLimbo();
     }
 }

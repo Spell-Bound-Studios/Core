@@ -9,6 +9,7 @@ namespace Spellbound.Core {
     /// </summary>
     public interface IObjectParent {
         public ObjectParent ObjectParent { get; }
+        public Vector3Int ChunkCoord { get; }
         void InitializeObjectParentChunk(Vector3Int id, Entity ecsChunk);
     }
 }
