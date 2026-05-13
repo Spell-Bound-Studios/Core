@@ -37,6 +37,8 @@ namespace Spellbound.Core {
 
         public event Action<float3[]> OnDynamicProximityEval = delegate { };
 
+        public event Action OnSetRuntimeDynamicEntryRequested = delegate { };
+
         /// <summary>
         /// Constructor. Includes the creation of ready-made entity queries.
         /// </summary>
@@ -173,6 +175,23 @@ namespace Spellbound.Core {
                 return;
 
             BufferEntitySpawnRequests(instances.Select(kvp => (kvp.Key, kvp.Value)));
+        }
+
+        /// <summary>
+        /// Sends the full state of saved dynamic runtime entries as Entity Spawn Requests to the ECS world.
+        /// </summary>
+        public void BufferFullStateDynamicInstances() {
+            var instances = DynamicDataAccess.GetAllRuntimeDynamicInstances();
+
+            if (instances.Count == 0)
+                return;
+
+            var entityRequests = new List<(int, string, TransformData)>(instances.Count);
+
+            foreach (var (instanceIndex, entry) in instances)
+                entityRequests.Add((instanceIndex, entry.PresetUid, entry.Transform));
+
+            BufferEntitySpawnRequests(entityRequests);
         }
 
         /// <summary>
@@ -362,7 +381,15 @@ namespace Spellbound.Core {
         }
 
         public void OnDynamicObjectsLoaded(IReadOnlyList<(int, DynamicInstanceEntry)> loaded) {
-            
+            if (loaded.Count == 0)
+                return;
+
+            var entityRequests = new List<(int, string, TransformData)>(loaded.Count);
+
+            foreach (var (instanceIndex, entry) in loaded)
+                entityRequests.Add((instanceIndex, entry.PresetUid, entry.Transform));
+
+            BufferEntitySpawnRequests(entityRequests);
         }
         
         public void OnDynamicObjectsCreated(IReadOnlyList<(int, DynamicInstanceEntry)> creations) {
@@ -615,9 +642,14 @@ namespace Spellbound.Core {
             UnityEngine.Object.Destroy(surface.GameObject);
         }
         
-        public void SleepDynamicObject(int instanceIndex, DynamicInstanceEntry entry, IEventSurface eventSurface) 
+        public void SleepDynamicObject(int instanceIndex, DynamicInstanceEntry entry, IEventSurface eventSurface)
             => DynamicDataAccess.Sleep(instanceIndex, entry, eventSurface);
-        
+
+        public void SetRuntimeDynamicEntry(int instanceIndex, DynamicInstanceEntry entry) =>
+                DynamicDataAccess.SetRuntimeDynamicEntry(instanceIndex, entry);
+
+        public void RaiseSetRuntimeDynamicEntryRequested() => OnSetRuntimeDynamicEntryRequested?.Invoke();
+
         #endregion EventSurfaces
 
         #region Distance Queries
