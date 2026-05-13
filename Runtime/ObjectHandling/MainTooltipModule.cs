@@ -5,13 +5,13 @@ using System;
 namespace Spellbound.Core {
     public class MainTooltipModule : PresetModule, IDispatch<MouseoverContext>, IMouseoverHandler {
         
-        public void OnDispatch(
+        public bool OnDispatch(
             MouseoverContext dispatchContext, IObjectParent parent, int instanceIndex, ObjectPreset preset,
             int eventSurfaceIndex) {
 
-            if (preset.TryGetModule(out IMouseoverHandler handler, eventSurfaceIndex)) {
-                TooltipEvents.Invoke(handler.GetTooltip(preset));
-            }
+            TooltipEvents.Invoke(GetTooltip(preset));
+
+            return true;
         }
 
         public string GetTooltip(ObjectPreset preset) => preset.objectName;

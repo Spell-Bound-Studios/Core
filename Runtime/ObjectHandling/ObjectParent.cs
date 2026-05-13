@@ -87,9 +87,9 @@ namespace Spellbound.Core {
             return DataAccess.TryReadAll(instanceIndex, eventSurfaceIndex, out results);
         }
 
-        public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData)
+        public bool TryWriteData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData, byte context = 0)
                 where T : IDecodableData, new() {
-            DataAccess.Write(instanceIndex, presetUid, eventSurfaceIndex, newData);
+            DataAccess.Write(instanceIndex, presetUid, eventSurfaceIndex, newData, context);
 
             return true;
         }

@@ -35,6 +35,10 @@ namespace Spellbound.Core {
             });
 
             AddSharedComponent(entity, new ChunkParentComponent());
+
+            if (authoring.preset.TryGetModules<ITimerModule>(out _)) {
+                AddComponent(entity, new TimerModuleTag());
+            }
         }
     }
 }
