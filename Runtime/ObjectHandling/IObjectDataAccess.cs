@@ -7,8 +7,6 @@ using UnityEngine;
 
 namespace Spellbound.Core {
     public interface IObjectDataAccess {
-        // Intended to separate procedural instances from runtime instances.
-        int ProceduralInstanceIndexCount { get; set; }
         void SetConsumer(IObjectInstanceConsumer consumer);
         
         #region Bulk Access

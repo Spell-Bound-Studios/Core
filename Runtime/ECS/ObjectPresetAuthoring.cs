@@ -1,6 +1,7 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using Spellbound.Core.ECS;
+using Spellbound.Core.Logging;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -14,9 +15,7 @@ namespace Spellbound.Core {
     public class ObjectPresetBaker : Baker<ObjectPresetAuthoring> {
         public override void Bake(ObjectPresetAuthoring authoring) {
             if (authoring.preset == null) {
-                Debug.LogError($"[ObjectPresetBaker] Missing ObjectPreset on '{authoring.gameObject.name}'!",
-                    authoring);
-
+                Log.Error($"[ObjectPresetBaker] Missing ObjectPreset on '{authoring.gameObject.name}'!");
                 return;
             }
 
@@ -26,13 +25,16 @@ namespace Spellbound.Core {
                 Value = authoring.preset.presetUid
             });
 
-            AddComponent(entity, new StaticProximityObjectComponent {
+            AddComponent(entity, new ProximityThresholdComponent {
                 Value = new float2(authoring.preset.interactionDistance)
             });
 
             AddComponent(entity, new InstanceIndexComponent {
                 Value = -1
             });
+            
+            if (authoring.preset.isDynamic)
+                AddComponent<DynamicTag>(entity);
 
             AddSharedComponent(entity, new ChunkParentComponent());
         }

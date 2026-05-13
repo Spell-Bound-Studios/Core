@@ -6,14 +6,23 @@ using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
     public interface IObjectInstanceConsumer {
+        int GetNextInstanceIndex();
         void OnRuntimeInstancesLoaded(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
-
         void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);
+       
         void OnInstancesDeleted(IReadOnlyList<int> instanceIndices);
         void OnInstanceDataStructuralChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handler);
         
         void OnInstanceDataCosmeticChanged(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc, Type handler);
         
         void OnInstanceDataInitialized(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc);
+        
+        void OnDynamicObjectsLoaded(IReadOnlyList<(int, DynamicInstanceEntry)> loaded);
+        void OnDynamicObjectsCreated(IReadOnlyList<(int, DynamicInstanceEntry)> creations);
+        void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests);
+        
+        void OnDynamicObjectEntityDeleteRequested(IReadOnlyList<int> entityDeleteRequests);
+
+        List<int> GetCurrentNonProceduralDynamicEntities();
     }
 }
