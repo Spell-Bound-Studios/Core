@@ -419,6 +419,18 @@ namespace Spellbound.Core {
             DestroyEntities(entityDeleteRequests, _dynamicQuery);
         }
 
+        public List<int> GetCurrentNonProceduralDynamicEntities() {
+            var instanceList = new List<int>();
+            var instanceIndices = _dynamicQuery.ToComponentDataArray<InstanceIndexComponent>(Allocator.TempJob);
+
+            foreach (var instanceIndex in instanceIndices) {
+                if (instanceIndex.Value >= _seedInstanceCount) {
+                    instanceList.Add(instanceIndex.Value);
+                }
+            }
+            return instanceList;
+        }
+
         /// <summary>
         /// Handles the in-game consequences of an Instances being deleted.
         /// Destroys their associated entities,

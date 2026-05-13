@@ -22,5 +22,7 @@ namespace Spellbound.Core {
         void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests);
         
         void OnDynamicObjectEntityDeleteRequested(IReadOnlyList<int> entityDeleteRequests);
+
+        List<int> GetCurrentNonProceduralDynamicEntities();
     }
 }
