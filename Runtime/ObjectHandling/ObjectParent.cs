@@ -219,6 +219,7 @@ namespace Spellbound.Core {
         /// Destroys Static Entities from a list. 
         /// </summary>
         /// <param name="instanceIndices"></param>
+        /// <param name="query"></param>
         private void DestroyEntities(IReadOnlyList<int> instanceIndices, EntityQuery query) {
             var removedSet = new HashSet<int>(instanceIndices);
             
@@ -228,10 +229,9 @@ namespace Spellbound.Core {
             var entities = selectedQuery.ToEntityArray(Allocator.Temp);
             var entitiesToDestroy = new NativeList<Entity>(removedSet.Count, Allocator.Temp);
 
-            for (var i = 0; i < indices.Length; i++) {
+            for (var i = 0; i < indices.Length; i++)
                 if (removedSet.Contains(indices[i].Value))
                     entitiesToDestroy.Add(entities[i]);
-            }
 
             if (entitiesToDestroy.Length > 0) {
                 var em = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -423,11 +423,11 @@ namespace Spellbound.Core {
             var instanceList = new List<int>();
             var instanceIndices = _dynamicQuery.ToComponentDataArray<InstanceIndexComponent>(Allocator.TempJob);
 
-            foreach (var instanceIndex in instanceIndices) {
-                if (instanceIndex.Value >= _seedInstanceCount) {
+            foreach (var instanceIndex in instanceIndices)
+                if (instanceIndex.Value >= _seedInstanceCount)
                     instanceList.Add(instanceIndex.Value);
-                }
-            }
+            
+            instanceIndices.Dispose();
             return instanceList;
         }
 
@@ -698,9 +698,8 @@ namespace Spellbound.Core {
             var jobHandle = proximityJob.Schedule(maxCapacity, 64);
             jobHandle.Complete();
 
-            foreach (var toAwaken in instancesToAwaken) {
+            foreach (var toAwaken in instancesToAwaken)
                 DynamicDataAccess.Awaken(instanceIndices[toAwaken].Value);
-            }
 
             povPositions.Dispose();
             transforms.Dispose();
