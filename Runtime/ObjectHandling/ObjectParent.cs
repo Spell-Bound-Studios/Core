@@ -124,7 +124,6 @@ namespace Spellbound.Core {
                 where T : IDecodableData, new() {
             if (StaticDataAccess.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
                 result = data;
-                Debug.Log($"result is {result}");
 
                 return true;
             }
@@ -147,7 +146,6 @@ namespace Spellbound.Core {
 
         public bool TryTransformData<T>(
             int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IQuantitativeData, new() {
-            Debug.Log($"Calling TryTransformData on instanceIndex {instanceIndex}, delta {delta}");
 
             StaticDataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
 
@@ -481,7 +479,7 @@ namespace Spellbound.Core {
             }
             surface.AlertChanged();
 
-            data.InvokeChangeCallback(context, DataAccess, instanceIndex, preset, key.SurfaceIndex,
+            data.InvokeChangeCallback(context, StaticDataAccess, instanceIndex, preset, key.SurfaceIndex,
                 transformData);
         }
         
@@ -497,7 +495,7 @@ namespace Spellbound.Core {
             }
             
 
-            data.InvokeResolveCallback(context, DataAccess, instanceIndex, preset, key.SurfaceIndex,
+            data.InvokeResolveCallback(context, StaticDataAccess, instanceIndex, preset, key.SurfaceIndex,
                 transformData);
         }
 

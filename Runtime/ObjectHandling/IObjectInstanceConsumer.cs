@@ -16,8 +16,6 @@ namespace Spellbound.Core {
         void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context);
         void OnInstanceDataResolved(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context);
         
-        void OnInstanceDataInitialized(int instanceIndex, InstanceDataKey key, Func<IPacker> dataFunc);
-        
         void OnDynamicObjectsLoaded(IReadOnlyList<(int, DynamicInstanceEntry)> loaded);
         void OnDynamicObjectsCreated(IReadOnlyList<(int, DynamicInstanceEntry)> creations);
         void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests);
