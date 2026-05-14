@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Spellbound.Core.Logging;
 using UnityEditor;
 using UnityEngine;
 
@@ -25,6 +24,7 @@ namespace Spellbound.Core {
         public Vector2 interactionDistance = new(50, 70);
 
         [SerializeField] public List<PresetSurface> surfaceModules = new();
+
         /// <summary>
         /// Searches ALL surfaces for a module of type T. Returns the first match.
         /// </summary>
@@ -74,15 +74,15 @@ namespace Spellbound.Core {
 
             return false;
         }
-        
+
         public bool TryGetModules<T>(out IEnumerable<T> results, int surfaceIndex = 0) where T : class {
             results = Enumerable.Empty<T>();
-    
+
             if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
                 return false;
 
             var matches = new List<T>();
-    
+
             foreach (var module in surfaceModules[surfaceIndex].presetModules) {
                 if (module is T t)
                     matches.Add(t);
@@ -92,6 +92,7 @@ namespace Spellbound.Core {
                 return false;
 
             results = matches;
+
             return true;
         }
 
@@ -111,11 +112,9 @@ namespace Spellbound.Core {
         /// Creates guids based on an asset path for us when something gets updated.
         /// </summary>
         private void OnValidate() {
-            if (eventSurfacePrefab != null && eventSurfacePrefab.GetComponent<IEventSurface>() == null) {
+            if (eventSurfacePrefab != null && eventSurfacePrefab.GetComponent<IEventSurface>() == null)
                 Debug.LogError("EventSurfacePrefab not found");
-            }
-            
-            
+
             //Prohibits Multiple IDispatch<T> of the same T, and multiple IMouseoverHandler of any T or no T at all.
             foreach (var surface in surfaceModules) {
                 if (surface.presetModules == null) continue;
@@ -131,25 +130,25 @@ namespace Spellbound.Core {
                         if (!iface.IsGenericType) continue;
                         if (iface.GetGenericTypeDefinition() != typeof(IDispatch<>)) continue;
 
-                        if (!seenDispatchTypes.Add(iface))
+                        if (!seenDispatchTypes.Add(iface)) {
                             Debug.LogError(
                                 $"Duplicate {iface.Name}<{iface.GenericTypeArguments[0].Name}> " +
                                 $"on surface '{surface.surfaceName}' in preset '{name}'");
+                        }
                     }
 
                     // Enforce: only one IMouseoverHandler of any kind per surface
                     if (module is IMouseoverHandler) {
-                        if (hasMouseoverHandler)
+                        if (hasMouseoverHandler) {
                             Debug.LogError(
                                 $"Duplicate IMouseoverHandler on surface '{surface.surfaceName}' in preset '{name}'");
+                        }
 
                         hasMouseoverHandler = true;
                     }
                 }
             }
-            
-            
-            
+
             var assetPath = AssetDatabase.GetAssetPath(this);
 
             if (assetPath == null) {

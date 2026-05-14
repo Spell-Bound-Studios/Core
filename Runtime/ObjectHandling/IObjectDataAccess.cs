@@ -8,16 +8,16 @@ using UnityEngine;
 namespace Spellbound.Core {
     public interface IObjectDataAccess {
         void SetConsumer(IObjectInstanceConsumer consumer);
-        
+
         #region Bulk Access
-        
+
         Dictionary<int, NonProceduralStaticInstanceEntry> GetAllRuntimeInstances();
         IReadOnlyCollection<int> GetAllSeedInstanceDeletions();
-        
+
         #endregion Bulk Access
 
         #region Runtime Instance Creation
-        
+
         void CreateRuntimeInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
 
         #endregion
@@ -31,7 +31,7 @@ namespace Spellbound.Core {
         // Intended to be the implementation for simply reading data on an instance.
         bool TryRead<T>(int instanceIndex, int eventSurfaceIndex, out T data)
                 where T : IDecodableData, new();
-        
+
         bool TryReadAll(int instanceIndex, int eventSurfaceIndex, out List<IDecodableData> data);
 
         // Intended to be the implementation for simply reading data on an instance, guaranteeing a result.

@@ -8,6 +8,7 @@ namespace Spellbound.Core {
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public interface IDispatch<T> where T : struct {
-        bool OnDispatch(T dispatchContext, IObjectParent parent, int instanceIndex, ObjectPreset preset, int eventSurfaceIndex);
+        bool OnDispatch(
+            T dispatchContext, IObjectParent parent, int instanceIndex, ObjectPreset preset, int eventSurfaceIndex);
     }
 }

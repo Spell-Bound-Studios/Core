@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Buffers;
@@ -123,7 +123,7 @@ namespace Spellbound.Core.Packing {
         }
 
         #endregion
-        
+
         #region UInt
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -136,6 +136,7 @@ namespace Spellbound.Core.Packing {
         public static uint ReadUInt(ref ReadOnlySpan<byte> buffer) {
             var value = BitConverter.ToUInt32(buffer);
             buffer = buffer[sizeof(uint)..];
+
             return value;
         }
 
@@ -155,6 +156,7 @@ namespace Spellbound.Core.Packing {
                         | ((uint)buffer[2] << 16)
                         | ((uint)buffer[3] << 24);
             buffer = buffer[4..];
+
             return value;
         }
 

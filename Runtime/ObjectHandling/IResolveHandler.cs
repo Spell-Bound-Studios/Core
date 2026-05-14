@@ -8,6 +8,8 @@ namespace Spellbound.Core {
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public interface IResolveHandler<T> where T : IDecodableData {
-        void OnResolve(T data, byte context, IObjectDataAccess dataAccess, int instanceIndex, ObjectPreset preset, int surfaceIndex, TransformData transformData);
+        void OnResolve(
+            T data, byte context, IObjectDataAccess dataAccess, int instanceIndex, ObjectPreset preset,
+            int surfaceIndex, TransformData transformData);
     }
 }

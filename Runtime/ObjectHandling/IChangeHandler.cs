@@ -8,6 +8,8 @@ namespace Spellbound.Core {
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public interface IChangeHandler<T> where T : IDecodableData {
-        void OnChange(T data, byte context, IObjectDataAccess dataAccess, int instanceIndex, ObjectPreset preset, int surfaceIndex, TransformData transformData);
+        void OnChange(
+            T data, byte context, IObjectDataAccess dataAccess, int instanceIndex, ObjectPreset preset,
+            int surfaceIndex, TransformData transformData);
     }
 }

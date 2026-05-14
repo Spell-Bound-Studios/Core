@@ -10,7 +10,7 @@ namespace Spellbound.Core {
         public Dictionary<InstanceDataKey, byte[]> DataSlots = new();
         public TransformData Transform;
         public bool WasMovingAtSave;
-        
+
         public DynamicInstanceEntry() { }
 
         /// <summary>
@@ -24,13 +24,14 @@ namespace Spellbound.Core {
             Transform = transform;
             WasMovingAtSave = wasMovingAtSave;
         }
-        
+
         public void Pack(ref Span<byte> buffer) {
             Packer.WriteString(ref buffer, PresetUid);
             Transform.Pack(ref buffer);
             Packer.WriteBool(ref buffer, WasMovingAtSave);
 
             Packer.WriteInt(ref buffer, DataSlots.Count);
+
             foreach (var (key, bytes) in DataSlots) {
                 Packer.WriteString(ref buffer, key.PackerId);
                 Packer.WriteInt(ref buffer, key.SurfaceIndex);
@@ -46,6 +47,7 @@ namespace Spellbound.Core {
 
             var count = Packer.ReadInt(ref buffer);
             DataSlots = new Dictionary<InstanceDataKey, byte[]>(count);
+
             for (var i = 0; i < count; i++) {
                 var packerId = Packer.ReadString(ref buffer);
                 var surfaceIndex = Packer.ReadInt(ref buffer);

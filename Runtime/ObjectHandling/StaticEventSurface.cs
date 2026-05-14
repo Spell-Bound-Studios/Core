@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using Spellbound.Core.Logging;
-using Spellbound.Core.Packing;
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -13,9 +12,9 @@ namespace Spellbound.Core {
         private int surfaceIndex = -1;
 
         public Vector3 Position => transform.position;
-        
+
         public GameObject GameObject => gameObject;
-        
+
         public Transform Transform => transform;
 
         private IObjectParent _parent;
@@ -25,7 +24,9 @@ namespace Spellbound.Core {
 
         public ObjectPreset Preset { get; private set; }
 
-        public int Initialize(IObjectParent objectParent, int entityIndex, string presetUid, Dictionary<InstanceDataKey, byte[]> dataSlots = null) {
+        public int Initialize(
+            IObjectParent objectParent, int entityIndex, string presetUid,
+            Dictionary<InstanceDataKey, byte[]> dataSlots = null) {
             _parent = objectParent;
             _entityIndex = entityIndex;
             Preset = presetUid.ResolvePreset();
@@ -37,14 +38,13 @@ namespace Spellbound.Core {
                     continue;
 
                 var childSurfaceIndex = childSurface.Initialize(_parent, _entityIndex, Preset.presetUid, dataSlots);
-                
+
                 if (!_childEventSurfaces.TryAdd(childSurfaceIndex, childSurface))
                     Log.Error($"Duplicate surfaceIndex {childSurfaceIndex} on {childSurface.gameObject.name}");
             }
-            
+
             return surfaceIndex;
         }
-
 
         public void DebugQueryPing() =>
                 Debug.Log($"Pinging Event Surface for {Preset.name} " +
@@ -69,13 +69,12 @@ namespace Spellbound.Core {
 
         public event Action OnChanged;
 
-        public void AlertChanged() {
-            OnChanged?.Invoke();
-        }
+        public void AlertChanged() => OnChanged?.Invoke();
 
         public bool TryGetEventSurfaceByIndex(int desiredSurfaceIndex, out IEventSurface surface) {
             if (desiredSurfaceIndex == surfaceIndex) {
                 surface = this;
+
                 return true;
             }
 

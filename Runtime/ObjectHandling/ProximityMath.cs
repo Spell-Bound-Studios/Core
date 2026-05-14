@@ -1,4 +1,6 @@
-﻿using Unity.Burst;
+﻿// Copyright 2026 Spellbound Studio Inc.
+
+using Unity.Burst;
 using Unity.Mathematics;
 
 namespace Spellbound.Core {

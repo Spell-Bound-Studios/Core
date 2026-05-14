@@ -38,10 +38,12 @@ namespace Spellbound.Core.Packing {
         public static bool TryCreateInstance(string packerId, out IDecodableData instance) {
             if (Factories.TryGetValue(packerId, out var factory)) {
                 instance = factory();
+
                 return true;
             }
 
             instance = null;
+
             return false;
         }
 
@@ -55,6 +57,7 @@ namespace Spellbound.Core.Packing {
             try {
                 ReadOnlySpan<byte> span = data;
                 instance.Unpack(ref span);
+
                 return $"{packerId}: {instance}";
             }
             catch {

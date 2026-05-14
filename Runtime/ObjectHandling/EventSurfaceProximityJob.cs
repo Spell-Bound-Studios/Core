@@ -1,7 +1,7 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
- using System;
- using Spellbound.Core.ECS;
+using System;
+using Spellbound.Core.ECS;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -14,11 +14,21 @@ namespace Spellbound.Core {
     /// </summary>
     [BurstCompile]
     public struct EventSurfaceProximityJob : IJobParallelFor {
-        [NativeDisableParallelForRestriction, ReadOnly] public NativeArray<float3> PovPositions;
-        [NativeDisableParallelForRestriction, ReadOnly] public NativeArray<LocalTransform> Transforms;
-        [NativeDisableParallelForRestriction, ReadOnly] public NativeArray<ProximityThresholdComponent> Thresholds;
-        [NativeDisableParallelForRestriction, ReadOnly] public NativeArray<InstanceIndexComponent> InstanceIndices;
-        [NativeDisableParallelForRestriction, ReadOnly] public NativeHashSet<int> ExistingEventSurfaces;
+        [NativeDisableParallelForRestriction, ReadOnly]
+        public NativeArray<float3> PovPositions;
+
+        [NativeDisableParallelForRestriction, ReadOnly]
+        public NativeArray<LocalTransform> Transforms;
+
+        [NativeDisableParallelForRestriction, ReadOnly]
+        public NativeArray<ProximityThresholdComponent> Thresholds;
+
+        [NativeDisableParallelForRestriction, ReadOnly]
+        public NativeArray<InstanceIndexComponent> InstanceIndices;
+
+        [NativeDisableParallelForRestriction, ReadOnly]
+        public NativeHashSet<int> ExistingEventSurfaces;
+
         [NativeDisableParallelForRestriction] public NativeParallelHashSet<int>.ParallelWriter InstancesToAwaken;
         [NativeDisableParallelForRestriction] public NativeParallelHashSet<int>.ParallelWriter InstancesToSleep;
 
@@ -27,7 +37,7 @@ namespace Spellbound.Core {
             var instanceIndex = InstanceIndices[index].Value;
             var position = Transforms[index].Position;
             var thresholds = Thresholds[index].Value;
-            
+
             var canSleep = true;
 
             foreach (var povPosition in PovPositions) {
@@ -41,7 +51,7 @@ namespace Spellbound.Core {
                         canSleep = false;
 
                         break;
-                    
+
                     case ProximityChange.Blacklist:
                         // Too far — leave canSleep = true, keep checking other povs
                         break;
@@ -49,7 +59,7 @@ namespace Spellbound.Core {
                         throw new ArgumentOutOfRangeException();
                 }
             }
-            
+
             if (canSleep && ExistingEventSurfaces.Contains(instanceIndex))
                 InstancesToSleep.Add(index);
         }

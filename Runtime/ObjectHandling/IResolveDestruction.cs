@@ -2,8 +2,6 @@
 
 namespace Spellbound.Core {
     public interface IResolveDestruction {
-        void OnResolveDestruction() {
-            
-        }
+        void OnResolveDestruction() { }
     }
 }
