@@ -315,6 +315,10 @@ namespace Spellbound.Core {
             DestroyEntities(instanceIndices);
         }
 
+        public void OnInstancesDeleteResolve(IReadOnlyList<int> instanceIndices) {
+            
+        }
+
         public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context) {
             if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData,
                     out var preset, out IEventSurface surface)) {

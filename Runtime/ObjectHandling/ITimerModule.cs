@@ -8,6 +8,6 @@ namespace Spellbound.Core {
     }
     public interface ITimerModule<T> : ITimerModule where T : IDecodableData {
         void OnTimerUpdate(T data, uint time, IObjectDataAccess dataAccess, 
-            int instanceIndex, ObjectPreset preset);
+            int instanceIndex, ObjectPreset preset, int eventSurfaceIndex = 0);
     }
 }

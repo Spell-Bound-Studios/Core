@@ -1,4 +1,4 @@
-﻿﻿// Copyright 2026 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using Spellbound.Core.ECS;
 using Unity.Burst;
