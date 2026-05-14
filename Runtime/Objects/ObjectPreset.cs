@@ -18,6 +18,7 @@ namespace Spellbound.Core {
         [Immutable] public string presetUid;
         public string objectName;
         public string objectDescription;
+        public bool isDynamic;
 
         public GameObject bakePrefab; // not the proxy, it is the thing that bakes into an entity
         public GameObject eventSurfacePrefab;

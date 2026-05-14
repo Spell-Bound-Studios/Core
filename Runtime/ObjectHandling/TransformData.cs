@@ -32,7 +32,7 @@ namespace Spellbound.Core {
         // Constructor from GameObject Transform
         public TransformData(Transform transform) {
             Position = transform.position;
-            Rotation = transform.rotation.eulerAngles;
+            Rotation= math.degrees(math.EulerXYZ(transform.rotation));
             Scale = transform.localScale.x;
         }
         
@@ -43,13 +43,13 @@ namespace Spellbound.Core {
         public readonly LocalTransform ToLocalTransform() {
             return new LocalTransform() {
                 Position = Position,
-                Rotation = quaternion.EulerXYZ(Rotation),
+                Rotation = quaternion.EulerXYZ(math.radians(Rotation)),
                 Scale = Scale
             };
         }
 
         public Quaternion RotAsQuaternion() {
-            return quaternion.EulerXYZ(Rotation);
+            return Quaternion.Euler(Rotation);
         }
         
         public Vector3 ScaleAsVector3() {
