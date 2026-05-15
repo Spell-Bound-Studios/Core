@@ -17,11 +17,11 @@ namespace Spellbound.Core {
         IDecodableData InvokeGetDefaultData(ObjectPreset preset, int surfaceIndex, byte level = 1);
 
         void InvokeChangeCallback(
-            byte context, IObjectDataAccess dataAccess, int instanceIndex,
+            byte context, ObjectParent parent, int instanceIndex,
             ObjectPreset preset, int surfaceIndex, TransformData transformData);
 
         void InvokeResolveCallback(
-            byte context, IObjectDataAccess dataAccess, int instanceIndex,
+            byte context, ObjectParent parent, int instanceIndex,
             ObjectPreset preset, int surfaceIndex, TransformData transformData);
 
         static IDecodableData Decode(string packerId, byte[] data) {

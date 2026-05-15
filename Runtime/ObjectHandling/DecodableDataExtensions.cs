@@ -1,5 +1,7 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
+using Spellbound.Core.Logging;
+
 namespace Spellbound.Core {
     public static class DecodableDataExtensions {
         public static IDecodableData GetDefaultData<T>(
@@ -12,25 +14,26 @@ namespace Spellbound.Core {
         }
 
         public static void ChangeCallback<T>(
-            this T data, byte context, IObjectDataAccess dataAccess,
+            this T data, byte context, ObjectParent parent,
             int instanceIndex, ObjectPreset preset, int surfaceIndex, TransformData transformData)
                 where T : IDecodableData {
+
             if (!preset.TryGetModules<IChangeHandler<T>>(out var modules, surfaceIndex))
                 return;
 
             foreach (var module in modules)
-                module.OnChange(data, context, dataAccess, instanceIndex, preset, surfaceIndex, transformData);
+                module.OnChange(data, context, parent, instanceIndex, preset, surfaceIndex, transformData);
         }
 
         public static void ResolveCallback<T>(
-            this T data, byte context, IObjectDataAccess dataAccess,
+            this T data, byte context, ObjectParent parent,
             int instanceIndex, ObjectPreset preset, int surfaceIndex, TransformData transformData)
                 where T : IDecodableData {
             if (!preset.TryGetModules<IResolveHandler<T>>(out var modules, surfaceIndex))
                 return;
 
             foreach (var module in modules)
-                module.OnResolve(data, context, dataAccess, instanceIndex, preset, surfaceIndex, transformData);
+                module.OnResolve(data, context, parent, instanceIndex, preset, surfaceIndex, transformData);
         }
     }
 }
