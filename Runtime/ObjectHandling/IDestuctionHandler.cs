@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
     public interface IDestuctionHandler {

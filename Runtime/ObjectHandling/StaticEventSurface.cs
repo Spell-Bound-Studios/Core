@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-using Spellbound.Core.Packing;
+using Spellbound.Core.Logging;
 using UnityEngine;
 
 namespace Spellbound.Core {
@@ -12,30 +12,38 @@ namespace Spellbound.Core {
         private int surfaceIndex = -1;
 
         public Vector3 Position => transform.position;
-        
+
         public GameObject GameObject => gameObject;
-        
+
         public Transform Transform => transform;
 
         private IObjectParent _parent;
         private int _entityIndex;
 
+        private Dictionary<int, IEventSurface> _childEventSurfaces = new();
+
         public ObjectPreset Preset { get; private set; }
 
-        public void Initialize(IObjectParent objectParent, int entityIndex, string presetUid, Dictionary<InstanceDataKey, byte[]> dataSlots = null) {
+        public int Initialize(
+            IObjectParent objectParent, int entityIndex, string presetUid,
+            Dictionary<InstanceDataKey, byte[]> dataSlots = null) {
             _parent = objectParent;
             _entityIndex = entityIndex;
             Preset = presetUid.ResolvePreset();
 
-            // Check for children.
             var childSurfaces = GetComponentsInChildren<StaticEventSurface>(true);
 
             foreach (var childSurface in childSurfaces) {
                 if (childSurface == this)
                     continue;
 
-                childSurface.Initialize(_parent, _entityIndex, Preset.presetUid, dataSlots);
+                var childSurfaceIndex = childSurface.Initialize(_parent, _entityIndex, Preset.presetUid, dataSlots);
+
+                if (!_childEventSurfaces.TryAdd(childSurfaceIndex, childSurface))
+                    Log.Error($"Duplicate surfaceIndex {childSurfaceIndex} on {childSurface.gameObject.name}");
             }
+
+            return surfaceIndex;
         }
 
         public void DebugQueryPing() =>
@@ -44,8 +52,7 @@ namespace Spellbound.Core {
                           $"and surface index {surfaceIndex}");
 
         // Declare a THandler type at runtime that will pass in a pointer of that type to THAT types implementation.
-        public void Dispatch<THandler>(Action<THandler, IObjectParent, int, string, int> invoke)
-                where THandler : class {
+        public void Dispatch<TContext>(TContext context) where TContext : struct {
             if (Preset == null)
                 return;
 
@@ -55,19 +62,23 @@ namespace Spellbound.Core {
 
             // If it does have children loop through them and invoke.
             foreach (var module in Preset.surfaceModules[surfaceIndex].presetModules) {
-                if (module is THandler handler)
-                    invoke(handler, _parent, _entityIndex, Preset.presetUid, surfaceIndex);
+                if (module is IDispatch<TContext> handler)
+                    handler.OnDispatch(context, _parent, _entityIndex, Preset, surfaceIndex);
             }
         }
 
-        public void Receive(){
-            AudioSource.PlayClipAtPoint(
-                AudioClip.Create("beep", 4096, 1, 44100, false, data => {
-                    for (int i = 0; i < data.Length; i++)
-                        data[i] = Mathf.Sin(2 * Mathf.PI * 440f * i / 44100f);
-                }),
-                GameObject.transform.position
-            );
+        public event Action OnChanged;
+
+        public void AlertChanged() => OnChanged?.Invoke();
+
+        public bool TryGetEventSurfaceByIndex(int desiredSurfaceIndex, out IEventSurface surface) {
+            if (desiredSurfaceIndex == surfaceIndex) {
+                surface = this;
+
+                return true;
+            }
+
+            return _childEventSurfaces.TryGetValue(desiredSurfaceIndex, out surface);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Buffers;
@@ -120,6 +120,44 @@ namespace Spellbound.Core.Packing {
             var intVal = ReadIntBitwise(ref buffer);
 
             return BitConverter.Int32BitsToSingle(intVal);
+        }
+
+        #endregion
+
+        #region UInt
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUInt(ref Span<byte> buffer, uint value) {
+            BitConverter.TryWriteBytes(buffer, value);
+            buffer = buffer[sizeof(uint)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint ReadUInt(ref ReadOnlySpan<byte> buffer) {
+            var value = BitConverter.ToUInt32(buffer);
+            buffer = buffer[sizeof(uint)..];
+
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUIntBitwise(ref Span<byte> buffer, uint value) {
+            buffer[0] = (byte)value;
+            buffer[1] = (byte)(value >> 8);
+            buffer[2] = (byte)(value >> 16);
+            buffer[3] = (byte)(value >> 24);
+            buffer = buffer[4..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint ReadUIntBitwise(ref ReadOnlySpan<byte> buffer) {
+            var value = buffer[0]
+                        | ((uint)buffer[1] << 8)
+                        | ((uint)buffer[2] << 16)
+                        | ((uint)buffer[3] << 24);
+            buffer = buffer[4..];
+
+            return value;
         }
 
         #endregion

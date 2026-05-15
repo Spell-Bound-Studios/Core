@@ -2,11 +2,10 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using Spellbound.Core.Packing;
 
 namespace Spellbound.Core {
     public interface IThresholdHandler {
-        bool ThresholdCheck(IQuantitativeData data, ObjectParent parent,  out List<Action<int, TransformData>> actions);
+        bool ThresholdCheck(IQuantitativeData data, ObjectParent parent, out List<Action<int, TransformData>> actions);
     }
 }

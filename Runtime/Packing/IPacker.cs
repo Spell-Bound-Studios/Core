@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Spellbound Studio Inc.
+﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 
@@ -10,5 +10,7 @@ namespace Spellbound.Core.Packing {
     public interface IPacker {
         public void Pack(ref Span<byte> buffer);
         public void Unpack(ref ReadOnlySpan<byte> buffer);
+
+        public string ToString();
     }
 }

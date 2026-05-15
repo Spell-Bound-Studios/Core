@@ -16,6 +16,7 @@ namespace Spellbound.Core {
         public override void Bake(ObjectPresetAuthoring authoring) {
             if (authoring.preset == null) {
                 Log.Error($"[ObjectPresetBaker] Missing ObjectPreset on '{authoring.gameObject.name}'!");
+
                 return;
             }
 
@@ -32,11 +33,13 @@ namespace Spellbound.Core {
             AddComponent(entity, new InstanceIndexComponent {
                 Value = -1
             });
-            
+
             if (authoring.preset.isDynamic)
                 AddComponent<DynamicTag>(entity);
 
             AddSharedComponent(entity, new ChunkParentComponent());
+
+            if (authoring.preset.TryGetModules<ITimerModule>(out _)) AddComponent(entity, new TimerModuleTag());
         }
     }
 }

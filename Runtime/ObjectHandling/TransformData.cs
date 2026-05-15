@@ -11,10 +11,9 @@ namespace Spellbound.Core {
         public Vector3 Position;
         public Vector3 Rotation;
         public float Scale;
-        
+
         #region Constructors
 
-        
         // Default Constructor
         public TransformData(Vector3 position, Vector3 rotation, float scale) {
             Position = position;
@@ -32,34 +31,29 @@ namespace Spellbound.Core {
         // Constructor from GameObject Transform
         public TransformData(Transform transform) {
             Position = transform.position;
-            Rotation= math.degrees(math.EulerXYZ(transform.rotation));
+            Rotation = math.degrees(math.EulerXYZ(transform.rotation));
             Scale = transform.localScale.x;
         }
-        
+
         #endregion
 
         #region HelperReadMethdods
-        
-        public readonly LocalTransform ToLocalTransform() {
-            return new LocalTransform() {
-                Position = Position,
-                Rotation = quaternion.EulerXYZ(math.radians(Rotation)),
-                Scale = Scale
-            };
-        }
 
-        public Quaternion RotAsQuaternion() {
-            return Quaternion.Euler(Rotation);
-        }
-        
-        public Vector3 ScaleAsVector3() {
-            return new  Vector3(Scale, Scale, Scale);
-        }
-        
+        public readonly LocalTransform ToLocalTransform() =>
+                new() {
+                    Position = Position,
+                    Rotation = quaternion.EulerXYZ(math.radians(Rotation)),
+                    Scale = Scale
+                };
+
+        public Quaternion RotAsQuaternion() => Quaternion.Euler(Rotation);
+
+        public Vector3 ScaleAsVector3() => new(Scale, Scale, Scale);
+
         #endregion
-        
+
         #region Packing
-        
+
         public void Pack(ref Span<byte> buffer) {
             Packer.WriteVector3(ref buffer, Position);
             Packer.WriteVector3(ref buffer, Rotation);
@@ -71,9 +65,7 @@ namespace Spellbound.Core {
             Rotation = Packer.ReadVector3(ref buffer);
             Scale = Packer.ReadFloat(ref buffer);
         }
-        
-        #endregion
 
-        
+        #endregion
     }
 }
