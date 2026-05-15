@@ -490,22 +490,21 @@ namespace Spellbound.Core {
 
             surface.AlertChanged();
 
-            data.InvokeChangeCallback(context, StaticDataAccess, instanceIndex, preset, key.SurfaceIndex,
+            data.InvokeChangeCallback(context, this, instanceIndex, preset, key.SurfaceIndex,
                 transformData);
         }
 
         public void OnInstanceDataResolved(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context) {
             if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData,
                     out var preset, out var surface))
-                return;
 
             if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
                 Log.Error("failed to find entity");
 
                 return;
             }
-
-            data.InvokeResolveCallback(context, StaticDataAccess, instanceIndex, preset, key.SurfaceIndex,
+            
+            data.InvokeResolveCallback(context, this, instanceIndex, preset, key.SurfaceIndex,
                 transformData);
         }
 
