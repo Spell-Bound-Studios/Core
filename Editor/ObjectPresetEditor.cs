@@ -3,6 +3,8 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using Spellbound.Core.Modules;
+using Spellbound.Core.Objects;
 using UnityEditor;
 using UnityEngine;
 

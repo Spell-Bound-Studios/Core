@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.Tooling {
     /// <summary>
     /// Fixed-length observable array intended for containers whose sizes change rarely. Cannot add, insert, or remove.
     /// </summary>

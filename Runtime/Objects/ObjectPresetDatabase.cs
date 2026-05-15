@@ -1,9 +1,10 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System.Collections.Generic;
+using Spellbound.Core.Tooling;
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.Objects {
     /// <summary>
     /// Global database for all objects.
     /// </summary>

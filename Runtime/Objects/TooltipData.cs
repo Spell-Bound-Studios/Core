@@ -2,7 +2,7 @@
 
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.Objects {
     public struct TooltipData {
         public readonly string TooltipText;
         public Vector2 OffsetFromTarget;
@@ -20,11 +20,5 @@ namespace Spellbound.Core {
             Source = source;
             RequiresCursorUnlocked = requiresCursorUnlocked;
         }
-    }
-
-    public enum TooltipSource {
-        None,
-        World,
-        Inventory
     }
 }

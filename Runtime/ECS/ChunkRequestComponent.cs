@@ -3,7 +3,7 @@
 using Unity.Entities;
 using Unity.Mathematics;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     public struct ChunkRequestComponent : IComponentData {
         public int3 ChunkCoord;
     }

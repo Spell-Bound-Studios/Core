@@ -2,7 +2,10 @@
 
 using System;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.Modules {
+    /// <summary>
+    /// TODO: 
+    /// </summary>
     [Serializable]
     public abstract class PresetModule { }
 }

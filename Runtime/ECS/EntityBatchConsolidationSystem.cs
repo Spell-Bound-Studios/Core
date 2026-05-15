@@ -1,11 +1,10 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
-using Spellbound.Core.ECS;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Rendering;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     /// <summary>
     /// 
     /// </summary>

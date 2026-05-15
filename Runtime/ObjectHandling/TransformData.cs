@@ -7,6 +7,9 @@ using Unity.Transforms;
 using UnityEngine;
 
 namespace Spellbound.Core {
+    /// <summary>
+    /// IPacker transform type. Allows wiring and persistence for transform components.
+    /// </summary>
     public struct TransformData : IPacker {
         public Vector3 Position;
         public Vector3 Rotation;

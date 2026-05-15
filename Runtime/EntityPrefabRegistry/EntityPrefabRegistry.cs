@@ -1,9 +1,10 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
+using Spellbound.Core.Tooling;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.EntityPrefabs {
     /// <summary>
     /// Access point for O(1) Entity Prefab Lookup by guid.
     /// </summary>

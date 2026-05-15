@@ -1,9 +1,10 @@
 // Copyright 2026 Spellbound Studio Inc.
 
+using Spellbound.Core.Objects;
 using Unity.Entities;
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.EntityPrefabs {
     /// <summary>
     /// Combs the resource folder and populates buffer with entity prefabs and their guid.
     /// </summary>

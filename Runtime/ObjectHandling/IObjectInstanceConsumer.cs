@@ -1,8 +1,9 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System.Collections.Generic;
+using Spellbound.Core.ObjectData;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ObjectHandling {
     public interface IObjectInstanceConsumer {
         int GetNextInstanceIndex();
         void OnRuntimeInstancesLoaded(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> creations);

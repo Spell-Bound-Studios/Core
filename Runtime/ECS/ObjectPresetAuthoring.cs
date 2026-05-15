@@ -1,12 +1,13 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
-using Spellbound.Core.ECS;
 using Spellbound.Core.Logging;
+using Spellbound.Core.Objects;
+using Spellbound.Core.PresetContracts;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     // Attach this MonoBehaviour to the prefab GameObject
     public class ObjectPresetAuthoring : MonoBehaviour {
         public ObjectPreset preset; // drag in the ScriptableObject
@@ -39,7 +40,8 @@ namespace Spellbound.Core {
 
             AddSharedComponent(entity, new ChunkParentComponent());
 
-            if (authoring.preset.TryGetModules<ITimerModule>(out _)) AddComponent(entity, new TimerModuleTag());
+            if (authoring.preset.TryGetModules<ITimerModule>(out _))
+                AddComponent(entity, new TimerModuleTag());
         }
     }
 }

@@ -2,7 +2,7 @@
 
 using Unity.Entities;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.EntityPrefabs {
     /// <summary>
     /// Tag for finding EntityPrefabBuffer
     /// </summary>

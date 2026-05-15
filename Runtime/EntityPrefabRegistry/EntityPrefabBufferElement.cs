@@ -3,7 +3,7 @@
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.EntityPrefabs {
     /// <summary>
     /// Buffer for entity prefabs and their guid.
     /// </summary>
