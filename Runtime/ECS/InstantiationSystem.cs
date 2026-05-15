@@ -1,11 +1,10 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
-using Spellbound.Core.ECS;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     public partial struct InstantiationSystem : ISystem {
         public void OnCreate(ref SystemState state) =>
                 state.RequireForUpdate(state.GetEntityQuery(

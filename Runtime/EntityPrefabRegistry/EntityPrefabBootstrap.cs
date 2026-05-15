@@ -1,11 +1,13 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
+using Spellbound.Core.Tooling;
 using Unity.Entities;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.EntityPrefabs {
     /// <summary>
     /// Copies entity prefabs from O(n) searchable buffer to O(1) searchable EntityPrefabRegistry (NativeHashMap)
     /// </summary>
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
     public partial struct EntityPrefabBootstrap : ISystem {
         public void OnUpdate(ref SystemState state) {
             var query = SystemAPI.QueryBuilder()

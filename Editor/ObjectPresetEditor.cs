@@ -3,6 +3,8 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using Spellbound.Core.Modules;
+using Spellbound.Core.Objects;
 using UnityEditor;
 using UnityEngine;
 
@@ -40,6 +42,7 @@ namespace Spellbound.Core {
                 if (GUILayout.Button("-", GUILayout.Width(25))) {
                     _surfacesProp.DeleteArrayElementAtIndex(i);
                     serializedObject.ApplyModifiedProperties();
+                    PersistStructuralChange();
                     GUIUtility.ExitGUI();
 
                     return;
@@ -58,9 +61,18 @@ namespace Spellbound.Core {
                 var newSurface = _surfacesProp.GetArrayElementAtIndex(_surfacesProp.arraySize - 1);
                 newSurface.FindPropertyRelative(FieldNameOnPresetSurfaceName).stringValue = "New Surface";
                 newSurface.FindPropertyRelative(FieldNameOnPresetSurfaceList).ClearArray();
+                serializedObject.ApplyModifiedProperties();
+                PersistStructuralChange();
+
+                return;
             }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void PersistStructuralChange() {
+            EditorUtility.SetDirty(target);
+            AssetDatabase.SaveAssetIfDirty(target);
         }
 
         private void DrawModules(SerializedProperty modulesProp) {
@@ -75,6 +87,8 @@ namespace Spellbound.Core {
 
                 if (GUILayout.Button("-", GUILayout.Width(25))) {
                     modulesProp.DeleteArrayElementAtIndex(i);
+                    serializedObject.ApplyModifiedProperties();
+                    PersistStructuralChange();
 
                     break;
                 }
@@ -116,6 +130,7 @@ namespace Spellbound.Core {
                         var element = modulesProp.GetArrayElementAtIndex(modulesProp.arraySize - 1);
                         element.managedReferenceValue = Activator.CreateInstance(type);
                         serializedObject.ApplyModifiedProperties();
+                        PersistStructuralChange();
                     });
                 }
             }

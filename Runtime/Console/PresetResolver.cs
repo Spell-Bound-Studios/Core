@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Spellbound.Core.Objects;
 using UnityEngine;
 
 namespace Spellbound.Core.Console {

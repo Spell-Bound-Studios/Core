@@ -1,9 +1,11 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
+using Spellbound.Core.EntityPrefabs;
+using Spellbound.Core.Logging;
+using Spellbound.Core.Tooling;
 using Unity.Entities;
-using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.Objects {
     public static class ObjectPresetUtils {
         public static ObjectPreset ResolvePreset(this string uid) =>
                 !string.IsNullOrEmpty(uid) &&
@@ -14,19 +16,18 @@ namespace Spellbound.Core {
 
         public static bool TryGetEntityPrefab(this string uid, out Entity entity) {
             if (!SingletonManager.TryGetSingletonInstance(out EntityPrefabRegistry registry)) {
-                Debug.LogWarning("EntityPrefabRegistry not found");
+                Log.Warn("EntityPrefabRegistry not found");
                 entity = Entity.Null;
 
                 return false;
             }
 
-            if (!registry.PrefabLookup.TryGetValue(uid, out entity)) {
-                Debug.LogWarning($"No entity bakePrefab found for preset {uid.ResolvePreset()}");
+            if (registry.PrefabLookup.TryGetValue(uid, out entity))
+                return true;
 
-                return false;
-            }
+            Log.Warn($"No entity bakePrefab found for preset {uid.ResolvePreset()}");
 
-            return true;
+            return false;
         }
     }
 }

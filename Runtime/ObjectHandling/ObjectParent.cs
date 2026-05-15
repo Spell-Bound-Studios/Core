@@ -6,7 +6,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Spellbound.Core.ECS;
 using Spellbound.Core.Logging;
-using Spellbound.Core.Packing;
+using Spellbound.Core.ObjectData;
+using Spellbound.Core.Objects;
+using Spellbound.Core.PresetContracts;
+using Spellbound.Core.Surfaces;
+using Spellbound.Core.Tooling;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -14,7 +18,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ObjectHandling {
     /// <summary>
     /// Poco to assist management of object data by the parent.
     /// </summary>
@@ -496,14 +500,14 @@ namespace Spellbound.Core {
 
         public void OnInstanceDataResolved(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context) {
             if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData,
-                    out var preset, out var surface))
+                    out var preset, out var surface)) {
+                if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
+                    Log.Error("failed to find entity");
 
-            if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
-                Log.Error("failed to find entity");
-
-                return;
+                    return;
+                }
             }
-            
+
             data.InvokeResolveCallback(context, this, instanceIndex, preset, key.SurfaceIndex,
                 transformData);
         }

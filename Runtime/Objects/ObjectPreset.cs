@@ -3,10 +3,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Spellbound.Core.Modules;
+using Spellbound.Core.PresetContracts;
+using Spellbound.Core.Surfaces;
+using Spellbound.Core.Tooling;
 using UnityEditor;
 using UnityEngine;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.Objects {
     /// <summary>
     /// ObjectPreset is the root of most "objects" that a player would want in game. It comes equipped with some baseline
     /// utility but also offers a modules field where additional modules that inherit from PresetModule can be loaded

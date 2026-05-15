@@ -2,6 +2,6 @@
 
 using Unity.Entities;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     public struct ReadyForObjectsTag : IComponentData { }
 }

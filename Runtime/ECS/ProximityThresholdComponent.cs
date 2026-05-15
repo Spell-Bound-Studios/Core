@@ -3,7 +3,7 @@
 using Unity.Entities;
 using Unity.Mathematics;
 
-namespace Spellbound.Core {
+namespace Spellbound.Core.ECS {
     /// <summary>
     /// This is intended to be a unified component for proximity jobs.
     /// </summary>

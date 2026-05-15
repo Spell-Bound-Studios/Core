@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using Spellbound.Core.ObjectData;
 
 namespace Spellbound.Core.Packing {
     public static class PackerRegistry {

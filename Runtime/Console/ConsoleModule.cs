@@ -1,6 +1,7 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System;
+using Spellbound.Core.Modules;
 using UnityEngine;
 
 namespace Spellbound.Core.Console {
