@@ -34,10 +34,6 @@ namespace Spellbound.Core.ObjectData {
 
         bool TryReadAll(int instanceIndex, int eventSurfaceIndex, out List<IDecodableData> data);
 
-        // Intended to be the implementation for simply reading data on an instance, guaranteeing a result.
-        Task<T> Read<T>(int instanceIndex, string presetUid, int eventSurfaceIndex)
-                where T : IDecodableData, new();
-
         // Intended to be the implementation for writing over any data with new data on an object.
         void Write<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData, byte contextIn)
                 where T : IDecodableData, new();

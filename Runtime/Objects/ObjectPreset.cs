@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Spellbound.Core.Logging;
 using Spellbound.Core.Modules;
 using Spellbound.Core.PresetContracts;
 using Spellbound.Core.Surfaces;
@@ -28,59 +28,37 @@ namespace Spellbound.Core.Objects {
         public Vector2 interactionDistance = new(50, 70);
 
         [SerializeField] public List<PresetSurface> surfaceModules = new();
+        
+        // In ObjectPreset
+        private void OnEnable() => RewireModules();
 
-        /// <summary>
-        /// Searches ALL surfaces for a module of type T. Returns the first match.
-        /// </summary>
-        /// <param name="result"></param>
-        /// <param name="surfaceIndex"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
+        private void RewireModules() {
+            if (surfaceModules == null)
+                return;
+
+            for (var i = 0; i < surfaceModules.Count; i++) {
+                var surface = surfaceModules[i];
+
+                if (surface?.presetModules == null)
+                    continue;
+
+                foreach (var module in surface.presetModules)
+                    module?.OnPresetLoaded(this, i);
+            }
+        }
+
         public bool TryGetModule<T>(out T result, int surfaceIndex = 0) where T : class {
-            result = null;
-
-            if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
-                return false;
-
-            foreach (var pm in surfaceModules[surfaceIndex].presetModules) {
-                if (pm is not T t)
-                    continue;
-
-                result = t;
-
+            if (TryGetModules<T>(out var results, surfaceIndex)) {
+                result = results[0];
                 return true;
             }
 
-            return false;
-        }
-
-        /// <summary>
-        /// Searches ALL surfaces for a module matching a runtime Type. Returns the first match.
-        /// </summary>
-        /// <param name="moduleType"></param>
-        /// <param name="result"></param>
-        /// <param name="surfaceIndex"></param>
-        /// <returns></returns>
-        public bool TryGetModule(Type moduleType, out PresetModule result, int surfaceIndex = 0) {
             result = null;
-
-            if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
-                return false;
-
-            foreach (var pm in surfaceModules[surfaceIndex].presetModules) {
-                if (!moduleType.IsAssignableFrom(pm.GetType()))
-                    continue;
-
-                result = pm;
-
-                return true;
-            }
-
             return false;
         }
 
-        public bool TryGetModules<T>(out IEnumerable<T> results, int surfaceIndex = 0) where T : class {
-            results = Enumerable.Empty<T>();
+        public bool TryGetModules<T>(out IReadOnlyList<T> results, int surfaceIndex = 0) where T : class {
+            results = Array.Empty<T>();
 
             if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
                 return false;
@@ -97,6 +75,32 @@ namespace Spellbound.Core.Objects {
 
             results = matches;
 
+            return true;
+        }
+        
+        public bool TryGetModulesAcrossSurfaces<T>(out IReadOnlyList<T>  results) where T : class {
+            results = Array.Empty<T>();
+            List<T> matches = null;
+
+            for (var i = 0; i < surfaceModules.Count; i++) {
+                var surface = surfaceModules[i];
+
+                if (surface?.presetModules == null)
+                    continue;
+
+                foreach (var module in surface.presetModules) {
+                    if (module is not T t)
+                        continue;
+
+                    matches ??= new List<T>();
+                    matches.Add(t);
+                }
+            }
+
+            if (matches == null)
+                return false;
+
+            results = matches;
             return true;
         }
 
@@ -117,9 +121,9 @@ namespace Spellbound.Core.Objects {
         /// </summary>
         private void OnValidate() {
             if (eventSurfacePrefab != null && eventSurfacePrefab.GetComponent<IEventSurface>() == null)
-                Debug.LogError("EventSurfacePrefab not found");
+                Log.Error("EventSurfacePrefab not found");
 
-            //Prohibits Multiple IDispatch<T> of the same T, and multiple IMouseoverHandler of any T or no T at all.
+            //Prohibits Multiple IDispatch<T> of the same T, and multiple ITooltipHandler of any T or no T at all.
             foreach (var surface in surfaceModules) {
                 if (surface.presetModules == null) continue;
 
@@ -135,17 +139,17 @@ namespace Spellbound.Core.Objects {
                         if (iface.GetGenericTypeDefinition() != typeof(IDispatch<>)) continue;
 
                         if (!seenDispatchTypes.Add(iface)) {
-                            Debug.LogError(
+                            Log.Error(
                                 $"Duplicate {iface.Name}<{iface.GenericTypeArguments[0].Name}> " +
                                 $"on surface '{surface.surfaceName}' in preset '{name}'");
                         }
                     }
 
-                    // Enforce: only one IMouseoverHandler of any kind per surface
-                    if (module is IMouseoverHandler) {
+                    // Enforce: only one ITooltipHandler of any kind per surface
+                    if (module is ITooltipHandler) {
                         if (hasMouseoverHandler) {
                             Debug.LogError(
-                                $"Duplicate IMouseoverHandler on surface '{surface.surfaceName}' in preset '{name}'");
+                                $"Duplicate ITooltipHandler on surface '{surface.surfaceName}' in preset '{name}'");
                         }
 
                         hasMouseoverHandler = true;

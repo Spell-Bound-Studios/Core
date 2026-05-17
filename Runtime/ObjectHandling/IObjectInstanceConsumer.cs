@@ -11,7 +11,7 @@ namespace Spellbound.Core.ObjectHandling {
 
         void OnInstancesDeleted(IReadOnlyList<int> instanceIndices);
 
-        void OnInstancesDeleteResolve(IReadOnlyList<int> instanceIndices);
+        void OnInstanceDeleteResolve(int instanceIndex, Dictionary<InstanceDataKey, byte[]> dataSlots = null);
         void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context);
         void OnInstanceDataResolved(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context);
 

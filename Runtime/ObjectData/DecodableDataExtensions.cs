@@ -23,18 +23,18 @@ namespace Spellbound.Core.ObjectData {
                 return;
 
             foreach (var module in modules)
-                module.OnChange(data, context, parent, instanceIndex, preset, surfaceIndex, transformData);
+                module.HandleChange(data, context, parent, instanceIndex, transformData);
         }
 
         public static void ResolveCallback<T>(
             this T data, byte context, ObjectParent parent,
             int instanceIndex, ObjectPreset preset, int surfaceIndex, TransformData transformData)
                 where T : IDecodableData {
-            if (!preset.TryGetModules<IResolveHandler<T>>(out var modules, surfaceIndex))
+            if (!preset.TryGetModules<IChangeResolver<T>>(out var modules, surfaceIndex))
                 return;
 
             foreach (var module in modules)
-                module.OnResolve(data, context, parent, instanceIndex, preset, surfaceIndex, transformData);
+                module.ResolveChange(data, context, parent, instanceIndex, transformData);
         }
     }
 }
