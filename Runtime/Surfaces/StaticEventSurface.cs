@@ -67,7 +67,7 @@ namespace Spellbound.Core.Surfaces {
             // If it does have children loop through them and invoke.
             foreach (var module in Preset.surfaceModules[surfaceIndex].presetModules) {
                 if (module is IDispatch<TContext> handler)
-                    handler.OnDispatch(context, _parent, _entityIndex, Preset, surfaceIndex);
+                    handler.OnDispatch(context, _parent, _entityIndex, this);
             }
         }
 

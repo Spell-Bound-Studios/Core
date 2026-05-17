@@ -366,7 +366,7 @@ namespace Spellbound.Core.ObjectHandling {
         /// <summary>
         /// Handles the in-game consequences Instances being loaded.
         /// Buffers them to be created as entities,
-        /// and for those that pass the proximitymath check, spawns an EventSurface and calls ICreationHandler's OnCreation actions.
+        /// and for those that pass the proximitymath check, spawns an EventSurface and calls ICreateHandler's OnHandleCreate actions.
         /// </summary>
         /// <param name="instances"></param>
         public void OnRuntimeInstancesCreated(IReadOnlyList<(int, NonProceduralStaticInstanceEntry)> instances) {
@@ -383,16 +383,11 @@ namespace Spellbound.Core.ObjectHandling {
 
                 SpawnSurface(preset, entry.Transform, instanceIndex);
 
-                if (!preset.TryGetModule(typeof(ICreationHandler), out var module))
-                    return;
+                preset.TryGetModules<ICreateHandler>(out var creationHandlers);
 
-                if (module is not ICreationHandler handler)
-                    continue;
-
-                handler.OnCreation(instanceIndex, this, out var actions);
-
-                foreach (var action in actions)
-                    action.Invoke(instanceIndex, entry.Transform);
+                foreach (var creationHandler in creationHandlers) {
+                    creationHandler.HandleCreate(this, instanceIndex, entry.Transform);
+                }
             }
         }
 
@@ -453,7 +448,7 @@ namespace Spellbound.Core.ObjectHandling {
         /// Handles the in-game consequences of an Instances being deleted.
         /// Destroys their associated entities,
         /// Destroys their associated EventSurfaces if they exist.
-        /// And calls IDestructionHandler's OnDestruction actions.
+        /// And calls IDestructionHandler's OnHandleDelete actions.
         /// </summary>
         /// <param name="instanceIndices"></param>
         public void OnInstancesDeleted(IReadOnlyList<int> instanceIndices) {
@@ -469,14 +464,13 @@ namespace Spellbound.Core.ObjectHandling {
 
                     continue;
                 }
+                
+                var preset = surface.Preset;
 
-                if (!surface.Preset.TryGetModule(typeof(IDestuctionHandler), out var module))
-                    continue; // safe return
+                preset.TryGetModules<IDeleteHandler>(out var destructionHandlers);
 
-                if (module is IDestuctionHandler handler) {
-                    handler.OnDestruction(instanceIndex, this, out var actions);
-
-                    foreach (var action in actions) action.Invoke(instanceIndex, new TransformData(surface.Transform));
+                foreach (var destructionHandler in destructionHandlers) {
+                    destructionHandler.HandleDelete(this, instanceIndex, new TransformData(surface.GameObject.transform));
                 }
 
                 DespawnSurface(instanceIndex);
@@ -485,7 +479,21 @@ namespace Spellbound.Core.ObjectHandling {
             DestroyEntities(instanceIndices, _staticQuery);
         }
 
-        public void OnInstancesDeleteResolve(IReadOnlyList<int> instanceIndices) { }
+        public void OnInstanceDeleteResolve(int instanceIndex, Dictionary<InstanceDataKey, byte[]> dataSlots = null) {
+            if (!TryGetCallbackParamsFromEventSurface(instanceIndex, 0, out var transformData,
+                    out var preset, out var surface)) {
+                if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
+                    Log.Error("failed to find entity");
+                    return;
+                }
+            }
+
+            if (preset.TryGetModulesAcrossSurfaces<IDeleteResolver>(out var modules)) {
+                foreach (var module in modules) {
+                    module.ResolveDelete(dataSlots, this, instanceIndex, transformData);
+                }
+            }
+        }
 
         public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context) {
             if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData,
