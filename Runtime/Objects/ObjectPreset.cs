@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using Spellbound.Core.Logging;
 using Spellbound.Core.Modules;
 using Spellbound.Core.PresetContracts;
 using Spellbound.Core.Surfaces;
@@ -120,7 +121,7 @@ namespace Spellbound.Core.Objects {
         /// </summary>
         private void OnValidate() {
             if (eventSurfacePrefab != null && eventSurfacePrefab.GetComponent<IEventSurface>() == null)
-                Debug.LogError("EventSurfacePrefab not found");
+                Log.Error("EventSurfacePrefab not found");
 
             //Prohibits Multiple IDispatch<T> of the same T, and multiple ITooltipHandler of any T or no T at all.
             foreach (var surface in surfaceModules) {
@@ -138,7 +139,7 @@ namespace Spellbound.Core.Objects {
                         if (iface.GetGenericTypeDefinition() != typeof(IDispatch<>)) continue;
 
                         if (!seenDispatchTypes.Add(iface)) {
-                            Debug.LogError(
+                            Log.Error(
                                 $"Duplicate {iface.Name}<{iface.GenericTypeArguments[0].Name}> " +
                                 $"on surface '{surface.surfaceName}' in preset '{name}'");
                         }
