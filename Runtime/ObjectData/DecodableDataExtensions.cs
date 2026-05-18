@@ -1,5 +1,6 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
+using Spellbound.Core.Logging;
 using Spellbound.Core.ObjectHandling;
 using Spellbound.Core.Objects;
 using Spellbound.Core.PresetContracts;
@@ -13,6 +14,21 @@ namespace Spellbound.Core.ObjectData {
                 return provider.GetDefaultData(preset, level);
 
             return data.GetEmptyData();
+        }
+
+        public static T ApplyDelta<T>(
+            this T data, T delta, ObjectPreset preset, int surfaceIndex, out byte context) where T : IDecodableData {
+            
+            if (!preset.TryGetModule<IApplyDelta<T>>(out var module, surfaceIndex)) {
+                context = 0;
+                Log.Debug($"In static ApplyDelta, but failed to find module. surfaceIndex is  {surfaceIndex} ");
+                return data;
+            }
+
+            return module.ApplyDelta(data, delta, preset, surfaceIndex, out  context);
+
+
+
         }
 
         public static void ChangeCallback<T>(

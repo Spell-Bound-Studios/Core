@@ -153,7 +153,7 @@ namespace Spellbound.Core.ObjectHandling {
         }
 
         public bool TryTransformData<T>(
-            int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IQuantitativeData, new() {
+            int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IDecodableData, new() {
             StaticDataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
 
             return true;

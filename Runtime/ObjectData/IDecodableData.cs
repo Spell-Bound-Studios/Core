@@ -15,7 +15,7 @@ namespace Spellbound.Core.ObjectData {
 
         IDecodableData GetEmptyData();
 
-        // TODO, delete it to be handled by IDefaultDataProvider<T>
+        IDecodableData InvokeApplyDelta(IDecodableData delta, ObjectPreset preset, int surfaceIndex, out byte context);
         IDecodableData InvokeGetDefaultData(ObjectPreset preset, int surfaceIndex, byte level = 1);
 
         void InvokeChangeCallback(

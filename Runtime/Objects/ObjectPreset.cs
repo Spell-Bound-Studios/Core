@@ -64,7 +64,6 @@ namespace Spellbound.Core.Objects {
                 return false;
 
             var matches = new List<T>();
-
             foreach (var module in surfaceModules[surfaceIndex].presetModules) {
                 if (module is T t)
                     matches.Add(t);
