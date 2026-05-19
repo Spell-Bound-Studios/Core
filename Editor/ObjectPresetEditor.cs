@@ -18,7 +18,7 @@ namespace Spellbound.Core {
     /// the concrete module type — that's how DamageableModule's bespoke layout shows up.
     /// </summary>
     [CustomEditor(typeof(ObjectPreset))]
-    public sealed class ObjectPresetEditor : UnityEditor.Editor {
+    public sealed class ObjectPresetEditor : Editor {
         private const string FieldSurfaceModules = "surfaceModules";
         private const string FieldPresetModules = "presetModules";
         private const string FieldSurfaceName = "surfaceName";
