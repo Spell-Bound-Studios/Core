@@ -17,18 +17,18 @@ namespace Spellbound.Core.ObjectData {
         }
 
         public static T ApplyDelta<T>(
-            this T data, T delta, ObjectPreset preset, int surfaceIndex, out byte context)
-                where T : IDecodableData {
+            this T data, T delta, ObjectPreset preset, int surfaceIndex, out byte context) where T : IDecodableData {
+            
             if (!preset.TryGetModule<IApplyDelta<T>>(out var module, surfaceIndex)) {
                 context = 0;
-                Log.Debug(
-                    $"In static ApplyDelta, no IApplyDelta<{typeof(T).Name}> module on surfaceIndex " +
-                    $"{surfaceIndex}.");
-
+                Log.Debug($"In static ApplyDelta, but failed to find module. surfaceIndex is  {surfaceIndex} ");
                 return data;
             }
 
-            return module.ApplyDelta(data, delta, preset, surfaceIndex, out context);
+            return module.ApplyDelta(data, delta, preset, surfaceIndex, out  context);
+
+
+
         }
 
         public static void ChangeCallback<T>(

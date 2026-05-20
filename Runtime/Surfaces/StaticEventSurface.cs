@@ -51,7 +51,7 @@ namespace Spellbound.Core.Surfaces {
         }
 
         public void DebugQueryPing() =>
-                Log.Debug($"Pinging Event Surface for {Preset.name} " +
+                Debug.Log($"Pinging Event Surface for {Preset.name} " +
                           $"index {_entityIndex} " +
                           $"and surface index {surfaceIndex}");
 
