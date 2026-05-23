@@ -6,6 +6,7 @@ using Spellbound.Core.Logging;
 using Spellbound.Core.ObjectData;
 using Spellbound.Core.ObjectHandling;
 using Spellbound.Core.Objects;
+using Spellbound.Core.Packing;
 using Spellbound.Core.PresetContracts;
 using UnityEngine;
 
@@ -56,7 +57,7 @@ namespace Spellbound.Core.Surfaces {
                           $"and surface index {surfaceIndex}");
 
         // Declare a THandler type at runtime that will pass in a pointer of that type to THAT types implementation.
-        public void Dispatch<TContext>(TContext context) where TContext : struct {
+        public void Dispatch<TContext>(TContext dispatch) where TContext : struct, IPacker {
             if (Preset == null)
                 return;
 
@@ -67,7 +68,7 @@ namespace Spellbound.Core.Surfaces {
             // If it does have children loop through them and invoke.
             foreach (var module in Preset.surfaceModules[surfaceIndex].presetModules) {
                 if (module is IDispatch<TContext> handler)
-                    handler.OnDispatch(context, _parent, _entityIndex, this);
+                    handler.OnDispatch(dispatch, _parent, _entityIndex, this);
             }
         }
 
