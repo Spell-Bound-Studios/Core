@@ -8,7 +8,7 @@ using Spellbound.Core.Objects;
 using UnityEngine;
 
 namespace Spellbound.Core.Surfaces {
-    public interface IEventSurface {
+    public interface IEventSurface : IDispatchSurface {
         GameObject GameObject { get; }
 
         Transform Transform { get; }
@@ -20,10 +20,7 @@ namespace Spellbound.Core.Surfaces {
             Dictionary<InstanceDataKey, byte[]> dataSlots = null);
 
         void DebugQueryPing();
-
-        void Dispatch<TContext>(TContext context)
-                where TContext : struct;
-
+        
         public event Action OnChanged;
 
         void AlertChanged();
