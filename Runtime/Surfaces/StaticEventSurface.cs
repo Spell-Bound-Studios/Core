@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Spellbound.Core.Logging;
 using Spellbound.Core.ObjectData;
 using Spellbound.Core.ObjectHandling;
@@ -57,19 +58,21 @@ namespace Spellbound.Core.Surfaces {
                           $"and surface index {surfaceIndex}");
 
         // Declare a THandler type at runtime that will pass in a pointer of that type to THAT types implementation.
-        public void Dispatch<TContext>(TContext dispatch) where TContext : struct, IPacker {
+        public Task<int> Dispatch<TContext>(TContext dispatch) where TContext : struct, IPacker {
             if (Preset == null)
-                return;
+                return Task.FromResult(0);
 
             // If this event surface doesn't have children - early return.
             if (surfaceIndex < 0 || surfaceIndex >= Preset.surfaceModules.Count)
-                return;
+                return Task.FromResult(0);
 
             // If it does have children loop through them and invoke.
             foreach (var module in Preset.surfaceModules[surfaceIndex].presetModules) {
                 if (module is IDispatch<TContext> handler)
                     handler.OnDispatch(dispatch, _parent, _entityIndex, this);
             }
+
+            return Task.FromResult(0);
         }
 
         public event Action OnChanged;

@@ -420,7 +420,7 @@ namespace Spellbound.Core.ObjectHandling {
                     _transform);
 
                 if (instance.TryGetComponent<IEventSurface>(out var surface))
-                    surface.Initialize(_implementer, instanceIndex, entry.PresetUid);
+                    surface.Initialize(_implementer, instanceIndex, entry.PresetUid, entry.DataSlots);
             }
         }
 

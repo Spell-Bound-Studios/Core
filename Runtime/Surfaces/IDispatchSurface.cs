@@ -1,10 +1,11 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
+using System.Threading.Tasks;
 using Spellbound.Core.Packing;
 
 namespace Spellbound.Core.Surfaces {
     public interface IDispatchSurface {
-        void Dispatch<TDispatch>(TDispatch dispatch)
+        Task<int> Dispatch<TDispatch>(TDispatch dispatch)
                 where TDispatch : struct, IPacker;
 
     }
