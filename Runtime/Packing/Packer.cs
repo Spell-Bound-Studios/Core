@@ -287,6 +287,39 @@ namespace Spellbound.Core.Packing {
         }
 
         #endregion
+        
+        #region UShort
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUShort(ref Span<byte> buffer, ushort value) {
+            BitConverter.TryWriteBytes(buffer, value);
+            buffer = buffer[sizeof(ushort)..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort ReadUShort(ref ReadOnlySpan<byte> buffer) {
+            var value = BitConverter.ToUInt16(buffer);
+            buffer = buffer[sizeof(ushort)..];
+
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUShortBitwise(ref Span<byte> buffer, ushort value) {
+            buffer[0] = (byte)value;
+            buffer[1] = (byte)(value >> 8);
+            buffer = buffer[2..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort ReadUShortBitwise(ref ReadOnlySpan<byte> buffer) {
+            var value = (ushort)(buffer[0] | (buffer[1] << 8));
+            buffer = buffer[2..];
+
+            return value;
+        }
+
+        #endregion
 
         #region Strings
 
@@ -636,6 +669,10 @@ namespace Spellbound.Core.Packing {
         #endregion
 
         #region High-Level Helpers
+        
+        public static byte[] SmartToBytes(ISmartPacker obj) {
+            return BuildPayload((ref Span<byte> buffer) => obj.SmartPack(ref buffer));
+        }
 
         /// <summary>
         /// Serialize a value-type IPacker into a byte[].

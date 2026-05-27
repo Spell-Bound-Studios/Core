@@ -128,7 +128,7 @@ namespace Spellbound.Core.ObjectHandling {
         }
 
         public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
-                where T : IDecodableData, new() {
+                where T : IPackerObjectData, new() {
             if (StaticDataAccess.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
                 result = data;
 
@@ -141,19 +141,19 @@ namespace Spellbound.Core.ObjectHandling {
         }
 
         public bool TryReadDataAllData(
-            int instanceIndex, string presetUid, int eventSurfaceIndex, out List<IDecodableData> results) =>
+            int instanceIndex, string presetUid, int eventSurfaceIndex, out List<IPackerObjectData> results) =>
                 StaticDataAccess.TryReadAll(instanceIndex, eventSurfaceIndex, out results);
 
         public bool TryWriteData<T>(
             int instanceIndex, string presetUid, int eventSurfaceIndex, T newData, byte context = 0)
-                where T : IDecodableData, new() {
+                where T : IPackerObjectData, new() {
             StaticDataAccess.Write(instanceIndex, presetUid, eventSurfaceIndex, newData, context);
 
             return true;
         }
 
         public bool TryTransformData<T>(
-            int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IDecodableData, new() {
+            int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IPackerObjectData, new() {
             StaticDataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
 
             return true;
@@ -495,7 +495,7 @@ namespace Spellbound.Core.ObjectHandling {
             }
         }
 
-        public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context) {
+        public void OnInstanceDataChanged(int instanceIndex, InstanceDataKey key, IPackerObjectData data, byte context) {
             if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData,
                     out var preset, out var surface))
                 return;
@@ -506,7 +506,7 @@ namespace Spellbound.Core.ObjectHandling {
                 transformData);
         }
 
-        public void OnInstanceDataResolved(int instanceIndex, InstanceDataKey key, IDecodableData data, byte context) {
+        public void OnInstanceDataResolved(int instanceIndex, InstanceDataKey key, IPackerObjectData data, byte context) {
             if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData,
                     out var preset, out var surface)) {
                 if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
