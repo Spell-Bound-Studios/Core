@@ -490,7 +490,7 @@ namespace Spellbound.Core.ObjectHandling {
 
             if (preset.TryGetModulesAcrossSurfaces<IDeleteResolver>(out var modules)) {
                 foreach (var module in modules) {
-                    module.ResolveDelete(dataSlots, this, instanceIndex, transformData);
+                    module.ResolveDelete(dataSlots, transformData, this, instanceIndex);
                 }
             }
         }
