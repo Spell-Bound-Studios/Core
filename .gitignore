@@ -62,3 +62,11 @@ sysinfo.txt
 
 # Mac
 .DS_Store
+
+# Claude — local-only artifacts; not for external lib consumers
+claude.md
+claude.md.meta
+CLAUDE.md
+CLAUDE.md.meta
+.claude/
+.claude.meta
