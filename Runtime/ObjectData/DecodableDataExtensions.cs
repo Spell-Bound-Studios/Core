@@ -7,9 +7,9 @@ using Spellbound.Core.PresetContracts;
 
 namespace Spellbound.Core.ObjectData {
     public static class DecodableDataExtensions {
-        public static IDecodableData GetDefaultData<T>(
+        public static IPackerObjectData GetDefaultData<T>(
             this T data, ObjectPreset preset, int surfaceIndex, byte level = 1)
-                where T : IDecodableData {
+                where T : IPackerObjectData {
             if (preset.TryGetModule<IDefaultDataProvider<T>>(out var provider, surfaceIndex))
                 return provider.GetDefaultData(preset, level);
 
@@ -17,7 +17,7 @@ namespace Spellbound.Core.ObjectData {
         }
 
         public static T ApplyDelta<T>(
-            this T data, T delta, ObjectPreset preset, int surfaceIndex, out byte context) where T : IDecodableData {
+            this T data, T delta, ObjectPreset preset, int surfaceIndex, out byte context) where T : IPackerObjectData {
             
             if (!preset.TryGetModule<IApplyDelta<T>>(out var module, surfaceIndex)) {
                 context = 0;
@@ -34,7 +34,7 @@ namespace Spellbound.Core.ObjectData {
         public static void ChangeCallback<T>(
             this T data, byte context, ObjectParent parent,
             int instanceIndex, ObjectPreset preset, int surfaceIndex, TransformData transformData)
-                where T : IDecodableData {
+                where T : IPackerObjectData {
             if (!preset.TryGetModules<IChangeHandler<T>>(out var modules, surfaceIndex))
                 return;
 
@@ -45,7 +45,7 @@ namespace Spellbound.Core.ObjectData {
         public static void ResolveCallback<T>(
             this T data, byte context, ObjectParent parent,
             int instanceIndex, ObjectPreset preset, int surfaceIndex, TransformData transformData)
-                where T : IDecodableData {
+                where T : IPackerObjectData {
             if (!preset.TryGetModules<IChangeResolver<T>>(out var modules, surfaceIndex))
                 return;
 

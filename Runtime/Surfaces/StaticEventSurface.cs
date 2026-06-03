@@ -57,19 +57,20 @@ namespace Spellbound.Core.Surfaces {
                           $"and surface index {surfaceIndex}");
 
         // Declare a THandler type at runtime that will pass in a pointer of that type to THAT types implementation.
-        public void Dispatch<TContext>(TContext dispatch) where TContext : struct, IPacker {
+        public bool Dispatch<TContext>(TContext dispatch) where TContext : IPackerDispatch {
             if (Preset == null)
-                return;
+                return false;
 
             // If this event surface doesn't have children - early return.
             if (surfaceIndex < 0 || surfaceIndex >= Preset.surfaceModules.Count)
-                return;
+                return false;
 
             // If it does have children loop through them and invoke.
             foreach (var module in Preset.surfaceModules[surfaceIndex].presetModules) {
                 if (module is IDispatch<TContext> handler)
-                    handler.OnDispatch(dispatch, _parent, _entityIndex, this);
+                    handler.OnDispatch(dispatch, this, _parent, _entityIndex);
             }
+            return false;
         }
 
         public event Action OnChanged;
@@ -85,5 +86,12 @@ namespace Spellbound.Core.Surfaces {
 
             return _childEventSurfaces.TryGetValue(desiredSurfaceIndex, out surface);
         }
+        
+        //TODO
+        public bool TryRead<T>(out T data) where T : IPackerObjectData, new() => throw new NotImplementedException();
+
+        public bool TryWrite<T>(T data, byte contextIn) where T : IPackerObjectData, new() => throw new NotImplementedException();
+
+        public bool TryDestroy() => throw new NotImplementedException();
     }
 }

@@ -1,5 +1,6 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
+using Spellbound.Core.ObjectData;
 using Spellbound.Core.ObjectHandling;
 using Spellbound.Core.Surfaces;
 
@@ -10,8 +11,8 @@ namespace Spellbound.Core.PresetContracts {
     /// Dispatch is typically the call site for something that ultimately changes some data.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IDispatch<T> where T : struct {
+    public interface IDispatch<T> where T : IPackerDispatch {
         bool OnDispatch(
-            T dispatchContext, IObjectParent parent, int instanceIndex, IEventSurface eventSurface);
+            T dispatchContext, IEventSurface eventSurface, IObjectParent parent = null, int instanceIndex = -1);
     }
 }

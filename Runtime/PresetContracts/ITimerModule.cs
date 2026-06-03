@@ -10,7 +10,7 @@ namespace Spellbound.Core.PresetContracts {
             IObjectDataAccess dataAccess, int instanceIndex, ObjectPreset preset);
     }
 
-    public interface ITimerModule<T> : ITimerModule where T : IDecodableData {
+    public interface ITimerModule<T> : ITimerModule where T : IPackerObjectData {
         void OnTimerUpdate(
             T data, uint time, IObjectDataAccess dataAccess,
             int instanceIndex, ObjectPreset preset, int eventSurfaceIndex = 0);
