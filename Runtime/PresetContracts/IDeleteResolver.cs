@@ -3,6 +3,8 @@
 using System.Collections.Generic;
 using Spellbound.Core.ObjectData;
 using Spellbound.Core.ObjectHandling;
+using Spellbound.Core.Objects;
+using Spellbound.Core.Surfaces;
 
 namespace Spellbound.Core.PresetContracts {
     public interface IDeleteResolver {
@@ -10,6 +12,8 @@ namespace Spellbound.Core.PresetContracts {
         /// For ObjectPreset PresetModules
         /// Interface Contract for a Module to respond to changes with major consequences
         /// </summary>
-        void ResolveDelete(Dictionary<InstanceDataKey, byte[]> dataSlots, ObjectParent parent, int instanceIndex, TransformData transformData);
+        void ResolveDelete(Dictionary<InstanceDataKey, byte[]> dataSlots, TransformData transformData, ObjectParent parent = null, int instanceIndex = -1);
+        
+        void ResolveDelete(IEventSurface eventSurface, IAwardReciever awardReciever);
     }
 }
