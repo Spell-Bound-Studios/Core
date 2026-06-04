@@ -24,6 +24,10 @@ namespace Spellbound.Core.Surfaces {
         public event Action OnChanged;
 
         void AlertChanged();
+        
+        bool TryRead<T>(out T data) where T : IPackerObjectData, new();
+        bool TryWrite<T>(T data, byte contextIn) where T : IPackerObjectData, new();
+        bool TryDestroy();
 
         bool TryGetEventSurfaceByIndex(int desiredSurfaceIndex, out IEventSurface surface);
     }

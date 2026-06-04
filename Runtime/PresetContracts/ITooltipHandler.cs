@@ -17,7 +17,7 @@ namespace Spellbound.Core.PresetContracts {
     /// For ObjectPreset PresetModules
     /// Interface Contract for a Module to respond in a data-aware way to being moused-over
     /// </summary>
-    public interface ITooltipHandler<T> : ITooltipHandler where T : IDecodableData {
+    public interface ITooltipHandler<T> : ITooltipHandler where T : IPackerObjectData {
         string GetTooltip(T data);
     }
 }

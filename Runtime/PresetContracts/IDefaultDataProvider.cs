@@ -10,7 +10,7 @@ namespace Spellbound.Core.PresetContracts {
     /// Level is scaffolding for future "1star", "2star", etc variants of an Enemy
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IDefaultDataProvider<T> where T : IDecodableData {
+    public interface IDefaultDataProvider<T> where T : IPackerObjectData {
         T GetDefaultData(ObjectPreset preset, byte level = 1);
     }
 }
