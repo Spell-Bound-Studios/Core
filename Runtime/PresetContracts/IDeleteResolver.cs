@@ -1,6 +1,7 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Spellbound.Core.ObjectData;
 using Spellbound.Core.ObjectHandling;
 using Spellbound.Core.Objects;
@@ -14,6 +15,6 @@ namespace Spellbound.Core.PresetContracts {
         /// </summary>
         void ResolveDelete(Dictionary<InstanceDataKey, byte[]> dataSlots, TransformData transformData, ObjectParent parent = null, int instanceIndex = -1);
         
-        void ResolveDelete(IEventSurface eventSurface, IAwardReciever awardReciever);
+        Task<bool> ResolveDelete(IEventSurface eventSurface, IAwardReciever awardReciever);
     }
 }
