@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using Spellbound.Core.Logging;
 using Spellbound.Core.ObjectData;
 
 namespace Spellbound.Core.Packing {
@@ -42,7 +43,7 @@ namespace Spellbound.Core.Packing {
                     Factories[hash] = factory;
                     HashCache[id] = hash;
 
-                    UnityEngine.Debug.Log($"PackerRegistry: registered '{id}' ({type.Name}) -> hash {hash}");
+                    Log.Debug($"Registered '{id}' ({type.Name}) -> hash {hash}");
                 }
             }
         }
