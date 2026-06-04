@@ -510,7 +510,7 @@ namespace Spellbound.Core.ObjectHandling {
             if (!TryGetCallbackParamsFromEventSurface(instanceIndex, key.SurfaceIndex, out var transformData,
                     out var preset, out var surface)) {
                 if (!TryGetCallbackParamsFromEntity(instanceIndex, out transformData, out preset)) {
-                    Log.Error("failed to find entity");
+                    Log.Warn("failed to find entity");
 
                     return;
                 }
