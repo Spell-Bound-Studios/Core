@@ -152,9 +152,11 @@ namespace Spellbound.Core.ObjectHandling {
             return true;
         }
 
-        public bool TryTransformData<T>(
-            int instanceIndex, string presetUid, int eventSurfaceIndex, T delta) where T : IPackerObjectData, new() {
-            StaticDataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, delta);
+        public bool TryTransformData<TData, TDispatch>(
+            int instanceIndex, string presetUid, int eventSurfaceIndex, TData data, TDispatch delta) 
+                where TData : IPackerObjectData, new() 
+                where TDispatch : IPackerDispatch, new(){
+            StaticDataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, data, delta);
 
             return true;
         }

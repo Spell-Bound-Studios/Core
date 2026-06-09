@@ -13,7 +13,7 @@ namespace Spellbound.Core.ObjectData {
     public interface IPackerObjectData : ISmartPacker {
         
         static IPackerObjectData SmartUnpackObjectData(ref ReadOnlySpan<byte> buffer) {
-            var result = ISmartPacker.SmartUnpack(ref buffer);
+            var result = SmartUnpack(ref buffer);
     
             if (result is not IPackerObjectData objectData)
                 throw new Exception($"PackerRegistry: '{result.PackerId}' is not an IPackerObjectData.");
@@ -26,8 +26,10 @@ namespace Spellbound.Core.ObjectData {
             return IPackerObjectData.SmartUnpackObjectData(ref span);
         }
         IPackerObjectData GetEmptyData();
-        IPackerObjectData InvokeApplyDelta(IPackerObjectData delta, ObjectPreset preset, int surfaceIndex, out byte context);
         IPackerObjectData InvokeGetDefaultData(ObjectPreset preset, int surfaceIndex, byte level = 1);
+        
+        IPackerObjectData InvokeApplyDispatch(
+            IPackerDispatch dispatch, ObjectPreset preset, int surfaceIndex, out byte context);
 
         void InvokeChangeCallback(
             byte context, ObjectParent parent, int instanceIndex,

@@ -3,6 +3,7 @@
 using Spellbound.Core.Logging;
 using Spellbound.Core.ObjectHandling;
 using Spellbound.Core.Objects;
+using Spellbound.Core.Packing;
 using Spellbound.Core.PresetContracts;
 
 namespace Spellbound.Core.ObjectData {
@@ -15,20 +16,16 @@ namespace Spellbound.Core.ObjectData {
 
             return data.GetEmptyData();
         }
-
-        public static T ApplyDelta<T>(
-            this T data, T delta, ObjectPreset preset, int surfaceIndex, out byte context) where T : IPackerObjectData {
-            
-            if (!preset.TryGetModule<IApplyDelta<T>>(out var module, surfaceIndex)) {
-                context = 0;
-                Log.Debug($"In static ApplyDelta, but failed to find module. surfaceIndex is  {surfaceIndex} ");
+        
+        public static IPackerObjectData ApplyDelta<T, TDispatch>(
+            this T data, TDispatch delta, ObjectPreset preset, int surfaceIndex, out ISmartPacker consequence)
+                where T : IPackerObjectData
+                where TDispatch : IPackerDispatch {
+            if (!preset.TryGetModule<IApplyDelta<T, TDispatch>>(out var module, surfaceIndex)) {
+                consequence = null;
                 return data;
             }
-
-            return module.ApplyDelta(data, delta, preset, surfaceIndex, out  context);
-
-
-
+            return module.ApplyDelta(data, delta, preset, surfaceIndex, out consequence);
         }
 
         public static void ChangeCallback<T>(

@@ -39,8 +39,8 @@ namespace Spellbound.Core.ObjectData {
                 where T : IPackerObjectData, new();
 
         // Intended to be the implementation for transforming current object data with incoming data.
-        void Delta<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T delta)
-                where T : IPackerObjectData, new();
+        void Delta<TData, TDispatch>(int instanceIndex, string presetUid, int eventSurfaceIndex, TData data, TDispatch dispatch)
+                where TData : IPackerObjectData, new() where TDispatch : IPackerDispatch, new();
 
         // Intended to be the implementation for deleting an instance with confirmation of deletion.
         Task<bool> TryDeleteInstance(int instanceIndex);
