@@ -1,9 +1,10 @@
-﻿// Copyright 2026 Spellbound Studio Inc.
+// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using Spellbound.Core.Hashing;
 using Spellbound.Core.Logging;
 using Spellbound.Core.ObjectData;
 
@@ -31,7 +32,7 @@ namespace Spellbound.Core.Packing {
                     if (string.IsNullOrEmpty(id))
                         continue;
 
-                    var hash = ComputeHash(id);
+                    var hash = StableHash.Fnv1A16(id);
 
                     if (Factories.ContainsKey(hash))
                         throw new Exception($"PackerRegistry: hash collision or duplicate PackerId '{id}' (hash: {hash})");
@@ -86,17 +87,6 @@ namespace Spellbound.Core.Packing {
             catch {
                 return $"hash:{hash} ({instance.PackerId}) [{data.Length} bytes, decode failed]";
             }
-        }
-        
-        private static ushort ComputeHash(string packerId) {
-            var hash = 2166136261u;
-
-            foreach (var c in packerId) {
-                hash ^= c;
-                hash *= 16777619u;
-            }
-
-            return (ushort)(hash ^ (hash >> 16));
         }
     }
 }
