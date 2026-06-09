@@ -7,22 +7,22 @@ namespace Spellbound.Core.Hashing {
     /// stable numeric id (registry keys, save / network ids) instead of re-implementing the algorithm inline.
     /// </summary>
     public static class StableHash {
-        public const uint Fnv1aOffset = 2166136261u;
-        public const uint Fnv1aPrime = 16777619u;
+        private const uint Fnv1AOffset = 2166136261u;
+        private const uint Fnv1APrime = 16777619u;
 
         /// <summary>
         /// Full 32-bit FNV-1a of <paramref name="value"/>. Empty or null returns 0, which callers treat as the
         /// reserved "null / none" id.
         /// </summary>
-        public static uint Fnv1a32(string value) {
+        public static uint Fnv1A32(string value) {
             if (string.IsNullOrEmpty(value))
                 return 0u;
 
-            var hash = Fnv1aOffset;
+            var hash = Fnv1AOffset;
 
-            for (var i = 0; i < value.Length; i++) {
-                hash ^= value[i];
-                hash *= Fnv1aPrime;
+            foreach (var t in value) {
+                hash ^= t;
+                hash *= Fnv1APrime;
             }
 
             return hash;
@@ -32,8 +32,8 @@ namespace Spellbound.Core.Hashing {
         /// 16-bit variant: the 32-bit hash folded down with XOR. Matches the value PackerRegistry computed
         /// inline before this util existed.
         /// </summary>
-        public static ushort Fnv1a16(string value) {
-            var hash = Fnv1a32(value);
+        public static ushort Fnv1A16(string value) {
+            var hash = Fnv1A32(value);
 
             return (ushort)(hash ^ (hash >> 16));
         }

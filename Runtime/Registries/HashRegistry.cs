@@ -5,10 +5,7 @@ using Spellbound.Core.Logging;
 
 namespace Spellbound.Core.Registries {
     /// <summary>
-    /// Default in-memory <see cref="IRegistry{TEntry}"/> backend: a uint-hash to entry dictionary built from a
-    /// caller-supplied source (a manifest array, Resources.LoadAll, eventually database rows). Owns the
-    /// zero-hash and collision guards that every hand-rolled registry was duplicating. The uint key means no
-    /// boxing on lookup, and nothing here runs per frame.
+    /// Default in-memory <see cref="IRegistry{TEntry}"/> backend: a uint-hash to entry dictionary.
     /// </summary>
     public class HashRegistry<TEntry> : IRegistry<TEntry> where TEntry : class, IRegistryEntry {
         private readonly Dictionary<uint, TEntry> _byHash = new();
@@ -23,8 +20,7 @@ namespace Spellbound.Core.Registries {
         }
 
         /// <summary>
-        /// Registers one entry. Entries that are null, carry the reserved 0 hash, or collide with an
-        /// already-registered hash are rejected and logged; the first registration wins.
+        /// Registers one entry.
         /// </summary>
         public void Add(TEntry entry) {
             if (entry == null)
@@ -53,18 +49,18 @@ namespace Spellbound.Core.Registries {
             if (entries == null)
                 return;
 
-            for (var i = 0; i < entries.Count; i++)
-                Add(entries[i]);
+            foreach (var t in entries)
+                Add(t);
         }
 
         public bool TryGet(uint hash, out TEntry entry) {
-            if (hash == 0u) {
-                entry = null;
+            if (hash != 0u) 
+                return _byHash.TryGetValue(hash, out entry);
 
-                return false;
-            }
+            entry = null;
 
-            return _byHash.TryGetValue(hash, out entry);
+            return false;
+
         }
 
         public TEntry Get(uint hash) {
