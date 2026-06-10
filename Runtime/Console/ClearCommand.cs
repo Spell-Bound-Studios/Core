@@ -10,7 +10,7 @@ namespace Spellbound.Core.Console {
         public string Usage => "clear";
 
         public CommandResult Execute(string[] args) {
-            var console = Object.FindFirstObjectByType<ConsoleController>();
+            var console = Object.FindAnyObjectByType<ConsoleController>();
 
             if (console == null)
                 return CommandResult.Fail("Console controller not found");
