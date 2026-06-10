@@ -7,7 +7,7 @@ using Spellbound.Core.Packing;
 using Spellbound.Core.ModuleContracts;
 
 namespace Spellbound.Core.ObjectData {
-    public static class DecodableDataExtensions {
+    public static class ObjectDataExtensions {
         public static IPackerObjectData GetDefaultData<T>(
             this T data, ObjectPreset preset, int surfaceIndex, byte level = 1)
                 where T : IPackerObjectData {
@@ -17,13 +17,16 @@ namespace Spellbound.Core.ObjectData {
             return data.GetEmptyData();
         }
         
-        public static IPackerObjectData ApplyDelta<T, TDelta>(
+        
+        public static T ApplyDelta<T, TDelta>(
             this T data, TDelta delta, ObjectPreset preset, int surfaceIndex, out byte context, out ISmartPacker consequence)
                 where T : IPackerObjectData
-                where TDelta : IPackerDispatch {
+                where TDelta : ISmartPacker {
             if (!preset.TryGetModule<IApplyDelta<T, TDelta>>(out var module, surfaceIndex)) {
                 context = 0;
                 consequence = null;
+                Log.Warn($"ApplyDelta: '{preset.name}' surface {surfaceIndex} has no " +
+                         $"IApplyDelta<{typeof(T).Name}, {typeof(TDelta).Name}>; delta dropped.");
                 return data;
             }
             return module.ApplyDelta(data, delta, preset, surfaceIndex, out context, out consequence);
