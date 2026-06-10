@@ -461,7 +461,7 @@ namespace Spellbound.Core.Console {
 
             // I really dislike this right now, but I'm not sure how to improve it just yet.
             if (typeof(MonoBehaviour).IsAssignableFrom(method.DeclaringType)) {
-                var instance = UnityEngine.Object.FindFirstObjectByType(method.DeclaringType) as MonoBehaviour;
+                var instance = UnityEngine.Object.FindAnyObjectByType(method.DeclaringType) as MonoBehaviour;
 
                 if (instance != null) {
                     MethodInstances[method] = instance;

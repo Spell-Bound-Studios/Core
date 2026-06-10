@@ -164,6 +164,11 @@ namespace Spellbound.Core.Objects {
                 return;
             }
 
+            var fileName = System.IO.Path.GetFileNameWithoutExtension(assetPath);
+
+            if (!string.IsNullOrEmpty(fileName) && name != fileName)
+                name = fileName;
+
             var assetGuid = AssetDatabase.GUIDFromAssetPath(assetPath).ToString();
 
             if (string.IsNullOrEmpty(presetUid) || presetUid != assetGuid)
