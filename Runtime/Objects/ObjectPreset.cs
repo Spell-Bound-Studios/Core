@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Spellbound.Core.Logging;
 using Spellbound.Core.Modules;
-using Spellbound.Core.PresetContracts;
+using Spellbound.Core.ModuleContracts;
 using Spellbound.Core.Surfaces;
 using Spellbound.Core.Tooling;
 using UnityEditor;

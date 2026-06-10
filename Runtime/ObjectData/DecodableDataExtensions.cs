@@ -4,7 +4,7 @@ using Spellbound.Core.Logging;
 using Spellbound.Core.ObjectHandling;
 using Spellbound.Core.Objects;
 using Spellbound.Core.Packing;
-using Spellbound.Core.PresetContracts;
+using Spellbound.Core.ModuleContracts;
 
 namespace Spellbound.Core.ObjectData {
     public static class DecodableDataExtensions {
@@ -17,15 +17,16 @@ namespace Spellbound.Core.ObjectData {
             return data.GetEmptyData();
         }
         
-        public static IPackerObjectData ApplyDelta<T, TDispatch>(
-            this T data, TDispatch delta, ObjectPreset preset, int surfaceIndex, out ISmartPacker consequence)
+        public static IPackerObjectData ApplyDelta<T, TDelta>(
+            this T data, TDelta delta, ObjectPreset preset, int surfaceIndex, out byte context, out ISmartPacker consequence)
                 where T : IPackerObjectData
-                where TDispatch : IPackerDispatch {
-            if (!preset.TryGetModule<IApplyDelta<T, TDispatch>>(out var module, surfaceIndex)) {
+                where TDelta : IPackerDispatch {
+            if (!preset.TryGetModule<IApplyDelta<T, TDelta>>(out var module, surfaceIndex)) {
+                context = 0;
                 consequence = null;
                 return data;
             }
-            return module.ApplyDelta(data, delta, preset, surfaceIndex, out consequence);
+            return module.ApplyDelta(data, delta, preset, surfaceIndex, out context, out consequence);
         }
 
         public static void ChangeCallback<T>(

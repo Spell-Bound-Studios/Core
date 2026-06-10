@@ -27,9 +27,13 @@ namespace Spellbound.Core.ObjectData {
         }
         IPackerObjectData GetEmptyData();
         IPackerObjectData InvokeGetDefaultData(ObjectPreset preset, int surfaceIndex, byte level = 1);
-        
+
         IPackerObjectData InvokeApplyDispatch(
-            IPackerDispatch dispatch, ObjectPreset preset, int surfaceIndex, out byte context);
+            IPackerDispatch dispatch, ObjectPreset preset, int surfaceIndex, out byte context, out ISmartPacker consequence) {
+            context = 0;
+            consequence = null;
+            return this;
+        }
 
         void InvokeChangeCallback(
             byte context, ObjectParent parent, int instanceIndex,

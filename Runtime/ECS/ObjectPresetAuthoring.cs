@@ -2,7 +2,7 @@
 
 using Spellbound.Core.Logging;
 using Spellbound.Core.Objects;
-using Spellbound.Core.PresetContracts;
+using Spellbound.Core.ModuleContracts;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;

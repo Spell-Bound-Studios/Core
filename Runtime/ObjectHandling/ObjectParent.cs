@@ -8,7 +8,7 @@ using Spellbound.Core.ECS;
 using Spellbound.Core.Logging;
 using Spellbound.Core.ObjectData;
 using Spellbound.Core.Objects;
-using Spellbound.Core.PresetContracts;
+using Spellbound.Core.ModuleContracts;
 using Spellbound.Core.Surfaces;
 using Spellbound.Core.Tooling;
 using Unity.Collections;

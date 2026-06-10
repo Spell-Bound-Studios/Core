@@ -7,7 +7,7 @@ using Spellbound.Core.ObjectHandling;
 using Spellbound.Core.Objects;
 using Spellbound.Core.Surfaces;
 
-namespace Spellbound.Core.PresetContracts {
+namespace Spellbound.Core.ModuleContracts {
     public interface IDeleteResolver {
         /// <summary>
         /// For ObjectPreset PresetModules
