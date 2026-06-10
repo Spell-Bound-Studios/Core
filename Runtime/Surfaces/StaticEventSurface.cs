@@ -7,7 +7,7 @@ using Spellbound.Core.ObjectData;
 using Spellbound.Core.ObjectHandling;
 using Spellbound.Core.Objects;
 using Spellbound.Core.Packing;
-using Spellbound.Core.PresetContracts;
+using Spellbound.Core.ModuleContracts;
 using UnityEngine;
 
 namespace Spellbound.Core.Surfaces {

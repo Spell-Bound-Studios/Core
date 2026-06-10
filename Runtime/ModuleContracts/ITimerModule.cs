@@ -3,7 +3,7 @@
 using Spellbound.Core.ObjectData;
 using Spellbound.Core.Objects;
 
-namespace Spellbound.Core.PresetContracts {
+namespace Spellbound.Core.ModuleContracts {
     public interface ITimerModule {
         void OnTimerUpdate(
             uint time,

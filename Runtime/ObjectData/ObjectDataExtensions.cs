@@ -3,10 +3,11 @@
 using Spellbound.Core.Logging;
 using Spellbound.Core.ObjectHandling;
 using Spellbound.Core.Objects;
-using Spellbound.Core.PresetContracts;
+using Spellbound.Core.Packing;
+using Spellbound.Core.ModuleContracts;
 
 namespace Spellbound.Core.ObjectData {
-    public static class DecodableDataExtensions {
+    public static class ObjectDataExtensions {
         public static IPackerObjectData GetDefaultData<T>(
             this T data, ObjectPreset preset, int surfaceIndex, byte level = 1)
                 where T : IPackerObjectData {
@@ -15,20 +16,20 @@ namespace Spellbound.Core.ObjectData {
 
             return data.GetEmptyData();
         }
-
-        public static T ApplyDelta<T>(
-            this T data, T delta, ObjectPreset preset, int surfaceIndex, out byte context) where T : IPackerObjectData {
-            
-            if (!preset.TryGetModule<IApplyDelta<T>>(out var module, surfaceIndex)) {
+        
+        
+        public static T ApplyDelta<T, TDelta>(
+            this T data, TDelta delta, ObjectPreset preset, int surfaceIndex, out byte context, out ISmartPacker consequence)
+                where T : IPackerObjectData
+                where TDelta : ISmartPacker {
+            if (!preset.TryGetModule<IApplyDelta<T, TDelta>>(out var module, surfaceIndex)) {
                 context = 0;
-                Log.Debug($"In static ApplyDelta, but failed to find module. surfaceIndex is  {surfaceIndex} ");
+                consequence = null;
+                Log.Warn($"ApplyDelta: '{preset.name}' surface {surfaceIndex} has no " +
+                         $"IApplyDelta<{typeof(T).Name}, {typeof(TDelta).Name}>; delta dropped.");
                 return data;
             }
-
-            return module.ApplyDelta(data, delta, preset, surfaceIndex, out  context);
-
-
-
+            return module.ApplyDelta(data, delta, preset, surfaceIndex, out context, out consequence);
         }
 
         public static void ChangeCallback<T>(

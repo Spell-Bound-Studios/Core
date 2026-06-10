@@ -3,7 +3,7 @@
 using Spellbound.Core.ObjectData;
 using Spellbound.Core.Objects;
 
-namespace Spellbound.Core.PresetContracts {
+namespace Spellbound.Core.ModuleContracts {
     /// <summary>
     /// For ObjectPreset PresetModules
     /// Interface Contract for a Module to provide the default data of the ObjectPreset it is on.

@@ -2,7 +2,7 @@
 
 using Spellbound.Core.ObjectHandling;
 
-namespace Spellbound.Core.PresetContracts {
+namespace Spellbound.Core.ModuleContracts {
     public interface ICreateResolver {
         /// <summary>
         /// For ObjectPreset PresetModules
