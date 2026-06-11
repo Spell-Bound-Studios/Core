@@ -5,9 +5,8 @@ using System.Collections.Generic;
 using Spellbound.Core.Logging;
 using Spellbound.Core.Modules;
 using Spellbound.Core.ModuleContracts;
+using Spellbound.Core.Registries;
 using Spellbound.Core.Surfaces;
-using Spellbound.Core.Tooling;
-using UnityEditor;
 using UnityEngine;
 
 namespace Spellbound.Core.Objects {
@@ -17,8 +16,7 @@ namespace Spellbound.Core.Objects {
     /// like MonoBehaviours.
     /// </summary>
     [CreateAssetMenu(fileName = "Object Preset", menuName = "Spellbound/Presets/ObjectPreset")]
-    public class ObjectPreset : ScriptableObject {
-        [Immutable] public string presetUid;
+    public class ObjectPreset : HashedScriptableObject {
         public string objectName;
         public string objectDescription;
         public bool isDynamic;
@@ -116,13 +114,13 @@ namespace Spellbound.Core.Objects {
 
 #if UNITY_EDITOR
         /// <summary>
-        /// Creates guids based on an asset path for us when something gets updated.
+        /// Validates the module composition: the event surface prefab must implement IEventSurface, each surface
+        /// allows one IDispatch&lt;T&gt; per T, and one ITooltipHandler of any kind.
         /// </summary>
-        private void OnValidate() {
+        protected override void OnValidateAsset() {
             if (eventSurfacePrefab != null && eventSurfacePrefab.GetComponent<IEventSurface>() == null)
                 Log.Error("EventSurfacePrefab not found");
 
-            //Prohibits Multiple IDispatch<T> of the same T, and multiple ITooltipHandler of any T or no T at all.
             foreach (var surface in surfaceModules) {
                 if (surface.presetModules == null) continue;
 
@@ -132,7 +130,6 @@ namespace Spellbound.Core.Objects {
                 foreach (var module in surface.presetModules) {
                     if (module == null) continue;
 
-                    // Enforce: only one IDispatch<T> per T per surface
                     foreach (var iface in module.GetType().GetInterfaces()) {
                         if (!iface.IsGenericType) continue;
                         if (iface.GetGenericTypeDefinition() != typeof(IDispatch<>)) continue;
@@ -144,10 +141,9 @@ namespace Spellbound.Core.Objects {
                         }
                     }
 
-                    // Enforce: only one ITooltipHandler of any kind per surface
                     if (module is ITooltipHandler) {
                         if (hasMouseoverHandler) {
-                            Debug.LogError(
+                            Log.Error(
                                 $"Duplicate ITooltipHandler on surface '{surface.surfaceName}' in preset '{name}'");
                         }
 
@@ -155,26 +151,6 @@ namespace Spellbound.Core.Objects {
                     }
                 }
             }
-
-            var assetPath = AssetDatabase.GetAssetPath(this);
-
-            if (assetPath == null) {
-                presetUid = string.Empty;
-
-                return;
-            }
-
-            var fileName = System.IO.Path.GetFileNameWithoutExtension(assetPath);
-
-            if (!string.IsNullOrEmpty(fileName) && name != fileName)
-                name = fileName;
-
-            var assetGuid = AssetDatabase.GUIDFromAssetPath(assetPath).ToString();
-
-            if (string.IsNullOrEmpty(presetUid) || presetUid != assetGuid)
-                presetUid = assetGuid;
-
-            EditorUtility.SetDirty(this);
         }
 #endif
     }

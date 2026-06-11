@@ -68,7 +68,7 @@ namespace Spellbound.Core.ObjectHandling {
                 ComponentType.ReadOnly<LocalTransform>(),
                 ComponentType.ReadOnly<ProximityThresholdComponent>(),
                 ComponentType.ReadOnly<InstanceIndexComponent>(),
-                ComponentType.ReadOnly<PresetUidComponent>(),
+                ComponentType.ReadOnly<PresetHashComponent>(),
                 ComponentType.Exclude<DynamicTag>()
             );
 
@@ -77,7 +77,7 @@ namespace Spellbound.Core.ObjectHandling {
                 ComponentType.ReadOnly<LocalTransform>(),
                 ComponentType.ReadOnly<ProximityThresholdComponent>(),
                 ComponentType.ReadOnly<InstanceIndexComponent>(),
-                ComponentType.ReadOnly<PresetUidComponent>(),
+                ComponentType.ReadOnly<PresetHashComponent>(),
                 ComponentType.ReadOnly<DynamicTag>()
             );
 
@@ -104,30 +104,30 @@ namespace Spellbound.Core.ObjectHandling {
             ObjectPreset preset, Vector3 position, Vector3 rotation, int scale,
             List<(InstanceDataKey, byte[])> dataSlots = null) {
             if (!preset.isDynamic) {
-                StaticDataAccess.CreateRuntimeInstance(preset.presetUid, position, rotation, scale);
+                StaticDataAccess.CreateRuntimeInstance(preset.Hash, position, rotation, scale);
 
                 return;
             }
 
-            DynamicDataAccess.CreateRuntimeObject(preset.presetUid, position, rotation, scale, dataSlots);
+            DynamicDataAccess.CreateRuntimeObject(preset.Hash, position, rotation, scale, dataSlots);
         }
 
         public void AdoptMigratedDynamic(int newIndex, DynamicInstanceEntry entry, IEventSurface surface) {
             surface.Transform.SetParent(_transform, true);
-            surface.Initialize(_implementer, newIndex, entry.PresetUid);
+            surface.Initialize(_implementer, newIndex, entry.PresetHash);
         }
 
         public void CreateNewInstance(ObjectPreset preset, Vector3 position, Vector3 rotation, int scale) {
             if (!preset.isDynamic) {
-                StaticDataAccess.CreateRuntimeInstance(preset.presetUid, position, rotation, scale);
+                StaticDataAccess.CreateRuntimeInstance(preset.Hash, position, rotation, scale);
 
                 return;
             }
 
-            DynamicDataAccess.CreateRuntimeObject(preset.presetUid, position, rotation, scale);
+            DynamicDataAccess.CreateRuntimeObject(preset.Hash, position, rotation, scale);
         }
 
-        public bool TryReadData<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, out T result)
+        public bool TryReadData<T>(int instanceIndex, uint presetHash, int eventSurfaceIndex, out T result)
                 where T : IPackerObjectData, new() {
             if (StaticDataAccess.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
                 result = data;
@@ -141,22 +141,22 @@ namespace Spellbound.Core.ObjectHandling {
         }
 
         public bool TryReadDataAllData(
-            int instanceIndex, string presetUid, int eventSurfaceIndex, out List<IPackerObjectData> results) =>
+            int instanceIndex, uint presetHash, int eventSurfaceIndex, out List<IPackerObjectData> results) =>
                 StaticDataAccess.TryReadAll(instanceIndex, eventSurfaceIndex, out results);
 
         public bool TryWriteData<T>(
-            int instanceIndex, string presetUid, int eventSurfaceIndex, T newData, byte context = 0)
+            int instanceIndex, uint presetHash, int eventSurfaceIndex, T newData, byte context = 0)
                 where T : IPackerObjectData, new() {
-            StaticDataAccess.Write(instanceIndex, presetUid, eventSurfaceIndex, newData, context);
+            StaticDataAccess.Write(instanceIndex, presetHash, eventSurfaceIndex, newData, context);
 
             return true;
         }
 
         public bool TryTransformData<TData, TDispatch>(
-            int instanceIndex, string presetUid, int eventSurfaceIndex, TData data, TDispatch delta) 
+            int instanceIndex, uint presetHash, int eventSurfaceIndex, TData data, TDispatch delta) 
                 where TData : IPackerObjectData, new() 
                 where TDispatch : IPackerDispatch, new(){
-            StaticDataAccess.Delta(instanceIndex, presetUid, eventSurfaceIndex, data, delta);
+            StaticDataAccess.Delta(instanceIndex, presetHash, eventSurfaceIndex, data, delta);
 
             return true;
         }
@@ -198,10 +198,10 @@ namespace Spellbound.Core.ObjectHandling {
             if (instances.Count == 0)
                 return;
 
-            var entityRequests = new List<(int, string, TransformData)>(instances.Count);
+            var entityRequests = new List<(int, uint, TransformData)>(instances.Count);
 
             foreach (var (instanceIndex, entry) in instances)
-                entityRequests.Add((instanceIndex, entry.PresetUid, entry.Transform));
+                entityRequests.Add((instanceIndex, entry.PresetHash, entry.Transform));
 
             BufferEntitySpawnRequests(entityRequests);
         }
@@ -292,8 +292,8 @@ namespace Spellbound.Core.ObjectHandling {
                     : em.AddBuffer<EntitySpawnRequestElement>(_ecsChunk);
 
             foreach (var (instanceIndex, entry) in instances) {
-                if (!entry.PresetUid.TryGetEntityPrefab(out var prefab)) {
-                    Log.Error($"Entity prefab could not be found for preset: {entry.PresetUid}");
+                if (!entry.PresetHash.TryGetEntityPrefab(out var prefab)) {
+                    Log.Error($"Entity prefab could not be found for preset: {entry.PresetHash}");
 
                     continue;
                 }
@@ -310,16 +310,16 @@ namespace Spellbound.Core.ObjectHandling {
         /// Overload for dynamic requests converting to entities.
         /// </summary>
         /// <param name="requests"></param>
-        private void BufferEntitySpawnRequests(IReadOnlyList<(int, string, TransformData)> requests) {
+        private void BufferEntitySpawnRequests(IReadOnlyList<(int, uint, TransformData)> requests) {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             var buffer = em.HasBuffer<EntitySpawnRequestElement>(_ecsChunk)
                     ? em.GetBuffer<EntitySpawnRequestElement>(_ecsChunk)
                     : em.AddBuffer<EntitySpawnRequestElement>(_ecsChunk);
 
-            foreach (var (instanceIndex, presetUid, transformData) in requests) {
-                if (!presetUid.TryGetEntityPrefab(out var prefab)) {
-                    Log.Error($"Entity prefab could not be found for preset: {presetUid}");
+            foreach (var (instanceIndex, presetHash, transformData) in requests) {
+                if (!presetHash.TryGetEntityPrefab(out var prefab)) {
+                    Log.Error($"Entity prefab could not be found for preset: {presetHash}");
 
                     continue;
                 }
@@ -355,7 +355,7 @@ namespace Spellbound.Core.ObjectHandling {
             BufferEntitySpawnRequests(instances);
 
             foreach (var (instanceIndex, entry) in instances) {
-                var preset = entry.PresetUid.ResolvePreset();
+                var preset = entry.PresetHash.ResolvePreset();
 
                 var proximityChange = ProximityMath.IsWithinActivationRange(entry.Transform.Position, _lastPovPosition,
                     preset.interactionDistance);
@@ -375,7 +375,7 @@ namespace Spellbound.Core.ObjectHandling {
             BufferEntitySpawnRequests(instances);
 
             foreach (var (instanceIndex, entry) in instances) {
-                var preset = entry.PresetUid.ResolvePreset();
+                var preset = entry.PresetHash.ResolvePreset();
 
                 var proximityChange = ProximityMath.IsWithinActivationRange(entry.Transform.Position, _lastPovPosition,
                     preset.interactionDistance);
@@ -397,20 +397,20 @@ namespace Spellbound.Core.ObjectHandling {
             if (loaded.Count == 0)
                 return;
 
-            var entityRequests = new List<(int, string, TransformData)>(loaded.Count);
+            var entityRequests = new List<(int, uint, TransformData)>(loaded.Count);
 
             foreach (var (instanceIndex, entry) in loaded)
-                entityRequests.Add((instanceIndex, entry.PresetUid, entry.Transform));
+                entityRequests.Add((instanceIndex, entry.PresetHash, entry.Transform));
 
             BufferEntitySpawnRequests(entityRequests);
         }
 
         public void OnDynamicObjectsCreated(IReadOnlyList<(int, DynamicInstanceEntry)> creations) {
             foreach (var (instanceIndex, entry) in creations) {
-                var preset = entry.PresetUid.ResolvePreset();
+                var preset = entry.PresetHash.ResolvePreset();
 
                 if (preset == null || preset.eventSurfacePrefab == null) {
-                    Log.Error($"OnDynamicInstancesCreated: missing preset or prefab for {entry.PresetUid}");
+                    Log.Error($"OnDynamicInstancesCreated: missing preset or prefab for {entry.PresetHash}");
 
                     continue;
                 }
@@ -422,11 +422,11 @@ namespace Spellbound.Core.ObjectHandling {
                     _transform);
 
                 if (instance.TryGetComponent<IEventSurface>(out var surface))
-                    surface.Initialize(_implementer, instanceIndex, entry.PresetUid, entry.DataSlots);
+                    surface.Initialize(_implementer, instanceIndex, entry.PresetHash, entry.DataSlots);
             }
         }
 
-        public void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests) =>
+        public void OnDynamicObjectEntityRequested(IReadOnlyList<(int, uint, TransformData)> entityRequests) =>
                 BufferEntitySpawnRequests(entityRequests);
 
         public void OnDynamicObjectEntityDeleteRequested(IReadOnlyList<int> entityDeleteRequests) =>
@@ -569,7 +569,7 @@ namespace Spellbound.Core.ObjectHandling {
                 var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
                 transformData = new TransformData(em.GetComponentData<LocalTransform>(entities[i]));
-                preset = em.GetSharedComponentManaged<PresetUidComponent>(entities[i]).Value.Value.ResolvePreset();
+                preset = em.GetSharedComponentManaged<PresetHashComponent>(entities[i]).Value.ResolvePreset();
 
                 instanceIndices.Dispose();
                 entities.Dispose();
@@ -602,7 +602,7 @@ namespace Spellbound.Core.ObjectHandling {
             ).GetComponent<IEventSurface>();
             eventSurface.GameObject.name = $"{preset.name} Event Surface {instanceIndex}";
             eventSurface.GameObject.transform.localScale = transformData.ScaleAsVector3();
-            eventSurface.Initialize(_implementer, instanceIndex, preset.presetUid);
+            eventSurface.Initialize(_implementer, instanceIndex, preset.Hash);
             _eventSurfaces[instanceIndex] = eventSurface;
         }
 
@@ -708,9 +708,9 @@ namespace Spellbound.Core.ObjectHandling {
             var em = World.DefaultGameObjectInjectionWorld.EntityManager;
 
             foreach (var toAwaken in instancesToAwaken) {
-                var presetUid = em.GetSharedComponent<PresetUidComponent>(entities[toAwaken]);
+                var presetHash = em.GetSharedComponent<PresetHashComponent>(entities[toAwaken]);
 
-                SpawnSurface(presetUid.Value.Value.ResolvePreset(), new TransformData(transforms[toAwaken]),
+                SpawnSurface(presetHash.Value.ResolvePreset(), new TransformData(transforms[toAwaken]),
                     instanceIndices[toAwaken].Value);
             }
 

@@ -15,14 +15,14 @@ namespace Spellbound.Core.ECS {
 
         public void OnCreate(ref SystemState state) {
             _query = SystemAPI.QueryBuilder()
-                    .WithAll<PresetUidComponent>()
+                    .WithAll<PresetHashComponent>()
                     .WithAllChunkComponent<EntitiesGraphicsChunkInfo>()
                     .Build();
             _currentIndex = 0;
         }
 
         public void OnUpdate(ref SystemState state) {
-            state.EntityManager.GetAllUniqueSharedComponents(out NativeList<PresetUidComponent> uniqueValues,
+            state.EntityManager.GetAllUniqueSharedComponents(out NativeList<PresetHashComponent> uniqueValues,
                 Allocator.Temp);
 
             if (uniqueValues.Length <= 1) {
@@ -32,10 +32,10 @@ namespace Spellbound.Core.ECS {
             }
 
             _currentIndex %= uniqueValues.Length;
-            var presetUid = uniqueValues[_currentIndex];
+            var presetHash = uniqueValues[_currentIndex];
             _currentIndex++;
 
-            _query.SetSharedComponentFilter(presetUid);
+            _query.SetSharedComponentFilter(presetHash);
             var chunks = _query.ToArchetypeChunkArray(Allocator.Temp);
             _query.ResetFilter();
 

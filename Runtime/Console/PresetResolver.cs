@@ -11,7 +11,7 @@ namespace Spellbound.Core.Console {
     /// Provides lookup functionality for resolving preset names to their unique identifiers.
     /// </summary>
     public static class PresetResolver {
-        private static readonly Dictionary<string, string> NameToUid =
+        private static readonly Dictionary<string, string> NameToGuid =
                 CommandRegistryUtilities.CreateCaseInsensitiveDictionary<string>();
 
         private static bool _isInitialized;
@@ -45,34 +45,34 @@ namespace Spellbound.Core.Console {
         }
 
         /// <summary>
-        /// Registers a single preset's objectName → presetUid mapping.
+        /// Registers a single preset's objectName → presetGuid mapping.
         /// This will be called internally once all presets are gathered.
         /// </summary>
         private static void RegisterPreset(ObjectPreset preset) {
             var key = preset.objectName.ToLower().Replace(" ", "_");
 
-            if (NameToUid.ContainsKey(key)) {
+            if (NameToGuid.ContainsKey(key)) {
                 Debug.LogWarning(
                     $"[PresetConsoleRegistry] Duplicate preset name '{preset.objectName}' - " +
                     "overwriting previous registration");
             }
 
-            NameToUid[key] = preset.presetUid;
+            NameToGuid[key] = preset.Guid;
         }
 
         /// <summary>
         /// Attempts to resolve a preset name to its UID.
         /// </summary>
-        public static bool TryResolvePresetUid(string objectName, out string presetUid) {
+        public static bool TryResolvePresetGuid(string objectName, out string presetGuid) {
             if (!_isInitialized)
                 Initialize();
 
             var normalizedName = objectName?.ToLower().Replace(" ", "_");
 
             if (!string.IsNullOrEmpty(normalizedName))
-                return NameToUid.TryGetValue(normalizedName, out presetUid);
+                return NameToGuid.TryGetValue(normalizedName, out presetGuid);
 
-            presetUid = null;
+            presetGuid = null;
 
             return false;
         }
@@ -86,7 +86,7 @@ namespace Spellbound.Core.Console {
 
             // Chat bro helped me swim the dictionary using a long nested linq expression. This should only happen when
             // a user wants to do something like list all registered presets by name.
-            return NameToUid
+            return NameToGuid
                     .GroupBy(kvp => kvp.Value)
                     .Select(group => {
                         // Prefer an underscore version if it exists.
@@ -107,14 +107,14 @@ namespace Spellbound.Core.Console {
             if (!_isInitialized)
                 Initialize();
 
-            return NameToUid.Values.Distinct().Count();
+            return NameToGuid.Values.Distinct().Count();
         }
 
         /// <summary>
         /// Clears all registered presets for whatever reason lol.
         /// </summary>
         public static void Clear() {
-            NameToUid.Clear();
+            NameToGuid.Clear();
             _isInitialized = false;
         }
     }

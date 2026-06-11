@@ -6,7 +6,7 @@ using Spellbound.Core.Packing;
 
 namespace Spellbound.Core.ObjectData {
     public class DynamicInstanceEntry : IPacker {
-        public string PresetUid;
+        public uint PresetHash;
         public Dictionary<InstanceDataKey, byte[]> DataSlots = new();
         public TransformData Transform;
         public bool WasMovingAtSave;
@@ -16,17 +16,17 @@ namespace Spellbound.Core.ObjectData {
         /// <summary>
         /// Ctor for DynamicInstanceEntry.
         /// </summary>
-        /// <param name="presetUid"></param>
+        /// <param name="presetHash"></param>
         /// <param name="transform"></param>
         /// <param name="wasMovingAtSave"></param>
-        public DynamicInstanceEntry(string presetUid, TransformData transform, bool wasMovingAtSave) {
-            PresetUid = presetUid;
+        public DynamicInstanceEntry(uint presetHash, TransformData transform, bool wasMovingAtSave) {
+            PresetHash = presetHash;
             Transform = transform;
             WasMovingAtSave = wasMovingAtSave;
         }
 
         public void Pack(ref Span<byte> buffer) {
-            Packer.WriteString(ref buffer, PresetUid);
+            Packer.WriteUInt(ref buffer, PresetHash);
             Transform.Pack(ref buffer);
             Packer.WriteBool(ref buffer, WasMovingAtSave);
 
@@ -40,7 +40,7 @@ namespace Spellbound.Core.ObjectData {
         }
 
         public void Unpack(ref ReadOnlySpan<byte> buffer) {
-            PresetUid = Packer.ReadString(ref buffer);
+            PresetHash = Packer.ReadUInt(ref buffer);
             Transform = new TransformData();
             Transform.Unpack(ref buffer);
             WasMovingAtSave = Packer.ReadBool(ref buffer);

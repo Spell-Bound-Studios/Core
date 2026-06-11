@@ -21,14 +21,14 @@ namespace Spellbound.Core.EntityPrefabs {
 
             foreach (var preset in presets) {
                 if (preset.bakePrefab == null) {
-                    Debug.LogWarning($"Preset {preset.presetUid} has no bakePrefab assigned, skipping.");
+                    Debug.LogWarning($"Preset {preset.name} has no bakePrefab assigned, skipping.");
 
                     continue;
                 }
 
                 buffer.Add(new EntityPrefabBufferElement {
                     Prefab = GetEntity(preset.bakePrefab, TransformUsageFlags.Renderable),
-                    Guid = preset.presetUid
+                    Hash = preset.Hash
                 });
             }
         }

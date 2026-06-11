@@ -6,18 +6,18 @@ using Unity.Entities;
 
 namespace Spellbound.Core.EntityPrefabs {
     /// <summary>
-    /// Access point for O(1) Entity Prefab Lookup by guid.
+    /// Access point for O(1) Entity Prefab lookup by preset hash.
     /// </summary>
     public partial class EntityPrefabRegistry : SystemBase {
         private Entity _registryEntity;
         private bool _found;
 
-        public NativeHashMap<FixedString64Bytes, Entity> PrefabLookup;
+        public NativeHashMap<uint, Entity> PrefabLookup;
 
         protected override void OnStartRunning() {
             if (PrefabLookup.IsCreated)
                 PrefabLookup.Dispose();
-            PrefabLookup = new NativeHashMap<FixedString64Bytes, Entity>(64, Allocator.Persistent);
+            PrefabLookup = new NativeHashMap<uint, Entity>(64, Allocator.Persistent);
             SingletonManager.RegisterSingleton(this);
         }
 

@@ -1,14 +1,13 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
-using Unity.Collections;
 using Unity.Entities;
 
 namespace Spellbound.Core.EntityPrefabs {
     /// <summary>
-    /// Buffer for entity prefabs and their guid.
+    /// Buffer entry pairing a baked entity prefab with its preset's stable hash.
     /// </summary>
     public struct EntityPrefabBufferElement : IBufferElementData {
         public Entity Prefab;
-        public FixedString64Bytes Guid;
+        public uint Hash;
     }
 }
