@@ -14,7 +14,7 @@ namespace Spellbound.Core.ObjectData {
         Dictionary<int, DynamicInstanceEntry> GetAllRuntimeDynamicInstances();
 
         void CreateRuntimeObject(
-            string presetUid, Vector3 position, Vector3 rotation, int scale,
+            uint presetHash, Vector3 position, Vector3 rotation, int scale,
             List<(InstanceDataKey, byte[])> dataSlots = null);
 
         void Awaken(int instanceIndex);

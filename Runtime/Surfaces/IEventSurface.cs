@@ -16,7 +16,7 @@ namespace Spellbound.Core.Surfaces {
         ObjectPreset Preset { get; }
 
         int Initialize(
-            IObjectParent objectParent, int entityIndex, string presetUid,
+            IObjectParent objectParent, int entityIndex, uint presetHash,
             Dictionary<InstanceDataKey, byte[]> dataSlots = null);
 
         void DebugQueryPing();

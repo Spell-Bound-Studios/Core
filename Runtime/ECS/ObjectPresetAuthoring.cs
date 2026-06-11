@@ -23,8 +23,8 @@ namespace Spellbound.Core.ECS {
 
             var entity = GetEntity(TransformUsageFlags.Renderable);
 
-            AddSharedComponentManaged(entity, new PresetUidComponent {
-                Value = authoring.preset.presetUid
+            AddSharedComponentManaged(entity, new PresetHashComponent {
+                Value = authoring.preset.Hash
             });
 
             AddComponent(entity, new ProximityThresholdComponent {

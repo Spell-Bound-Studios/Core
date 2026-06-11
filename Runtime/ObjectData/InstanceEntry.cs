@@ -4,12 +4,12 @@ using System.Collections.Generic;
 
 namespace Spellbound.Core.ObjectData {
     public class InstanceEntry {
-        public readonly string PresetUid;
+        public readonly uint PresetHash;
         public readonly Dictionary<InstanceDataKey, byte[]> DataSlots;
         public TransformData? Transform;
 
-        public InstanceEntry(string presetUid) {
-            PresetUid = presetUid;
+        public InstanceEntry(uint presetHash) {
+            PresetHash = presetHash;
             DataSlots = new Dictionary<InstanceDataKey, byte[]>();
             Transform = null;
         }

@@ -30,11 +30,11 @@ namespace Spellbound.Core.Surfaces {
         public ObjectPreset Preset { get; private set; }
 
         public int Initialize(
-            IObjectParent objectParent, int entityIndex, string presetUid,
+            IObjectParent objectParent, int entityIndex, uint presetHash,
             Dictionary<InstanceDataKey, byte[]> dataSlots = null) {
             _parent = objectParent;
             _entityIndex = entityIndex;
-            Preset = presetUid.ResolvePreset();
+            Preset = presetHash.ResolvePreset();
 
             var childSurfaces = GetComponentsInChildren<StaticEventSurface>(true);
 
@@ -42,7 +42,7 @@ namespace Spellbound.Core.Surfaces {
                 if (childSurface == this)
                     continue;
 
-                var childSurfaceIndex = childSurface.Initialize(_parent, _entityIndex, Preset.presetUid, dataSlots);
+                var childSurfaceIndex = childSurface.Initialize(_parent, _entityIndex, Preset.Hash, dataSlots);
 
                 if (!_childEventSurfaces.TryAdd(childSurfaceIndex, childSurface))
                     Log.Error($"Duplicate surfaceIndex {childSurfaceIndex} on {childSurface.gameObject.name}");

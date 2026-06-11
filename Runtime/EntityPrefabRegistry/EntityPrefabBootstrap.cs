@@ -24,7 +24,7 @@ namespace Spellbound.Core.EntityPrefabs {
             var buffer = SystemAPI.GetBuffer<EntityPrefabBufferElement>(registryEntity);
 
             for (var i = 0; i < buffer.Length; i++)
-                registry.PrefabLookup[buffer[i].Guid] = buffer[i].Prefab;
+                registry.PrefabLookup[buffer[i].Hash] = buffer[i].Prefab;
 
             state.Enabled = false;
         }

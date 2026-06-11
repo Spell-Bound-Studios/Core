@@ -1,20 +1,22 @@
-﻿// Copyright 2026 Spellbound Studio Inc.
+// Copyright 2026 Spellbound Studio Inc.
 
 using System;
 
 namespace Spellbound.Core.ObjectData {
     public readonly struct InstanceDataKey : IEquatable<InstanceDataKey> {
-        public readonly string PackerId;
+        public readonly uint PackerHash;
         public readonly int SurfaceIndex;
 
-        public InstanceDataKey(string packerId, int surfaceIndex) {
-            PackerId = packerId;
+        public InstanceDataKey(uint packerHash, int surfaceIndex) {
+            PackerHash = packerHash;
             SurfaceIndex = surfaceIndex;
         }
 
-        public bool Equals(InstanceDataKey other) => PackerId == other.PackerId && SurfaceIndex == other.SurfaceIndex;
+        public bool Equals(InstanceDataKey other) =>
+                PackerHash == other.PackerHash && SurfaceIndex == other.SurfaceIndex;
+
         public override bool Equals(object obj) => obj is InstanceDataKey other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(PackerId, SurfaceIndex);
-        public override string ToString() => $"{PackerId}[{SurfaceIndex}]";
+        public override int GetHashCode() => HashCode.Combine(PackerHash, SurfaceIndex);
+        public override string ToString() => $"{PackerHash}[{SurfaceIndex}]";
     }
 }

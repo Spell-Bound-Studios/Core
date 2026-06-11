@@ -4,12 +4,12 @@ using System.Collections.Generic;
 
 namespace Spellbound.Core.ObjectData {
     public class NonProceduralStaticInstanceEntry {
-        public readonly string PresetUid;
+        public readonly uint PresetHash;
         public readonly Dictionary<InstanceDataKey, byte[]> DataSlots = new();
         public TransformData Transform;
 
-        public NonProceduralStaticInstanceEntry(string presetUid, TransformData transform) {
-            PresetUid = presetUid;
+        public NonProceduralStaticInstanceEntry(uint presetHash, TransformData transform) {
+            PresetHash = presetHash;
             Transform = transform;
         }
     }

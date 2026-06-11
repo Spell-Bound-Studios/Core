@@ -18,7 +18,7 @@ namespace Spellbound.Core.ObjectData {
 
         #region Runtime Instance Creation
 
-        void CreateRuntimeInstance(string presetUid, Vector3 position, Vector3 rotation, int scale);
+        void CreateRuntimeInstance(uint presetHash, Vector3 position, Vector3 rotation, int scale);
 
         #endregion
 
@@ -35,11 +35,11 @@ namespace Spellbound.Core.ObjectData {
         bool TryReadAll(int instanceIndex, int eventSurfaceIndex, out List<IPackerObjectData> data);
 
         // Intended to be the implementation for writing over any data with new data on an object.
-        void Write<T>(int instanceIndex, string presetUid, int eventSurfaceIndex, T newData, byte contextIn)
+        void Write<T>(int instanceIndex, uint presetHash, int eventSurfaceIndex, T newData, byte contextIn)
                 where T : IPackerObjectData, new();
 
         // Intended to be the implementation for transforming current object data with incoming data.
-        void Delta<TData, TDispatch>(int instanceIndex, string presetUid, int eventSurfaceIndex, TData data, TDispatch dispatch)
+        void Delta<TData, TDispatch>(int instanceIndex, uint presetHash, int eventSurfaceIndex, TData data, TDispatch dispatch)
                 where TData : IPackerObjectData, new() where TDispatch : IPackerDispatch, new();
 
         // Intended to be the implementation for deleting an instance with confirmation of deletion.

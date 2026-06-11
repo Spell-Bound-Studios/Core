@@ -17,7 +17,7 @@ namespace Spellbound.Core.ObjectHandling {
 
         void OnDynamicObjectsLoaded(IReadOnlyList<(int, DynamicInstanceEntry)> loaded);
         void OnDynamicObjectsCreated(IReadOnlyList<(int, DynamicInstanceEntry)> creations);
-        void OnDynamicObjectEntityRequested(IReadOnlyList<(int, string, TransformData)> entityRequests);
+        void OnDynamicObjectEntityRequested(IReadOnlyList<(int, uint, TransformData)> entityRequests);
 
         void OnDynamicObjectEntityDeleteRequested(IReadOnlyList<int> entityDeleteRequests);
 

@@ -15,10 +15,10 @@ namespace Spellbound.Core.Console {
         /// Executes a console command by routing it to the appropriate handler.
         /// </summary>
         public static CommandResult RouteCommand(string commandName, string targetName, string[] args) {
-            if (!PresetResolver.TryResolvePresetUid(targetName, out var presetUid))
+            if (!PresetResolver.TryResolvePresetGuid(targetName, out var presetGuid))
                 return CommandResult.Fail($"Unknown target: '{targetName}'");
 
-            var preset = presetUid.ResolvePreset();
+            var preset = presetGuid.ResolvePresetGuid();
 
             if (preset == null)
                 return CommandResult.Fail($"Failed to resolve preset: '{targetName}'");
@@ -42,7 +42,7 @@ namespace Spellbound.Core.Console {
                 // Call the method 'quantity' times... Is this a placeholder? I'm not sure yet. But I think other games
                 // do it like this.
                 for (var i = 0; i < quantity; i++) {
-                    var result = InvokeMethod(method, preset, presetUid);
+                    var result = InvokeMethod(method, preset, presetGuid);
 
                     if (!result.Success)
                         return result; // Stop on first failure
@@ -58,7 +58,7 @@ namespace Spellbound.Core.Console {
         /// Invokes the discovered method with appropriate arguments.
         /// </summary>
         private static CommandResult InvokeMethod(
-            System.Reflection.MethodInfo method, ObjectPreset preset, string presetUid) {
+            System.Reflection.MethodInfo method, ObjectPreset preset, string presetGuid) {
             try {
                 var instance = AttributeCommandRegistry.GetMethodInstance(method);
 
@@ -72,13 +72,13 @@ namespace Spellbound.Core.Console {
 
                 // TODO: Smart argument mapping based on parameter types
                 // For now, assume:
-                // (string presetUid, Vector3 position, Quaternion rotation, float scale, SbbData[] data)
+                // (string presetGuid, Vector3 position, Quaternion rotation, float scale, SbbData[] data)
                 for (var i = 0; i < methodParams.Length; i++) {
                     var param = methodParams[i];
 
                     // See if we have a preset uid or not.
-                    if (param.ParameterType == typeof(string) && param.Name == "presetUid")
-                        invokeArgs[i] = presetUid;
+                    if (param.ParameterType == typeof(string) && param.Name == "presetGuid")
+                        invokeArgs[i] = presetGuid;
 
                     // See if we have a rotational argument. (Identity because I don't know how we would do this lol)
                     else if (param.ParameterType == typeof(Quaternion))
