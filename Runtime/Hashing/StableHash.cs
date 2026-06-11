@@ -27,15 +27,5 @@ namespace Spellbound.Core.Hashing {
 
             return hash;
         }
-
-        /// <summary>
-        /// 16-bit variant: the 32-bit hash folded down with XOR. Matches the value PackerRegistry computed
-        /// inline before this util existed.
-        /// </summary>
-        public static ushort Fnv1A16(string value) {
-            var hash = Fnv1A32(value);
-
-            return (ushort)(hash ^ (hash >> 16));
-        }
     }
 }
