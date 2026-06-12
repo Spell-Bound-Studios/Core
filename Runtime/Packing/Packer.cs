@@ -849,7 +849,7 @@ namespace Spellbound.Core.Packing {
 
                 return stackBuf[..written].ToArray();
             }
-            catch (ArgumentException) { }
+            catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
 
             var size = Math.Max(StackBufferSize * 2, 8192);
 
@@ -868,7 +868,7 @@ namespace Spellbound.Core.Packing {
 
                         return result;
                     }
-                    catch (ArgumentException) { }
+                    catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
                 }
                 finally {
                     ArrayPool<byte>.Shared.Return(rented);
