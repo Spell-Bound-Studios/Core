@@ -670,11 +670,6 @@ namespace Spellbound.Core.Packing {
 
         #region High-Level Helpers
         
-        
-        public static byte[] SmartToBytes(ISmartPacker obj) {
-            return BuildPayload((ref Span<byte> buffer) => obj.SmartPack(ref buffer));
-        }
-
         /// <summary>
         /// Serialize a value-type IPacker into a byte[].
         /// Uses stack buffer for small payloads, ArrayPool for larger ones.

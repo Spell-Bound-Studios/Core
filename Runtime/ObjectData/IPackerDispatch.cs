@@ -6,7 +6,7 @@ using Spellbound.Core.Packing;
 
 namespace Spellbound.Core.ObjectData {
     public interface IPackerDispatch : ISmartPacker {
-        static IPackerDispatch SmartUnpackDispatchData(ref ReadOnlySpan<byte> buffer) {
+        /*static IPackerDispatch SmartUnpackDispatchData(ref ReadOnlySpan<byte> buffer) {
             var result = SmartUnpack(ref buffer);
 
             if (result is not IPackerDispatch dispatchData) {
@@ -23,6 +23,6 @@ namespace Spellbound.Core.ObjectData {
         static IPackerDispatch SmartUnpackDispatchData(byte[] data) {
             ReadOnlySpan<byte> span = data;
             return IPackerDispatch.SmartUnpackDispatchData(ref span);
-        }
+        }*/
     }
 }
