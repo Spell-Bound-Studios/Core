@@ -30,7 +30,7 @@ namespace Spellbound.Core.Logging.Editor {
         private const string UndoSinkLabel = "Toggle Log Sink";
         private const string ApplyLabel = "Apply";
         private const string LevelSubtitle = "Minimum severity compiled into all Spellbound packages.";
-        private const string FileSubtitle = "Name of the log file written to the persistent data path.";
+        private const string FileSubtitle = "Name of the log file written to the persistent Data path.";
         private const string SinksSubtitle = "Toggle where log output is routed.";
         private const string UndoSinkFilterLabel = "Change Sink Filter Level";
         private const string SinkFilterLabel = "  Filter Level";

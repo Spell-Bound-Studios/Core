@@ -40,13 +40,13 @@ namespace Spellbound.Core.Packing {
                     if (!typeof(ISmartPacker).IsAssignableFrom(type)) continue;
                     if (type.IsAbstract || type.IsInterface) continue;
 
-                    var idField = type.GetField("Id", BindingFlags.Public | BindingFlags.Static);
+                    var attribute = type.GetCustomAttribute<PackerIdAttribute>();
 
-                    if (idField == null)
+                    if (attribute == null)
                         throw new Exception(
-                            $"SmartPackerRegistry: '{type.FullName}' implements ISmartPacker but has no static 'Id' field.");
+                            $"SmartPackerRegistry: '{type.FullName}' implements ISmartPacker but has no [PackerId] attribute.");
 
-                    var id = (string)idField.GetValue(null);
+                    var id = attribute.Id;
 
                     if (string.IsNullOrEmpty(id))
                         throw new Exception(
@@ -58,9 +58,9 @@ namespace Spellbound.Core.Packing {
                         throw new Exception(
                             $"SmartPackerRegistry: hash collision or duplicate Id '{id}' (hash: {hash})");
 
+                    HashesByType[type] = hash;
                     var prototype = (ISmartPacker)Activator.CreateInstance(type);
                     Registry.Add(prototype);
-                    HashesByType[type] = hash;
 
                     Log.Debug($"Registered '{id}' ({type.Name}) -> hash {hash}");
                 }
@@ -71,7 +71,7 @@ namespace Spellbound.Core.Packing {
 
         #region API
 
-        private static uint GetHash(Type type) {
+        public static uint GetHash(Type type) {
             if (HashesByType.TryGetValue(type, out var hash)) return hash;
             throw new Exception($"SmartPackerRegistry: '{type.FullName}' is not registered.");
         }
