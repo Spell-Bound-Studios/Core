@@ -72,17 +72,25 @@ namespace Spellbound.Core.Packing {
         #region API
 
         public static uint GetHash(Type type) {
+            EnsureLoaded();
+
             if (HashesByType.TryGetValue(type, out var hash)) return hash;
             throw new Exception($"SmartPackerRegistry: '{type.FullName}' is not registered.");
         }
         
-        public static uint GetHash<T>() where T : ISmartPacker => GetHash(typeof(T));
+        public static uint GetHash<T>() where T : ISmartPacker => Cache<T>.Value;
+
+        private static class Cache<T> where T : ISmartPacker {
+            public static readonly uint Value = GetHash(typeof(T));
+        }
 
 
         /// <summary>
         /// Creates a new instance of the registered type for the given hash; false if not registered.
         /// </summary>
         public static bool TryCreateInstance(uint hash, out ISmartPacker instance) {
+            EnsureLoaded();
+
             if (Registry.TryGet(hash, out var prototype)) {
                 instance = prototype.CreateNewInstance();
                 return true;
