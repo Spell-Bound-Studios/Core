@@ -153,10 +153,10 @@ namespace Spellbound.Core.ObjectHandling {
         }
 
         public bool TryTransformData<TData, TDispatch>(
-            int instanceIndex, uint presetHash, int eventSurfaceIndex, TData data, TDispatch delta) 
-                where TData : IPackerObjectData, new() 
+            int instanceIndex, uint presetHash, int eventSurfaceIndex, TDispatch delta)
+                where TData : IPackerObjectData, new()
                 where TDispatch : IPackerDispatch, new(){
-            StaticDataAccess.Delta(instanceIndex, presetHash, eventSurfaceIndex, data, delta);
+            StaticDataAccess.Delta<TData, TDispatch>(instanceIndex, presetHash, eventSurfaceIndex, delta);
 
             return true;
         }
