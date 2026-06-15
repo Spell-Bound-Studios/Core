@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Spellbound.Core.Logging;
 using UnityEngine;
 
 namespace Spellbound.Core.Packing {
@@ -669,10 +670,181 @@ namespace Spellbound.Core.Packing {
         #endregion
 
         #region High-Level Helpers
-        
-        
-        public static byte[] SmartToBytes(ISmartPacker obj) {
-            return BuildPayload((ref Span<byte> buffer) => obj.SmartPack(ref buffer));
+
+        /// <summary>
+        /// Serialize an ISmartPacker into a byte[] led by its 4-byte stable type tag, so the payload can be
+        /// reconstructed without knowing the type first. A struct resolves its tag at JIT time and never boxes;
+        /// the returned array is the only allocation. An interface- or class-typed argument resolves its tag
+        /// from its runtime type instead.
+        /// </summary>
+        public static byte[] SmartToBytes<T>(in T obj) where T : ISmartPacker {
+            uint tag;
+
+            if (typeof(T).IsValueType)
+                tag = SmartPackerRegistry.GetHash<T>();
+            else {
+                if (obj == null)
+                    throw new ArgumentNullException(nameof(obj));
+
+                tag = SmartPackerRegistry.GetHash(obj.GetType());
+            }
+
+            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+            var span = stackBuf;
+
+            try {
+                WriteUInt(ref span, tag);
+                obj.Pack(ref span);
+                var written = stackBuf.Length - span.Length;
+
+                return stackBuf[..written].ToArray();
+            }
+            catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
+
+            var size = Math.Max(StackBufferSize * 2, 8192);
+
+            while (size <= MaxRentedBuffer) {
+                var rented = ArrayPool<byte>.Shared.Rent(size);
+
+                try {
+                    var rentedSpan = new Span<byte>(rented, 0, size);
+                    var working = rentedSpan;
+
+                    try {
+                        WriteUInt(ref working, tag);
+                        obj.Pack(ref working);
+                        var written = size - working.Length;
+                        var result = new byte[written];
+                        Buffer.BlockCopy(rented, 0, result, 0, written);
+
+                        return result;
+                    }
+                    catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
+                }
+                finally {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+
+                size = Math.Min(size * 2, MaxRentedBuffer);
+            }
+
+            throw new InvalidOperationException($"Payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
+        }
+
+        /// <summary>
+        /// Deserialize a payload written by <see cref="SmartToBytes{T}"/> whose type the caller already knows,
+        /// validating the leading tag against T. Returns false with an error log on null/short data or a tag
+        /// that is not T's; value is always a fresh T. A struct unpacks in place with zero heap allocation.
+        /// </summary>
+        public static bool TrySmartUnpack<T>(byte[] data, out T value) where T : ISmartPacker, new() {
+            value = new T();
+
+            if (data == null || data.Length < sizeof(uint)) {
+                Log.Error($"SmartUnpack: '{typeof(T).Name}' payload is too small to hold a 4-byte type tag.");
+
+                return false;
+            }
+
+            ReadOnlySpan<byte> span = data;
+            var tag = ReadUInt(ref span);
+            var expected = SmartPackerRegistry.GetHash<T>();
+
+            if (tag != expected) {
+                Log.Error($"SmartUnpack: tag {tag} is not '{typeof(T).Name}' ({expected}); " +
+                          "payload is corrupt or keyed to a different type.");
+
+                return false;
+            }
+
+            value.Unpack(ref span);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Serialize a polymorphic list of ISmartPackers into <paramref name="buffer"/>: a count of the
+        /// non-null entries, then each entry's 4-byte type tag (its <see cref="IRegistryEntry.Hash"/>) and
+        /// packed state. The tag comes from each entry's runtime type, so a list typed as a base round-trips
+        /// its concrete entries.
+        /// </summary>
+        public static void WriteSmartList<T>(ref Span<byte> buffer, IReadOnlyList<T> items) where T : ISmartPacker {
+            var count = 0;
+
+            if (items != null) {
+                for (var i = 0; i < items.Count; i++) {
+                    if (items[i] != null)
+                        count++;
+                }
+            }
+
+            WriteInt(ref buffer, count);
+
+            if (items == null)
+                return;
+
+            for (var i = 0; i < items.Count; i++) {
+                var item = items[i];
+
+                if (item == null)
+                    continue;
+
+                WriteUInt(ref buffer, item.Hash);
+                item.Pack(ref buffer);
+            }
+        }
+
+        /// <summary>
+        /// Deserialize a list written by <see cref="WriteSmartList{T}"/>, reconstructing each entry's concrete
+        /// type through <see cref="SmartPackerRegistry"/>. Throws on an unregistered tag or an entry whose type
+        /// is not a <typeparamref name="T"/> — an entry's byte length is only known once its type resolves, so a
+        /// miss cannot be skipped.
+        /// </summary>
+        public static List<T> ReadSmartList<T>(ref ReadOnlySpan<byte> buffer) where T : ISmartPacker {
+            var count = ReadInt(ref buffer);
+            var result = new List<T>(count);
+
+            for (var i = 0; i < count; i++) {
+                var hash = ReadUInt(ref buffer);
+
+                if (!SmartPackerRegistry.TryCreateInstance(hash, out var instance) || instance is not T typed)
+                    throw new InvalidOperationException(
+                        $"SmartList: tag {hash} did not resolve to a registered {typeof(T).Name}.");
+
+                typed.Unpack(ref buffer);
+                result.Add(typed);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Pack a polymorphic ISmartPacker list directly to a byte[]; null/empty yields an empty array.
+        /// </summary>
+        public static byte[] SmartListToBytes<T>(IReadOnlyList<T> items) where T : ISmartPacker {
+            if (items == null || items.Count == 0)
+                return Array.Empty<byte>();
+
+            return BuildPayload((ref Span<byte> buffer) => WriteSmartList(ref buffer, items));
+        }
+
+        /// <summary>
+        /// Unpack a polymorphic ISmartPacker list from a byte[], returning an empty list on null/empty or
+        /// malformed data (a corrupt or stale tag yields empty rather than throwing to the caller).
+        /// </summary>
+        public static List<T> SmartListFromBytes<T>(byte[] bytes) where T : ISmartPacker {
+            if (bytes == null || bytes.Length == 0)
+                return new List<T>();
+
+            try {
+                ReadOnlySpan<byte> span = bytes;
+
+                return ReadSmartList<T>(ref span);
+            }
+            catch (Exception e) {
+                Log.Error($"SmartListFromBytes<{typeof(T).Name}>: malformed payload; returning empty. ({e.Message})");
+
+                return new List<T>();
+            }
         }
 
         /// <summary>
