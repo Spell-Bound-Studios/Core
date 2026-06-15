@@ -109,8 +109,8 @@ namespace Spellbound.Core.ObjectData {
                         if (Table.ContainsKey(key))
                             continue;
 
-                        var closed = open.MakeGenericMethod(args[0], args[1]);
-                        Table[key] = (DeltaApply)closed.CreateDelegate(typeof(DeltaApply));
+                        var closed = open?.MakeGenericMethod(args[0], args[1]);
+                        Table[key] = (DeltaApply)closed?.CreateDelegate(typeof(DeltaApply));
                     }
                 }
             }
