@@ -43,6 +43,6 @@ namespace Spellbound.Core.ObjectData {
                 where TData : IPackerObjectData, new() where TDispatch : IPackerDispatch, new();
 
         // Intended to be the implementation for deleting an instance with confirmation of deletion.
-        Task<bool> TryDeleteInstance(int instanceIndex);
+        void DeleteInstance(int instanceIndex);
     }
 }

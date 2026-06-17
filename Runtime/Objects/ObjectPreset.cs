@@ -58,9 +58,6 @@ namespace Spellbound.Core.Objects {
         public bool TryGetModules<T>(out IReadOnlyList<T> results, int surfaceIndex = 0) where T : class {
             results = Array.Empty<T>();
 
-            if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
-                return false;
-
             var matches = new List<T>();
             foreach (var module in surfaceModules[surfaceIndex].presetModules) {
                 if (module is T t)

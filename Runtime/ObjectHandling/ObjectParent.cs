@@ -144,7 +144,7 @@ namespace Spellbound.Core.ObjectHandling {
             int instanceIndex, uint presetHash, int eventSurfaceIndex, out List<IPackerObjectData> results) =>
                 StaticDataAccess.TryReadAll(instanceIndex, eventSurfaceIndex, out results);
 
-        public bool TryWriteData<T>(
+        public bool WriteData<T>(
             int instanceIndex, uint presetHash, int eventSurfaceIndex, T newData, byte context = 0)
                 where T : IPackerObjectData, new() {
             StaticDataAccess.Write(instanceIndex, presetHash, eventSurfaceIndex, newData, context);
@@ -152,17 +152,15 @@ namespace Spellbound.Core.ObjectHandling {
             return true;
         }
 
-        public bool TryTransformData<TData, TDispatch>(
+        public void Delta<TData, TDispatch>(
             int instanceIndex, uint presetHash, int eventSurfaceIndex, TDispatch delta)
                 where TData : IPackerObjectData, new()
                 where TDispatch : IPackerDispatch, new(){
             StaticDataAccess.Delta<TData, TDispatch>(instanceIndex, presetHash, eventSurfaceIndex, delta);
-
-            return true;
         }
 
-        public async Task<bool> TryDeleteData(int instanceIndex) =>
-                await StaticDataAccess.TryDeleteInstance(instanceIndex);
+        public void DeleteInstance(int instanceIndex) =>
+                StaticDataAccess.DeleteInstance(instanceIndex);
 
         #endregion API
 
