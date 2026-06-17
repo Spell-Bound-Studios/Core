@@ -142,7 +142,7 @@ namespace Spellbound.Core.ObjectHandling {
 
         public bool TryReadDataAllData(
             int instanceIndex, uint presetHash, int eventSurfaceIndex, out List<IPackerObjectData> results) =>
-                StaticDataAccess.TryReadAll(instanceIndex, eventSurfaceIndex, out results);
+                StaticDataAccess.TryReadAllBySurface(instanceIndex, eventSurfaceIndex, out results);
 
         public bool WriteData<T>(
             int instanceIndex, uint presetHash, int eventSurfaceIndex, T newData, byte context = 0)

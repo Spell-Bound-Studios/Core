@@ -32,7 +32,9 @@ namespace Spellbound.Core.ObjectData {
         bool TryRead<T>(int instanceIndex, int eventSurfaceIndex, out T data)
                 where T : IPackerObjectData, new();
 
-        bool TryReadAll(int instanceIndex, int eventSurfaceIndex, out List<IPackerObjectData> data);
+        bool TryReadAllBySurface(int instanceIndex, int eventSurfaceIndex, out List<IPackerObjectData> data);
+        
+        bool TryReadAll(int instanceIndex, out List<IPackerObjectData> data);
 
         // Intended to be the implementation for writing over any data with new data on an object.
         void Write<T>(int instanceIndex, uint presetHash, int eventSurfaceIndex, T newData, byte contextIn)
