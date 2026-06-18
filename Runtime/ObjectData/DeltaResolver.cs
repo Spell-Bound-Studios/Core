@@ -26,7 +26,7 @@ namespace Spellbound.Core.ObjectData {
         /// consequence to award.
         /// </summary>
         public delegate byte[] DeltaApply(
-            byte[] currentBytes, byte[] deltaBytes, ObjectPreset preset, int surfaceIndex,
+            byte[] currentBytes, byte[] deltaBytes, ObjectPreset preset, byte surfaceIndex,
             out IPackerObjectData result, out byte context, out ISmartPacker consequence);
 
         private static readonly Dictionary<(uint dataHash, uint deltaHash), DeltaApply> Table = new();
@@ -50,7 +50,7 @@ namespace Spellbound.Core.ObjectData {
         /// module default), applies it, and repacks the result. Shared with the reflection path below.
         /// </summary>
         public static byte[] ApplyTyped<TData, TDelta>(
-            byte[] currentBytes, TDelta delta, ObjectPreset preset, int surfaceIndex,
+            byte[] currentBytes, TDelta delta, ObjectPreset preset, byte surfaceIndex,
             out IPackerObjectData result, out byte context, out ISmartPacker consequence)
                 where TData : IPackerObjectData, new()
                 where TDelta : ISmartPacker, new() {
@@ -76,7 +76,7 @@ namespace Spellbound.Core.ObjectData {
         /// <see cref="ApplyTyped{TData,TDelta}"/>.
         /// </summary>
         private static byte[] Run<TData, TDelta>(
-            byte[] currentBytes, byte[] deltaBytes, ObjectPreset preset, int surfaceIndex,
+            byte[] currentBytes, byte[] deltaBytes, ObjectPreset preset, byte surfaceIndex,
             out IPackerObjectData result, out byte context, out ISmartPacker consequence)
                 where TData : IPackerObjectData, new()
                 where TDelta : ISmartPacker, new() {

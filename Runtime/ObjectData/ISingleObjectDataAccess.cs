@@ -4,15 +4,15 @@ using System.Collections.Generic;
 
 namespace Spellbound.Core.ObjectData {
     public interface ISingleObjectDataAccess {
-        bool TryRead<T>(int eventSurfaceIndex, out T data) where T : IPackerObjectData, new();
+        bool TryRead<T>(byte eventSurfaceIndex, out T data) where T : IPackerObjectData, new();
 
-        void Write<T>(int eventSurfaceIndex, T newData, byte contextIn) where T : IPackerObjectData, new();
+        void Write<T>(byte eventSurfaceIndex, T newData, byte contextIn) where T : IPackerObjectData, new();
 
-        public void Delta<TData, TDispatch>(int eventSurfaceIndex, TDispatch dispatch)
+        public void Delta<TData, TDispatch>(byte eventSurfaceIndex, TDispatch dispatch)
                 where TData : IPackerObjectData, new()
                 where TDispatch : IPackerDispatch, new();
         
-        bool TryReadAllBySurface(int eventSurfaceIndex, out List<IPackerObjectData> data);
+        bool TryReadAllBySurface(byte eventSurfaceIndex, out List<IPackerObjectData> data);
         
         bool TryReadAll(out List<IPackerObjectData> allData);
     }
