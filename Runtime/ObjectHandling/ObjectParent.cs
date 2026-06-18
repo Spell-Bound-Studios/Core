@@ -127,7 +127,7 @@ namespace Spellbound.Core.ObjectHandling {
             DynamicDataAccess.CreateRuntimeObject(preset.Hash, position, rotation, scale);
         }
 
-        public bool TryReadData<T>(int instanceIndex, uint presetHash, int eventSurfaceIndex, out T result)
+        public bool TryReadData<T>(int instanceIndex, uint presetHash, byte eventSurfaceIndex, out T result)
                 where T : IPackerObjectData, new() {
             if (StaticDataAccess.TryRead<T>(instanceIndex, eventSurfaceIndex, out var data)) {
                 result = data;
@@ -141,28 +141,26 @@ namespace Spellbound.Core.ObjectHandling {
         }
 
         public bool TryReadDataAllData(
-            int instanceIndex, uint presetHash, int eventSurfaceIndex, out List<IPackerObjectData> results) =>
-                StaticDataAccess.TryReadAll(instanceIndex, eventSurfaceIndex, out results);
+            int instanceIndex, uint presetHash, byte eventSurfaceIndex, out List<IPackerObjectData> results) =>
+                StaticDataAccess.TryReadAllBySurface(instanceIndex, eventSurfaceIndex, out results);
 
-        public bool TryWriteData<T>(
-            int instanceIndex, uint presetHash, int eventSurfaceIndex, T newData, byte context = 0)
+        public bool WriteData<T>(
+            int instanceIndex, uint presetHash, byte eventSurfaceIndex, T newData, byte context = 0)
                 where T : IPackerObjectData, new() {
             StaticDataAccess.Write(instanceIndex, presetHash, eventSurfaceIndex, newData, context);
 
             return true;
         }
 
-        public bool TryTransformData<TData, TDispatch>(
-            int instanceIndex, uint presetHash, int eventSurfaceIndex, TDispatch delta)
+        public void Delta<TData, TDispatch>(
+            int instanceIndex, uint presetHash, byte eventSurfaceIndex, TDispatch delta)
                 where TData : IPackerObjectData, new()
                 where TDispatch : IPackerDispatch, new(){
             StaticDataAccess.Delta<TData, TDispatch>(instanceIndex, presetHash, eventSurfaceIndex, delta);
-
-            return true;
         }
 
-        public async Task<bool> TryDeleteData(int instanceIndex) =>
-                await StaticDataAccess.TryDeleteInstance(instanceIndex);
+        public void DeleteInstance(int instanceIndex) =>
+                StaticDataAccess.DeleteInstance(instanceIndex);
 
         #endregion API
 

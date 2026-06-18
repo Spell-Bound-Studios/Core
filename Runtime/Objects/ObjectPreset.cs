@@ -34,7 +34,7 @@ namespace Spellbound.Core.Objects {
             if (surfaceModules == null)
                 return;
 
-            for (var i = 0; i < surfaceModules.Count; i++) {
+            for (byte i = 0; i < surfaceModules.Count; i++) {
                 var surface = surfaceModules[i];
 
                 if (surface?.presetModules == null)
@@ -45,7 +45,7 @@ namespace Spellbound.Core.Objects {
             }
         }
 
-        public bool TryGetModule<T>(out T result, int surfaceIndex = 0) where T : class {
+        public bool TryGetModule<T>(out T result, byte surfaceIndex = 0) where T : class {
             if (TryGetModules<T>(out var results, surfaceIndex)) {
                 result = results[0];
                 return true;
@@ -55,11 +55,8 @@ namespace Spellbound.Core.Objects {
             return false;
         }
 
-        public bool TryGetModules<T>(out IReadOnlyList<T> results, int surfaceIndex = 0) where T : class {
+        public bool TryGetModules<T>(out IReadOnlyList<T> results, byte surfaceIndex = 0) where T : class {
             results = Array.Empty<T>();
-
-            if (surfaceIndex < 0 || surfaceIndex >= surfaceModules.Count)
-                return false;
 
             var matches = new List<T>();
             foreach (var module in surfaceModules[surfaceIndex].presetModules) {
