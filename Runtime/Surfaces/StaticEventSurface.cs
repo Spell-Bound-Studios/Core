@@ -14,7 +14,7 @@ namespace Spellbound.Core.Surfaces {
     [RequireComponent(typeof(Collider))]
     public class StaticEventSurface : MonoBehaviour, IEventSurface {
         [SerializeField, Tooltip("Decide your own surface index schema.")]
-        private int surfaceIndex = -1;
+        private byte surfaceIndex;
 
         public Vector3 Position => transform.position;
 
