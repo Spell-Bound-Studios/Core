@@ -6,6 +6,7 @@ using System.Reflection;
 using Spellbound.Core.ModuleContracts;
 using Spellbound.Core.Objects;
 using Spellbound.Core.Packing;
+using Spellbound.Core.Tooling;
 using UnityEngine;
 
 namespace Spellbound.Core.ObjectData {
@@ -94,8 +95,8 @@ namespace Spellbound.Core.ObjectData {
 
             var open = typeof(DeltaResolver).GetMethod(nameof(Run), BindingFlags.NonPublic | BindingFlags.Static);
 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-                foreach (var type in GetTypesSafe(assembly)) {
+            foreach (var assembly in AssemblyScanning.ScannableAssemblies()) {
+                foreach (var type in AssemblyScanning.LoadableTypes(assembly)) {
                     if (!type.IsClass || type.IsAbstract)
                         continue;
 
@@ -113,22 +114,6 @@ namespace Spellbound.Core.ObjectData {
                         Table[key] = (DeltaApply)closed?.CreateDelegate(typeof(DeltaApply));
                     }
                 }
-            }
-        }
-
-        private static IEnumerable<Type> GetTypesSafe(Assembly assembly) {
-            try {
-                return assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException e) {
-                var loaded = new List<Type>();
-
-                foreach (var type in e.Types) {
-                    if (type != null)
-                        loaded.Add(type);
-                }
-
-                return loaded;
             }
         }
     }

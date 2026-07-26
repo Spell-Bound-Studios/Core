@@ -16,6 +16,9 @@ namespace Spellbound.Core.Console {
 
         private static bool _isInitialized;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetForPlaySession() => Clear();
+
         /// <summary>
         /// Initializes the preset registry by scanning all ObjectPresets with ConsoleModules.
         /// </summary>
