@@ -1,6 +1,5 @@
 // Copyright 2026 Spellbound Studio Inc.
 
-#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using Spellbound.Core.Tooling;
@@ -95,5 +94,4 @@ namespace Spellbound.Core {
             return parts.Length == 2 ? Type.GetType($"{parts[1]}, {parts[0]}") : null;
         }
     }
-}
-#endif
+}

@@ -1,9 +1,5 @@
 ﻿// Copyright 2026 Spellbound Studio Inc.
 
-// === LogConfigEditor.cs ===
-// Copyright 2026 Spellbound Studio Inc.
-
-#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -295,4 +291,3 @@ namespace Spellbound.Core.Logging.Editor {
         }
     }
 }
-#endif
