@@ -35,6 +35,7 @@ namespace Spellbound.Core {
         public TransformData(Transform transform) {
             Position = transform.position;
             Rotation = math.degrees(math.EulerXYZ(transform.rotation));
+            // TODO: Tinker it looks like we are silently dropping non-uniform scale please investigate
             Scale = transform.localScale.x;
         }
 

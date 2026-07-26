@@ -68,13 +68,18 @@ namespace Spellbound.Core.Logging {
                 Emit(LogLevel.Error, message, file, member, line);
 
         public static void Emit(LogLevel level, string message, string file, string member, int line) {
-            var source = Path.GetFileNameWithoutExtension(file);
             var sinks = _sinks;
+
+            if (sinks.Length == 0)
+                return;
+
+            string source = null;
 
             for (var i = 0; i < sinks.Length; i++) {
                 if (level < sinks[i].FilterLevel)
                     continue;
 
+                source ??= Path.GetFileNameWithoutExtension(file);
                 sinks[i].Sink.Emit(level, source, message, member, line);
             }
         }
