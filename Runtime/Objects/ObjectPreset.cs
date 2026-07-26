@@ -26,11 +26,16 @@ namespace Spellbound.Core.Objects {
         public Vector2 interactionDistance = new(50, 70);
 
         [SerializeField] public List<PresetSurface> surfaceModules = new();
-        
-        // In ObjectPreset
+
+        private const int AllSurfaces = -1;
+
+        private readonly Dictionary<(int surfaceIndex, Type moduleType), object> _moduleCache = new();
+
         private void OnEnable() => RewireModules();
 
         private void RewireModules() {
+            _moduleCache.Clear();
+
             if (surfaceModules == null)
                 return;
 
@@ -46,56 +51,65 @@ namespace Spellbound.Core.Objects {
         }
 
         public bool TryGetModule<T>(out T result, byte surfaceIndex = 0) where T : class {
-            if (TryGetModules<T>(out var results, surfaceIndex)) {
-                result = results[0];
+            var modules = LookupModules<T>(surfaceIndex);
+
+            if (modules.Count > 0) {
+                result = modules[0];
+
                 return true;
             }
 
             result = null;
+
             return false;
         }
 
         public bool TryGetModules<T>(out IReadOnlyList<T> results, byte surfaceIndex = 0) where T : class {
-            results = Array.Empty<T>();
+            results = LookupModules<T>(surfaceIndex);
 
-            var matches = new List<T>();
-            foreach (var module in surfaceModules[surfaceIndex].presetModules) {
-                if (module is T t)
-                    matches.Add(t);
-            }
-
-            if (matches.Count == 0)
-                return false;
-
-            results = matches;
-
-            return true;
+            return results.Count > 0;
         }
-        
-        public bool TryGetModulesAcrossSurfaces<T>(out IReadOnlyList<T>  results) where T : class {
-            results = Array.Empty<T>();
+
+        public bool TryGetModulesAcrossSurfaces<T>(out IReadOnlyList<T> results) where T : class {
+            results = LookupModules<T>(AllSurfaces);
+
+            return results.Count > 0;
+        }
+
+        private IReadOnlyList<T> LookupModules<T>(int surfaceIndex) where T : class {
+            var key = (surfaceIndex, typeof(T));
+
+            if (_moduleCache.TryGetValue(key, out var cached))
+                return (IReadOnlyList<T>)cached;
+
             List<T> matches = null;
 
-            for (var i = 0; i < surfaceModules.Count; i++) {
-                var surface = surfaceModules[i];
-
-                if (surface?.presetModules == null)
-                    continue;
-
-                foreach (var module in surface.presetModules) {
-                    if (module is not T t)
-                        continue;
-
-                    matches ??= new List<T>();
-                    matches.Add(t);
+            if (surfaceModules != null) {
+                if (surfaceIndex == AllSurfaces) {
+                    foreach (var surface in surfaceModules)
+                        CollectModules(surface, ref matches);
                 }
+                else if (surfaceIndex >= 0 && surfaceIndex < surfaceModules.Count)
+                    CollectModules(surfaceModules[surfaceIndex], ref matches);
             }
 
-            if (matches == null)
-                return false;
+            IReadOnlyList<T> results = matches ?? (IReadOnlyList<T>)Array.Empty<T>();
+            _moduleCache[key] = results;
 
-            results = matches;
-            return true;
+            return results;
+
+            static void CollectModules(PresetSurface surface, ref List<T> collected) {
+                if (surface?.presetModules == null)
+                    return;
+
+                foreach (var module in surface.presetModules) {
+                    if (module is not T match)
+                        continue;
+
+                    collected ??= new List<T>();
+                    collected.Add(match);
+                }
+            }
         }
 
         /// <summary>

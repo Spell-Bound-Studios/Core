@@ -538,8 +538,11 @@ namespace Spellbound.Core.ObjectHandling {
 
             if (!_eventSurfaces.TryGetValue(instanceIndex, out var mainSurface)) return false;
 
-            if (!mainSurface.TryGetEventSurfaceByIndex(surfaceIndex, out surface))
+            if (!mainSurface.TryGetEventSurfaceByIndex(surfaceIndex, out surface)) {
                 Log.Error($"Surface not found for instanceIndex {instanceIndex} and surfaceIndex  {surfaceIndex}");
+
+                return false;
+            }
 
             transformData = new TransformData(surface.Transform);
             preset = surface.Preset;

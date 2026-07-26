@@ -622,21 +622,23 @@ namespace Spellbound.Core.Packing {
                 return emptyBuf.ToArray();
             }
 
-            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
-            var span = stackBuf;
+            if (_payloadSizeHint <= StackBufferSize) {
+                Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+                var span = stackBuf;
 
-            try {
-                PackList(ref span, items);
-                var written = stackBuf.Length - span.Length;
+                try {
+                    PackList(ref span, items);
+                    var written = stackBuf.Length - span.Length;
 
-                return stackBuf[..written].ToArray();
+                    return stackBuf[..written].ToArray();
+                }
+                catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
             }
-            catch (ArgumentOutOfRangeException) { }
 
             // Need larger buffer
-            var size = Math.Max(StackBufferSize * 2, 8192);
+            var size = Math.Max(_payloadSizeHint, 8192);
 
-            while (size <= MaxRentedBuffer) {
+            while (true) {
                 var rented = ArrayPool<byte>.Shared.Rent(size);
 
                 try {
@@ -649,20 +651,22 @@ namespace Spellbound.Core.Packing {
 
                         var result = new byte[written];
                         Buffer.BlockCopy(rented, 0, result, 0, written);
+                        RecordPayloadSize(written);
 
                         return result;
                     }
-                    catch (ArgumentOutOfRangeException) { }
+                    catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
                 }
                 finally {
                     ArrayPool<byte>.Shared.Return(rented);
                 }
 
+                if (size >= MaxRentedBuffer)
+                    throw new InvalidOperationException(
+                        $"List payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
+
                 size = Math.Min(size * 2, MaxRentedBuffer);
             }
-
-            throw new InvalidOperationException(
-                $"List payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
         }
 
         /// <summary>
@@ -699,21 +703,23 @@ namespace Spellbound.Core.Packing {
                 tag = SmartPackerRegistry.GetHash(obj.GetType());
             }
 
-            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
-            var span = stackBuf;
+            if (_payloadSizeHint <= StackBufferSize) {
+                Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+                var span = stackBuf;
 
-            try {
-                WriteUInt(ref span, tag);
-                obj.Pack(ref span);
-                var written = stackBuf.Length - span.Length;
+                try {
+                    WriteUInt(ref span, tag);
+                    obj.Pack(ref span);
+                    var written = stackBuf.Length - span.Length;
 
-                return stackBuf[..written].ToArray();
+                    return stackBuf[..written].ToArray();
+                }
+                catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
             }
-            catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
 
-            var size = Math.Max(StackBufferSize * 2, 8192);
+            var size = Math.Max(_payloadSizeHint, 8192);
 
-            while (size <= MaxRentedBuffer) {
+            while (true) {
                 var rented = ArrayPool<byte>.Shared.Rent(size);
 
                 try {
@@ -726,6 +732,7 @@ namespace Spellbound.Core.Packing {
                         var written = size - working.Length;
                         var result = new byte[written];
                         Buffer.BlockCopy(rented, 0, result, 0, written);
+                        RecordPayloadSize(written);
 
                         return result;
                     }
@@ -735,10 +742,12 @@ namespace Spellbound.Core.Packing {
                     ArrayPool<byte>.Shared.Return(rented);
                 }
 
+                if (size >= MaxRentedBuffer)
+                    throw new InvalidOperationException(
+                        $"Payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
+
                 size = Math.Min(size * 2, MaxRentedBuffer);
             }
-
-            throw new InvalidOperationException($"Payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
         }
 
         /// <summary>
@@ -873,7 +882,7 @@ namespace Spellbound.Core.Packing {
 
                     return stackBuf[..written].ToArray();
                 }
-                catch (ArgumentOutOfRangeException) { }
+                catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
             }
 
             // Payload too large, use ArrayPool with exponential growth
@@ -896,7 +905,7 @@ namespace Spellbound.Core.Packing {
 
                         return result;
                     }
-                    catch (ArgumentOutOfRangeException) { }
+                    catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
                 }
                 finally {
                     ArrayPool<byte>.Shared.Return(rented);
@@ -936,21 +945,23 @@ namespace Spellbound.Core.Packing {
                 return emptyBuf.ToArray();
             }
 
-            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
-            var span = stackBuf;
+            if (_payloadSizeHint <= StackBufferSize) {
+                Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+                var span = stackBuf;
 
-            try {
-                PackArray(ref span, items);
-                var written = stackBuf.Length - span.Length;
+                try {
+                    PackArray(ref span, items);
+                    var written = stackBuf.Length - span.Length;
 
-                return stackBuf[..written].ToArray();
+                    return stackBuf[..written].ToArray();
+                }
+                catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
             }
-            catch (ArgumentOutOfRangeException) { }
 
             // Need larger buffer
-            var size = Math.Max(StackBufferSize * 2, 8192);
+            var size = Math.Max(_payloadSizeHint, 8192);
 
-            while (size <= MaxRentedBuffer) {
+            while (true) {
                 var rented = ArrayPool<byte>.Shared.Rent(size);
 
                 try {
@@ -963,20 +974,22 @@ namespace Spellbound.Core.Packing {
 
                         var result = new byte[written];
                         Buffer.BlockCopy(rented, 0, result, 0, written);
+                        RecordPayloadSize(written);
 
                         return result;
                     }
-                    catch (ArgumentOutOfRangeException) { }
+                    catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
                 }
                 finally {
                     ArrayPool<byte>.Shared.Return(rented);
                 }
 
+                if (size >= MaxRentedBuffer)
+                    throw new InvalidOperationException(
+                        $"Array payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
+
                 size = Math.Min(size * 2, MaxRentedBuffer);
             }
-
-            throw new InvalidOperationException(
-                $"Array payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
         }
 
         /// <summary>
@@ -1006,15 +1019,7 @@ namespace Spellbound.Core.Packing {
             if (a == null || b == null)
                 return false;
 
-            if (a.Length != b.Length)
-                return false;
-
-            for (var i = 0; i < a.Length; ++i) {
-                if (a[i] != b[i])
-                    return false;
-            }
-
-            return true;
+            return a.AsSpan().SequenceEqual(b);
 
             // Helper method that returns a bool if the byte array is null or empty.
             static bool NoData(byte[] x) => x == null || x.Length == 0;
@@ -1025,20 +1030,22 @@ namespace Spellbound.Core.Packing {
         /// Caller provides only the write logic.
         /// </summary>
         public static byte[] BuildPayload(PackWriter writer) {
-            Span<byte> stackBuf = stackalloc byte[StackBufferSize];
-            var span = stackBuf;
+            if (_payloadSizeHint <= StackBufferSize) {
+                Span<byte> stackBuf = stackalloc byte[StackBufferSize];
+                var span = stackBuf;
 
-            try {
-                writer(ref span);
-                var written = stackBuf.Length - span.Length;
+                try {
+                    writer(ref span);
+                    var written = stackBuf.Length - span.Length;
 
-                return stackBuf[..written].ToArray();
+                    return stackBuf[..written].ToArray();
+                }
+                catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
             }
-            catch (Exception e) when (e is ArgumentException or IndexOutOfRangeException) { }
 
-            var size = Math.Max(StackBufferSize * 2, 8192);
+            var size = Math.Max(_payloadSizeHint, 8192);
 
-            while (size <= MaxRentedBuffer) {
+            while (true) {
                 var rented = ArrayPool<byte>.Shared.Rent(size);
 
                 try {
@@ -1050,6 +1057,7 @@ namespace Spellbound.Core.Packing {
                         var written = size - working.Length;
                         var result = new byte[written];
                         Buffer.BlockCopy(rented, 0, result, 0, written);
+                        RecordPayloadSize(written);
 
                         return result;
                     }
@@ -1059,10 +1067,12 @@ namespace Spellbound.Core.Packing {
                     ArrayPool<byte>.Shared.Return(rented);
                 }
 
+                if (size >= MaxRentedBuffer)
+                    throw new InvalidOperationException(
+                        $"Payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
+
                 size = Math.Min(size * 2, MaxRentedBuffer);
             }
-
-            throw new InvalidOperationException($"Payload exceeds maximum buffer size of {MaxRentedBuffer} bytes");
         }
 
         #endregion

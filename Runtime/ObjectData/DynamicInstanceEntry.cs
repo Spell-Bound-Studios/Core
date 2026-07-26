@@ -34,7 +34,7 @@ namespace Spellbound.Core.ObjectData {
 
             foreach (var (key, bytes) in DataSlots) {
                 Packer.WriteUInt(ref buffer, key.PackerHash);
-                Packer.WriteInt(ref buffer, key.SurfaceIndex);
+                Packer.WriteByte(ref buffer, key.SurfaceIndex);
                 Packer.WriteBytes(ref buffer, bytes);
             }
         }
