@@ -7,7 +7,6 @@ namespace Spellbound.Core.Console {
     /// <summary>
     /// Static logging utility that prints directly to the console in build or in the editor.
     /// Useful for debugging and adding capability to your packages.
-    /// Console frontends subscribe to the events to receive output.
     /// </summary>
     public static class ConsoleLogger {
         public static event Action<string> LinePrinted;
@@ -31,9 +30,6 @@ namespace Spellbound.Core.Console {
         /// </summary>
         public static void PrintError(string message) => ErrorPrinted?.Invoke(message);
 
-        /// <summary>
-        /// Clear the output of any listening console frontend.
-        /// </summary>
         public static void Clear() => Cleared?.Invoke();
 
         /// <summary>
