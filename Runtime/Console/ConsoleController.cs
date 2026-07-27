@@ -56,17 +56,24 @@ namespace Spellbound.Core.Console {
             CommandRegistry.Instance.AutoRegisterCommands();
 
             SetVisibilityImmediate(false);
-            ConsoleLogger.Initialize(this);
         }
 
         private void OnEnable() {
             if (inputField != null)
                 inputField.onSubmit.AddListener(OnSubmitInput);
+
+            ConsoleLogger.LinePrinted += LogOutput;
+            ConsoleLogger.ErrorPrinted += LogError;
+            ConsoleLogger.Cleared += ClearOutput;
         }
 
         private void OnDisable() {
             if (inputField != null)
                 inputField.onSubmit.RemoveListener(OnSubmitInput);
+
+            ConsoleLogger.LinePrinted -= LogOutput;
+            ConsoleLogger.ErrorPrinted -= LogError;
+            ConsoleLogger.Cleared -= ClearOutput;
         }
 
         #endregion
