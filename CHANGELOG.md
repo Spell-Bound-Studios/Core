@@ -1,3 +1,11 @@
+## [1.1.4] - 8/1/2026
+
+- Log sinks can now be unregistered with `Log.RemoveSink` or scoped to a `using` block with `Log.AddScopedSink`.
+- `EntityPrefabRegistryAuthoring` takes a `PresetBakeManifest`, letting the prefab registry rebake when presets are added, removed, or edited.
+- `TransformData.RotAsQuaternion` rebuilds rotation in XYZ euler order, matching how the constructors capture it. Composed rotations no longer come back skewed.
+- `RecordingLogSink` captures log entries in memory for assertions, and sink discovery now ignores non-public types so test sinks no longer appear in the Log Config inspector.
+- `ResourceRegistry<TEntry>` discovers registry entries under a Resources folder and adds the lazy load, name index, and per-entry validation that every registry was hand-rolling. `PresetRegistry` now sits on it; a failed load clears the registry and reports again on the next access instead of leaving it half populated.
+
 ## [2.0.0] - 4/18/2025
 
 ### Second Release

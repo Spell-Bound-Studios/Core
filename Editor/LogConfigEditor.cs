@@ -171,6 +171,9 @@ namespace Spellbound.Core.Logging.Editor {
                     if (type.IsAbstract || type.IsInterface)
                         continue;
 
+                    if (!type.IsPublic)
+                        continue;
+
                     if (type.GetConstructor(Type.EmptyTypes) == null)
                         continue;
 

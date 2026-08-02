@@ -11,16 +11,58 @@ namespace Spellbound.Core.Logging {
             public LogLevel FilterLevel;
         }
 
-        private static RegisteredSink[] _sinks = System.Array.Empty<RegisteredSink>();
+        private static readonly object SinkMutationLock = new object();
+
+        private static volatile RegisteredSink[] _sinks = System.Array.Empty<RegisteredSink>();
 
         public static void AddSink(ILogSink sink, LogConfig config, LogLevel filterLevel) {
+            if (sink == null)
+                return;
+
             sink.Initialize(config);
 
-            var old = _sinks;
-            var next = new RegisteredSink[old.Length + 1];
-            System.Array.Copy(old, next, old.Length);
-            next[old.Length] = new RegisteredSink { Sink = sink, FilterLevel = filterLevel };
-            _sinks = next;
+            lock (SinkMutationLock) {
+                var old = _sinks;
+                var next = new RegisteredSink[old.Length + 1];
+                System.Array.Copy(old, next, old.Length);
+                next[old.Length] = new RegisteredSink { Sink = sink, FilterLevel = filterLevel };
+                _sinks = next;
+            }
+        }
+
+        public static LogSinkScope AddScopedSink(ILogSink sink, LogConfig config, LogLevel filterLevel) {
+            AddSink(sink, config, filterLevel);
+
+            return new LogSinkScope(sink);
+        }
+
+        public static bool RemoveSink(ILogSink sink) {
+            if (sink == null)
+                return false;
+
+            lock (SinkMutationLock) {
+                var old = _sinks;
+                var index = -1;
+
+                for (var i = 0; i < old.Length; i++) {
+                    if (!ReferenceEquals(old[i].Sink, sink))
+                        continue;
+
+                    index = i;
+
+                    break;
+                }
+
+                if (index < 0)
+                    return false;
+
+                var next = new RegisteredSink[old.Length - 1];
+                System.Array.Copy(old, next, index);
+                System.Array.Copy(old, index + 1, next, index, old.Length - index - 1);
+                _sinks = next;
+
+                return true;
+            }
         }
 
         [Conditional("SPELLBOUND_LOG_VERBOSE")]

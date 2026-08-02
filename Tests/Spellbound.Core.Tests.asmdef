@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "Spellbound.Core",
+        "Unity.Transforms",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
