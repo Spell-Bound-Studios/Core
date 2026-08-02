@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace Spellbound.Core.Logging {
     public static class Log {
-        private struct RegisteredSink {
+        internal struct RegisteredSink {
             public ILogSink Sink;
             public LogLevel FilterLevel;
         }
@@ -63,6 +63,56 @@ namespace Spellbound.Core.Logging {
 
                 return true;
             }
+        }
+
+        public static void ClearSinks() {
+            lock (SinkMutationLock)
+                _sinks = System.Array.Empty<RegisteredSink>();
+        }
+
+        public static SinkSuspension SuspendSinks() {
+            lock (SinkMutationLock) {
+                var suspended = _sinks;
+                _sinks = System.Array.Empty<RegisteredSink>();
+
+                return new SinkSuspension(suspended);
+            }
+        }
+
+        private static void RestoreSinks(RegisteredSink[] suspended) {
+            if (suspended == null || suspended.Length == 0)
+                return;
+
+            lock (SinkMutationLock) {
+                var current = _sinks;
+                var restored = new System.Collections.Generic.List<RegisteredSink>(current);
+
+                foreach (var entry in suspended) {
+                    var alreadyPresent = false;
+
+                    foreach (var existing in current) {
+                        if (!ReferenceEquals(existing.Sink, entry.Sink))
+                            continue;
+
+                        alreadyPresent = true;
+
+                        break;
+                    }
+
+                    if (!alreadyPresent)
+                        restored.Add(entry);
+                }
+
+                _sinks = restored.ToArray();
+            }
+        }
+
+        public readonly struct SinkSuspension : System.IDisposable {
+            private readonly RegisteredSink[] _suspended;
+
+            internal SinkSuspension(RegisteredSink[] suspended) => _suspended = suspended;
+
+            public void Dispose() => RestoreSinks(_suspended);
         }
 
         [Conditional("SPELLBOUND_LOG_VERBOSE")]

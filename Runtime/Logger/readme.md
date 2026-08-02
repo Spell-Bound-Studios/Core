@@ -91,3 +91,15 @@ using (Log.AddScopedSink(sink, config, LogLevel.Verbose)) {
 `RecordingLogSink` keeps entries in memory instead of writing them anywhere, which is what lets a test assert that code reported an error. Its constructor takes a minimum level, so it is not reflection-discoverable and never appears in the config inspector. `Entries`, `Count`, `CountOf`, `Contains`, and `Clear` are the reading surface, and it is safe to emit into from background threads.
 
 Removal does not dispose the sink. Sinks that hold resources, like `FileSink`, are still the caller's to dispose.
+
+To mute sinks you do not hold a reference to, such as the ones `LogBootstrap` registered from config, use `Log.SuspendSinks`. It detaches everything and reattaches on dispose, leaving any sink registered during the suspension in place.
+
+```csharp
+using (Log.SuspendSinks())
+using (Log.AddScopedSink(sink, config, LogLevel.Verbose)) {
+    RunTheThingThatShouldFail();
+    Assert.AreEqual(1, sink.CountOf(LogLevel.Error));
+}
+```
+
+`Log.ClearSinks` drops every registration without restoring. `LogBootstrap` calls it before registering, so entering play mode with domain reload disabled re-registers rather than stacking a second copy of every sink, and it calls it again on returning to edit mode so play-mode sinks do not outlive the session.

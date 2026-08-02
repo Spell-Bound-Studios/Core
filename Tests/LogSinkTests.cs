@@ -148,6 +148,78 @@ namespace Spellbound.Core.Tests {
         }
 
         [Test]
+        public void ClearSinksRemovesEveryRegistration() {
+            var sink = NewSink();
+            Log.AddSink(sink, null, LogLevel.Verbose);
+
+            Log.ClearSinks();
+            Emit(LogLevel.Error, "boom");
+
+            Assert.AreEqual(0, sink.Count);
+            Assert.IsFalse(Log.RemoveSink(sink));
+        }
+
+        [Test]
+        public void SuspendSinksMutesThenRestores() {
+            var sink = NewSink();
+            Log.AddSink(sink, null, LogLevel.Verbose);
+
+            try {
+                using (Log.SuspendSinks())
+                    Emit(LogLevel.Error, "muted");
+
+                Emit(LogLevel.Error, "audible");
+
+                CollectionAssert.AreEqual(new[] { "audible" }, MessagesOf(sink));
+            }
+            finally {
+                Log.RemoveSink(sink);
+            }
+        }
+
+        [Test]
+        public void SinksAddedDuringSuspensionSurviveRestore() {
+            var original = NewSink();
+            var recorder = NewSink();
+            Log.AddSink(original, null, LogLevel.Verbose);
+
+            try {
+                using (Log.SuspendSinks()) {
+                    Log.AddSink(recorder, null, LogLevel.Verbose);
+                    Emit(LogLevel.Error, "during");
+                }
+
+                Emit(LogLevel.Error, "after");
+
+                CollectionAssert.AreEqual(new[] { "during", "after" }, MessagesOf(recorder));
+                CollectionAssert.AreEqual(new[] { "after" }, MessagesOf(original));
+            }
+            finally {
+                Log.RemoveSink(original);
+                Log.RemoveSink(recorder);
+            }
+        }
+
+        [Test]
+        public void DisposingSuspensionTwiceDoesNotDuplicateSinks() {
+            var sink = NewSink();
+            Log.AddSink(sink, null, LogLevel.Verbose);
+
+            try {
+                var suspension = Log.SuspendSinks();
+                suspension.Dispose();
+                suspension.Dispose();
+
+                Emit(LogLevel.Error, "once");
+
+                CollectionAssert.AreEqual(new[] { "once" }, MessagesOf(sink));
+            }
+            finally {
+                Log.RemoveSink(sink);
+            }
+        }
+
+        [Test]
         public void ClearDropsRecordedEntries() {
             var sink = NewSink();
 

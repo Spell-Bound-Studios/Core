@@ -1,3 +1,7 @@
+## [1.1.5] - 8/1/2026
+
+- `Log.ClearSinks` and `Log.SuspendSinks` mute sinks the caller does not hold a reference to. `LogBootstrap` now clears before registering and on returning to edit mode, so sinks no longer stack when domain reload is disabled.
+
 ## [1.1.4] - 8/1/2026
 
 - Log sinks can now be unregistered with `Log.RemoveSink` or scoped to a `using` block with `Log.AddScopedSink`.
