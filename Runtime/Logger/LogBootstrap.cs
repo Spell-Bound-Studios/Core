@@ -18,6 +18,8 @@ namespace Spellbound.Core.Logging {
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Initialize() {
+            Log.ClearSinks();
+
             var config = Resources.Load<LogConfig>(ConfigResourcePath);
 
             if (config == null) {
@@ -27,6 +29,19 @@ namespace Spellbound.Core.Logging {
 
             RegisterEnabledSinks(config);
         }
+
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void SubscribeToPlayModeExit() {
+            UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        private static void OnPlayModeStateChanged(UnityEditor.PlayModeStateChange state) {
+            if (state == UnityEditor.PlayModeStateChange.EnteredEditMode)
+                Log.ClearSinks();
+        }
+#endif
 
         private static LogConfig CreateDefaultConfig() {
             var config = ScriptableObject.CreateInstance<LogConfig>();

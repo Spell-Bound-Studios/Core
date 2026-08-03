@@ -1,3 +1,22 @@
+## [1.1.6] - 8/2/2026
+
+- `Packer` reads and writes `sbyte` through `WriteSByte` and `ReadSByte`, sharing the single-byte two's complement layout of `WriteByte`.
+- `Packer` test coverage extended to every read and write pair, the bitwise variants, the smart packer helpers, and `BuildPayload`.
+- `ObjectParent.GetNextInstanceIndex` advances a per-chunk cursor instead of rescanning from the seed count on every call, so placement cost stays flat as a chunk fills. Freed indices below the cursor are not reused within a chunk session.
+- `ObjectParent.StaticEntityDistanceQuery` skips evaluation until the POV has moved 4m or the chunk's static entity count has changed, and returns whether it evaluated. Surface promotion and demotion can lag movement by up to 4m, well inside the default 50/70 interaction band.
+
+## [1.1.5] - 8/1/2026
+
+- `Log.ClearSinks` and `Log.SuspendSinks` mute sinks the caller does not hold a reference to. `LogBootstrap` now clears before registering and on returning to edit mode, so sinks no longer stack when domain reload is disabled.
+
+## [1.1.4] - 8/1/2026
+
+- Log sinks can now be unregistered with `Log.RemoveSink` or scoped to a `using` block with `Log.AddScopedSink`.
+- `EntityPrefabRegistryAuthoring` takes a `PresetBakeManifest`, letting the prefab registry rebake when presets are added, removed, or edited.
+- `TransformData.RotAsQuaternion` rebuilds rotation in XYZ euler order, matching how the constructors capture it. Composed rotations no longer come back skewed.
+- `RecordingLogSink` captures log entries in memory for assertions, and sink discovery now ignores non-public types so test sinks no longer appear in the Log Config inspector.
+- `ResourceRegistry<TEntry>` discovers registry entries under a Resources folder and adds the lazy load, name index, and per-entry validation that every registry was hand-rolling. `PresetRegistry` now sits on it; a failed load clears the registry and reports again on the next access instead of leaving it half populated.
+
 ## [2.0.0] - 4/18/2025
 
 ### Second Release
