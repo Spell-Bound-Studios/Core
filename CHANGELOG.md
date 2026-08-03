@@ -1,3 +1,10 @@
+## [1.1.6] - 8/2/2026
+
+- `Packer` reads and writes `sbyte` through `WriteSByte` and `ReadSByte`, sharing the single-byte two's complement layout of `WriteByte`.
+- `Packer` test coverage extended to every read and write pair, the bitwise variants, the smart packer helpers, and `BuildPayload`.
+- `ObjectParent.GetNextInstanceIndex` advances a per-chunk cursor instead of rescanning from the seed count on every call, so placement cost stays flat as a chunk fills. Freed indices below the cursor are not reused within a chunk session.
+- `ObjectParent.StaticEntityDistanceQuery` skips evaluation until the POV has moved 4m or the chunk's static entity count has changed, and returns whether it evaluated. Surface promotion and demotion can lag movement by up to 4m, well inside the default 50/70 interaction band.
+
 ## [1.1.5] - 8/1/2026
 
 - `Log.ClearSinks` and `Log.SuspendSinks` mute sinks the caller does not hold a reference to. `LogBootstrap` now clears before registering and on returning to edit mode, so sinks no longer stack when domain reload is disabled.

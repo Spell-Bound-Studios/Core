@@ -45,6 +45,24 @@ namespace Spellbound.Core.Packing {
         }
 
         #endregion
+        
+        #region SByte
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteSByte(ref Span<byte> buffer, sbyte value) {
+            buffer[0] = unchecked((byte)value);
+            buffer = buffer[1..];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static sbyte ReadSByte(ref ReadOnlySpan<byte> buffer) {
+            var value = unchecked((sbyte)buffer[0]);
+            buffer = buffer[1..];
+
+            return value;
+        }
+
+        #endregion SByte
 
         #region Bool
 

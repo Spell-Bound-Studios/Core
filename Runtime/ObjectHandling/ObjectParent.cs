@@ -31,13 +31,18 @@ namespace Spellbound.Core.ObjectHandling {
         private EntityQuery _dynamicQuery;
         private readonly Entity _ecsChunk;
 
+        private const float SurfaceQueryMovementThreshold = 4f;
+
         private readonly Dictionary<int, IEventSurface> _eventSurfaces = new();
         private Vector3 _lastPovPosition;
+        private bool _hasEvaluatedStaticProximity;
+        private int _lastEvaluatedStaticEntityCount;
 
         public IObjectDataAccess StaticDataAccess { get; }
         public IDynamicDataAccess DynamicDataAccess { get; }
 
         private int _seedInstanceCount;
+        private int _instanceIndexCursor = int.MinValue;
 
         public event Action<float3[]> OnDynamicProximityEval = delegate { };
 
@@ -335,12 +340,14 @@ namespace Spellbound.Core.ObjectHandling {
         #region IObjectInstanceConsumer Implementation
 
         public int GetNextInstanceIndex() {
-            var i = _seedInstanceCount;
+            if (_instanceIndexCursor < _seedInstanceCount)
+                _instanceIndexCursor = _seedInstanceCount;
 
-            while (StaticDataAccess.HasInstance(i) || DynamicDataAccess.HasInstance(i))
-                i++;
+            while (StaticDataAccess.HasInstance(_instanceIndexCursor)
+                   || DynamicDataAccess.HasInstance(_instanceIndexCursor))
+                _instanceIndexCursor++;
 
-            return i;
+            return _instanceIndexCursor;
         }
 
         /// <summary>
@@ -676,14 +683,24 @@ namespace Spellbound.Core.ObjectHandling {
             instancesToSleep.Dispose();
         }
 
-        public void StaticEntityDistanceQuery(float3 localPov) {
+        public bool StaticEntityDistanceQuery(float3 localPov) {
+            var maxCapacity = _staticQuery.CalculateEntityCount();
+
+            if (_hasEvaluatedStaticProximity
+                && maxCapacity == _lastEvaluatedStaticEntityCount
+                && math.distancesq(localPov, _lastPovPosition)
+                   < SurfaceQueryMovementThreshold * SurfaceQueryMovementThreshold)
+                return false;
+
+            _hasEvaluatedStaticProximity = true;
+            _lastEvaluatedStaticEntityCount = maxCapacity;
             _lastPovPosition = localPov;
+
             var existingEventSurfaces = new NativeHashSet<int>(_eventSurfaces.Count, Allocator.TempJob);
 
             foreach (var key in _eventSurfaces.Keys)
                 existingEventSurfaces.Add(key);
 
-            var maxCapacity = _staticQuery.CalculateEntityCount();
             var entities = _staticQuery.ToEntityArray(Allocator.TempJob);
             var transforms = _staticQuery.ToComponentDataArray<LocalTransform>(Allocator.TempJob);
             var thresholds = _staticQuery.ToComponentDataArray<ProximityThresholdComponent>(Allocator.TempJob);
@@ -726,6 +743,8 @@ namespace Spellbound.Core.ObjectHandling {
             existingEventSurfaces.Dispose();
             instancesToAwaken.Dispose();
             instancesToSleep.Dispose();
+
+            return true;
         }
 
         #endregion Distance Queries

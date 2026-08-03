@@ -3,6 +3,9 @@
     "rootNamespace": "",
     "references": [
         "Spellbound.Core",
+        "Unity.Collections",
+        "Unity.Entities",
+        "Unity.Mathematics",
         "Unity.Transforms",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
