@@ -1,3 +1,7 @@
+## [1.1.8] - 9/7/2026
+
+- `WeightedPool<T>` renamed to `WeightedTableAsset<T>`. It is the asset form of a `WeightedTable<T>`, and the old name collided with `ObjectPool`.
+
 ## [1.1.7] - 9/7/2026
 
 - `WeightedTable<T>` in `Spellbound.Core.Sampling`: a serializable weighted list with a nothing slot. One roll through `PickIndex` or `TryPick`, driven by any random source in `[0, TotalWeight)`, resolves by binary search over cumulative weights built once per table. `Sample` draws several picks with or without replacement. `Define` builds a table in code.

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Spellbound.Core.Sampling {
-    public abstract class WeightedPool<T> : ScriptableObject where T : class {
+    public abstract class WeightedTableAsset<T> : ScriptableObject where T : class {
         [SerializeField] private WeightedTable<T> table = new();
 
         public WeightedTable<T> Table => table ??= new WeightedTable<T>();
