@@ -1,3 +1,8 @@
+## [1.1.7] - 9/7/2026
+
+- `WeightedTable<T>` in `Spellbound.Core.Sampling`: a serializable weighted list with a nothing slot. One roll through `PickIndex` or `TryPick`, driven by any random source in `[0, TotalWeight)`, resolves by binary search over cumulative weights built once per table. `Sample` draws several picks with or without replacement. `Define` builds a table in code.
+- `WeightedPool<T>`: a ScriptableObject holding one `WeightedTable<T>` for tables shared between assets.
+
 ## [1.1.6] - 8/2/2026
 
 - `Packer` reads and writes `sbyte` through `WriteSByte` and `ReadSByte`, sharing the single-byte two's complement layout of `WriteByte`.
