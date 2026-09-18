@@ -11,6 +11,7 @@ namespace Spellbound.Core.Tests {
 
         private class ItemPool : ObjectPool<Item> {
             public int Created;
+            public int Discarded;
 
             protected override Item Create() {
                 Created++;
@@ -19,6 +20,73 @@ namespace Spellbound.Core.Tests {
             }
 
             protected override void Reset(Item item) => item.ResetCount++;
+
+            protected override void Discard(Item item) => Discarded++;
+        }
+
+        [Test]
+        public void PrewarmFillsToCountWithResetItems() {
+            var pool = new ItemPool();
+
+            pool.Prewarm(3);
+
+            Assert.AreEqual(3, pool.Created);
+            Assert.AreEqual(3, pool.Available);
+            Assert.AreEqual(1, pool.Rent().ResetCount);
+            Assert.AreEqual(3, pool.Created);
+        }
+
+        [Test]
+        public void PrewarmOnlyCreatesTheShortfall() {
+            var pool = new ItemPool();
+            pool.Return(pool.Rent());
+
+            pool.Prewarm(3);
+
+            Assert.AreEqual(3, pool.Created);
+            Assert.AreEqual(3, pool.Available);
+
+            pool.Prewarm(2);
+
+            Assert.AreEqual(3, pool.Created);
+            Assert.AreEqual(3, pool.Available);
+        }
+
+        [Test]
+        public void PrewarmStopsAtMaximumRetained() {
+            var pool = new ItemPool { MaximumRetained = 2 };
+
+            pool.Prewarm(5);
+
+            Assert.AreEqual(2, pool.Created);
+            Assert.AreEqual(2, pool.Available);
+        }
+
+        [Test]
+        public void ReturnDiscardsBeyondMaximumRetained() {
+            var pool = new ItemPool { MaximumRetained = 1 };
+            var first = pool.Rent();
+            var second = pool.Rent();
+
+            pool.Return(first);
+            pool.Return(second);
+
+            Assert.AreEqual(1, pool.Available);
+            Assert.AreEqual(1, pool.Discarded);
+            Assert.AreEqual(0, second.ResetCount);
+            Assert.AreSame(first, pool.Rent());
+        }
+
+        [Test]
+        public void ZeroMaximumRetainedKeepsEverything() {
+            var pool = new ItemPool();
+            var items = new[] { pool.Rent(), pool.Rent(), pool.Rent() };
+
+            foreach (var item in items)
+                pool.Return(item);
+
+            Assert.AreEqual(3, pool.Available);
+            Assert.AreEqual(0, pool.Discarded);
         }
 
         [Test]
